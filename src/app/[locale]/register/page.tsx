@@ -71,7 +71,7 @@ export default function RegisterPage() {
               />
             </div>
             {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
-            <Button className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "..." : t("registerCta")}
             </Button>
           </form>

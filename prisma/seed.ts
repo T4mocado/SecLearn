@@ -88,6 +88,67 @@ async function main() {
     });
   }
 
+  // Public sample corpus so guest RAG has something to retrieve without PDF upload
+  const admin = await prisma.user.findUnique({ where: { email } });
+  if (admin) {
+    const existing = await prisma.document.findFirst({
+      where: { title: "SecLearn starter notes" },
+    });
+    if (!existing) {
+      const markdown = `# SecLearn starter notes
+
+## Mật khẩu mạnh / Strong passwords
+Dùng mật khẩu dài, ngẫu nhiên, không tái sử dụng. Prefer a password manager and enable 2FA.
+
+## Phishing
+Check sender addresses, avoid urgent pressure links, never send passwords by email.
+
+## 2FA / MFA
+Adds a second factor beyond the password so stolen passwords alone are not enough.
+`;
+      const doc = await prisma.document.create({
+        data: {
+          title: "SecLearn starter notes",
+          filename: "starter-notes.md",
+          mimeType: "text/markdown",
+          storagePath: "seed://starter-notes.md",
+          markdown,
+          visibility: "public",
+          status: "ready",
+          uploadedById: admin.id,
+        },
+      });
+      const chunks = markdown
+        .split(/\n## /)
+        .map((c, i) => (i === 0 ? c : `## ${c}`).trim())
+        .filter(Boolean);
+      for (let i = 0; i < chunks.length; i++) {
+        const content = chunks[i]!;
+        const created = await prisma.documentChunk.create({
+          data: {
+            documentId: doc.id,
+            content,
+            chunkIndex: i,
+            tokenCount: Math.ceil(content.length / 4),
+          },
+        });
+        // Deterministic mock embedding via SQL-compatible literal
+        const { createHash } = await import("crypto");
+        const hash = createHash("sha256").update(content).digest();
+        const vec = Array.from({ length: 1536 }, (_, idx) => {
+          const b = hash[idx % hash.length]!;
+          return ((b / 255) * 2 - 1) * 0.2;
+        });
+        const lit = `[${vec.join(",")}]`;
+        await prisma.$executeRawUnsafe(
+          `UPDATE "DocumentChunk" SET embedding = $1::vector WHERE id = $2`,
+          lit,
+          created.id,
+        );
+      }
+    }
+  }
+
   console.log(`Seeded admin ${email} and sample lessons`);
 }
 

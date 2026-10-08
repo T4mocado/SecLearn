@@ -1,0 +1,81 @@
+{
+  "brand": "SecLearn",
+  "tagline": "Beginner cybersecurity with an AI tutor",
+  "nav": {
+    "chat": "Chat",
+    "lessons": "Lessons",
+    "review": "Review",
+    "admin": "Admin",
+    "login": "Log in",
+    "register": "Sign up",
+    "logout": "Log out"
+  },
+  "chat": {
+    "new": "New chat",
+    "history": "History",
+    "placeholder": "Ask about passwords, phishing, 2FA...",
+    "send": "Send",
+    "emptyTitle": "SecLearn",
+    "emptyBody": "Ask any beginner security question. Guests get 10 questions on public docs.",
+    "guestBadge": "{remaining}/{limit} left",
+    "limitTitle": "Guest limit reached",
+    "limitBody": "Sign in for unlimited chat and saved conversations.",
+    "streaming": "Thinking...",
+    "error": "Could not send that message. Please try again.",
+    "suggestions": {
+      "1": "What makes a strong password?",
+      "2": "How do I spot a phishing email?",
+      "3": "How does 2FA protect accounts?"
+    }
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "loginTitle": "Log in to SecLearn",
+    "registerTitle": "Create a learner account",
+    "loginCta": "Log in",
+    "registerCta": "Sign up",
+    "haveAccount": "Already have an account?",
+    "noAccount": "Need an account?",
+    "error": "Login failed. Check your email/password.",
+    "registerError": "Could not register. Email may already exist."
+  },
+  "lessons": {
+    "title": "Lessons",
+    "empty": "No published lessons yet.",
+    "reviewCta": "Review",
+    "loading": "Loading lessons..."
+  },
+  "review": {
+    "title": "Review",
+    "create": "Generate review quiz",
+    "creating": "Generating questions...",
+    "empty": "No saved quizzes yet. Generate your first review set.",
+    "start": "Take quiz",
+    "submit": "Submit",
+    "score": "Score: {score}%",
+    "history": "Attempt history",
+    "needAuth": "Sign in to use Review.",
+    "questions": "{count} questions"
+  },
+  "admin": {
+    "users": "Users",
+    "documents": "PDF documents",
+    "lessons": "Lessons",
+    "upload": "Upload PDF",
+    "reindex": "Reindex",
+    "visibility": "Visibility",
+    "status": "Status",
+    "save": "Save",
+    "delete": "Delete",
+    "disabled": "Disabled",
+    "role": "Role"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong. Please try again.",
+    "retry": "Retry",
+    "close": "Close"
+  }
+}

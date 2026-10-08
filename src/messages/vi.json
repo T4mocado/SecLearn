@@ -1,0 +1,81 @@
+{
+  "brand": "SecLearn",
+  "tagline": "Học bảo mật nhập môn cùng trợ lý AI",
+  "nav": {
+    "chat": "Chat",
+    "lessons": "Bài học",
+    "review": "Ôn tập",
+    "admin": "Admin",
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "logout": "Đăng xuất"
+  },
+  "chat": {
+    "new": "Chat mới",
+    "history": "Lịch sử",
+    "placeholder": "Hỏi về mật khẩu, phishing, 2FA...",
+    "send": "Gửi",
+    "emptyTitle": "SecLearn",
+    "emptyBody": "Hỏi bất kỳ câu hỏi bảo mật cơ bản nào. Guest được 10 câu trên tài liệu công khai.",
+    "guestBadge": "Còn {remaining}/{limit}",
+    "limitTitle": "Đã hết 10 câu hỏi khách",
+    "limitBody": "Đăng nhập để tiếp tục chat không giới hạn và lưu hội thoại.",
+    "streaming": "Đang trả lời...",
+    "error": "Không gửi được tin nhắn. Thử lại nhé.",
+    "suggestions": {
+      "1": "Mật khẩu mạnh cần những gì?",
+      "2": "Làm sao nhận biết email phishing?",
+      "3": "2FA giúp bảo vệ tài khoản thế nào?"
+    }
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Mật khẩu",
+    "name": "Tên",
+    "loginTitle": "Đăng nhập SecLearn",
+    "registerTitle": "Tạo tài khoản học viên",
+    "loginCta": "Đăng nhập",
+    "registerCta": "Đăng ký",
+    "haveAccount": "Đã có tài khoản?",
+    "noAccount": "Chưa có tài khoản?",
+    "error": "Đăng nhập thất bại. Kiểm tra email/mật khẩu.",
+    "registerError": "Không đăng ký được. Email có thể đã tồn tại."
+  },
+  "lessons": {
+    "title": "Bài học",
+    "empty": "Chưa có bài học công khai.",
+    "reviewCta": "Ôn tập",
+    "loading": "Đang tải bài học..."
+  },
+  "review": {
+    "title": "Ôn tập",
+    "create": "Tạo bộ câu ôn tập",
+    "creating": "Đang tạo câu hỏi...",
+    "empty": "Bạn chưa có bộ câu nào. Hãy tạo bộ câu ôn tập đầu tiên.",
+    "start": "Làm bài",
+    "submit": "Nộp bài",
+    "score": "Điểm: {score}%",
+    "history": "Lịch sử làm bài",
+    "needAuth": "Đăng nhập để dùng Ôn tập.",
+    "questions": "{count} câu"
+  },
+  "admin": {
+    "users": "Người dùng",
+    "documents": "Tài liệu PDF",
+    "lessons": "Bài học",
+    "upload": "Tải PDF lên",
+    "reindex": "Reindex",
+    "visibility": "Hiển thị",
+    "status": "Trạng thái",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "disabled": "Đã khóa",
+    "role": "Vai trò"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "error": "Đã xảy ra lỗi. Thử lại sau.",
+    "retry": "Thử lại",
+    "close": "Đóng"
+  }
+}

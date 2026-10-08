@@ -1,0 +1,196 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+enum Role {
+  learner
+  admin
+}
+
+enum Locale {
+  vi
+  en
+}
+
+enum MessageRole {
+  user
+  assistant
+  system
+}
+
+enum DocVisibility {
+  public
+  authenticated
+}
+
+enum DocStatus {
+  pending
+  ready
+  failed
+}
+
+enum QuizSource {
+  generated
+  manual
+}
+
+enum AttemptMode {
+  review
+}
+
+model User {
+  id              String         @id @default(cuid())
+  email           String         @unique
+  passwordHash    String
+  name            String?
+  role            Role           @default(learner)
+  preferredLocale Locale         @default(vi)
+  disabledAt      DateTime?
+  createdAt       DateTime       @default(now())
+  conversations   Conversation[]
+  documents       Document[]     @relation("UploadedBy")
+  quizzes         Quiz[]         @relation("QuizCreator")
+  quizAttempts    QuizAttempt[]
+}
+
+model GuestQuota {
+  id            String    @id @default(cuid())
+  guestKey      String    @unique
+  questionCount Int       @default(0)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Conversation {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title              String?
+  locale             Locale?
+  migratedFromGuest  Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  messages           Message[]
+  quizzesBasedOn     Quiz[]   @relation("QuizFromConversation")
+
+  @@index([userId, updatedAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model Document {
+  id            String        @id @default(cuid())
+  title         String
+  filename      String
+  mimeType      String
+  storagePath   String
+  markdown      String?
+  visibility    DocVisibility @default(public)
+  status        DocStatus     @default(pending)
+  errorMessage  String?
+  uploadedById  String
+  uploadedBy    User          @relation("UploadedBy", fields: [uploadedById], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  chunks        DocumentChunk[]
+
+  @@index([status, visibility])
+}
+
+model DocumentChunk {
+  id         String                       @id @default(cuid())
+  documentId String
+  document   Document                     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content    String
+  chunkIndex Int
+  embedding  Unsupported("vector(1536)")?
+  tokenCount Int?
+  metadata   Json?
+  createdAt  DateTime                     @default(now())
+
+  @@index([documentId, chunkIndex])
+}
+
+model Lesson {
+  id           String              @id @default(cuid())
+  slug         String              @unique
+  order        Int                 @default(0)
+  published    Boolean             @default(false)
+  updatedAt    DateTime            @updatedAt
+  createdAt    DateTime            @default(now())
+  translations LessonTranslation[]
+}
+
+model LessonTranslation {
+  id        String @id @default(cuid())
+  lessonId  String
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  locale    Locale
+  title     String
+  summary   String
+  content   String
+
+  @@unique([lessonId, locale])
+}
+
+model Quiz {
+  id                     String         @id @default(cuid())
+  titleVi                String?
+  titleEn                String?
+  description            String?
+  published              Boolean        @default(false)
+  source                 QuizSource     @default(generated)
+  createdById            String
+  createdBy              User           @relation("QuizCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  basedOnConversationId  String?
+  basedOnConversation    Conversation?  @relation("QuizFromConversation", fields: [basedOnConversationId], references: [id], onDelete: SetNull)
+  createdAt              DateTime       @default(now())
+  questions              Question[]
+  attempts               QuizAttempt[]
+
+  @@index([createdById, createdAt])
+}
+
+model Question {
+  id              String  @id @default(cuid())
+  quizId          String
+  quiz            Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  prompt          String
+  options         Json
+  correctOptionId String
+  order           Int     @default(0)
+  locale          Locale?
+
+  @@index([quizId, order])
+}
+
+model QuizAttempt {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId      String
+  quiz        Quiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score       Float
+  answers     Json
+  mode        AttemptMode @default(review)
+  completedAt DateTime    @default(now())
+
+  @@index([userId, completedAt])
+}

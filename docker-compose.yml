@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: seclearn
+      POSTGRES_PASSWORD: seclearn
+      POSTGRES_DB: seclearn
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seclearn -d seclearn"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3847:3847"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://seclearn:seclearn@postgres:5432/seclearn?schema=public
+      UPLOAD_DIR: /app/data/uploads
+      AUTH_URL: http://localhost:3847
+      NEXT_PUBLIC_APP_URL: http://localhost:3847
+    volumes:
+      - uploads:/app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:

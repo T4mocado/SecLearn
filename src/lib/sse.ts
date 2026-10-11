@@ -19,8 +19,8 @@ export async function streamLlmToSse(opts: {
   tokens: AsyncGenerator<string, void, unknown>;
   /** Sent as a `sources` event before the first token. */
   sources?: unknown;
-  /** Runs after the last token; a returned event (e.g. citation checks) is sent before `done`. */
-  finalize?: (full: string) => Promise<{ event: string; data: unknown } | null>;
+  /** Runs after the last token; its result is sent as a second `sources` event (e.g. with citation checks). */
+  finalizeSources?: (full: string) => Promise<unknown>;
   onDone?: (full: string) => Promise<void> | void;
   onError?: (message: string) => Promise<void> | void;
 }): Promise<ReadableStream<Uint8Array>> {
@@ -37,8 +37,10 @@ export async function streamLlmToSse(opts: {
           full += token;
           controller.enqueue(encoder.encode(sseEncode("token", { token })));
         }
-        const extra = await opts.finalize?.(full);
-        if (extra) controller.enqueue(encoder.encode(sseEncode(extra.event, extra.data)));
+        if (opts.finalizeSources) {
+          const sources = await opts.finalizeSources(full);
+          controller.enqueue(encoder.encode(sseEncode("sources", { sources })));
+        }
         await opts.onDone?.(full);
         controller.enqueue(encoder.encode(sseEncode("done", { ok: true })));
         controller.close();

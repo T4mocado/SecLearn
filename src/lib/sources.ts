@@ -72,14 +72,7 @@ function cleanExcerpt(text: string): string {
 }
 
 /** One valid `[n]` marker in an answer, with the clause it backs. */
-/**
- * One valid `[n]` marker in an answer. `claim` is the text scored against the chunk; `start`..`at` is
- * the raw span of the marker's own clause (never overlaps another marker's span), used for hover.
- */
-export type CitationClaim = { index: number; claim: string; start: number; at: number };
-
-/** Leading separators and list bullets that should not be highlighted as part of a clause. */
-const LEADING_JUNK_RE = /^[\s,;:–—-]*(?:(?:[*+]|\d+\.)\s+)?/;
+export type CitationClaim = { index: number; claim: string; at: number };
 
 /**
  * Every valid `[n]` marker with the answer text it cites, without citation markers.
@@ -102,12 +95,9 @@ export function citationClaims(content: string, sourceCount: number): CitationCl
     for (const end of head.matchAll(SENTENCE_END_RE)) start = end.index + 1;
     const sentence = head.slice(start);
     const previous = [...sentence.matchAll(CITATION_RE)].at(-1);
-    const clauseFrom = start + (previous ? previous.index + previous[0].length : 0);
     const clause = previous ? cleanExcerpt(sentence.slice(previous.index + previous[0].length)) : "";
     const claim = (clause.length >= CLAUSE_MIN ? clause : cleanExcerpt(sentence)).slice(0, CLAUSE_MAX);
-    // The hover span always starts after the previous marker, even when the scored claim falls back to the sentence.
-    const spanStart = clauseFrom + LEADING_JUNK_RE.exec(content.slice(clauseFrom, head.length))![0].length;
-    if (claim) out.push({ index: n, claim, start: Math.min(spanStart, match.index), at: match.index });
+    if (claim) out.push({ index: n, claim, at: match.index });
   }
   return out;
 }
@@ -129,29 +119,6 @@ export function truncateClaim(claim: string): string {
 
 export function supportScore(source: MessageSource | undefined, claim: string): number | undefined {
   return source?.support?.find((s) => s.claim === claim)?.score;
-}
-
-/** Check results sent after the answer (`verification` SSE event) without resending chunk text. */
-export type SupportPatch = { index: number; support: CitationSupport[] };
-
-export function supportPatch(sources: MessageSource[]): SupportPatch[] {
-  return sources.flatMap((s) => (s.support ? [{ index: s.index, support: s.support }] : []));
-}
-
-export function parseSupportPatch(value: unknown): SupportPatch[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (p): p is SupportPatch =>
-      !!p && typeof p === "object" && typeof (p as SupportPatch).index === "number" && isSupportList((p as SupportPatch).support),
-  );
-}
-
-export function applySupportPatch(sources: MessageSource[], patch: SupportPatch[]): MessageSource[] {
-  if (!patch.length) return sources;
-  return sources.map((s) => {
-    const support = patch.find((p) => p.index === s.index)?.support;
-    return support ? { ...s, support } : s;
-  });
 }
 
 /** Old answers cite numbers from their own context; drop them so the model doesn't mix them up with the new one. */

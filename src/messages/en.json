@@ -39,7 +39,6 @@
     "sourcesNotCited": "Not cited",
     "sourcesChunk": "Chunk #{n}",
     "sourcesUsedIn": "Used in the answer",
-    "hoverViewFull": "Open in sources panel →",
     "verifySupported": "Backed by source",
     "verifyUnsupported": "Not found in source",
     "verifyScore": "Check score {score} (threshold {threshold})",

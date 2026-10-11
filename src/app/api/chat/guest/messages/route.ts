@@ -5,7 +5,7 @@ import { stripCitations } from "@/lib/sources";
 import { assertLlmConfigured, streamChatCompletion } from "@/lib/llm";
 import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
-import { verificationEvent, verifyCitations } from "@/lib/verify";
+import { verifyCitations } from "@/lib/verify";
 import { jsonAppError, jsonError } from "@/lib/session";
 import { isAppError } from "@/lib/errors";
 
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     const stream = await streamLlmToSse({
       tokens,
       sources,
-      finalize: async (full) => verificationEvent(await verifyCitations(full, sources)),
+      finalizeSources: (full) => verifyCitations(full, sources),
     });
     return createSseResponse(stream);
   } catch (err) {

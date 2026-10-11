@@ -7,16 +7,9 @@ import Link from "next/link";
 import { SendHorizonal, Plus, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { AnswerContent } from "@/components/chat/answer-content";
-import { SourcesPanel } from "@/components/chat/sources-panel";
+import { MessageContent, SourcesPanel } from "@/components/chat/sources-panel";
 import { clearDraft, loadDraft, saveDraft, type DraftMessage } from "@/lib/draft";
-import {
-  applySupportPatch,
-  parseSources,
-  parseSupportPatch,
-  type MessageSource,
-  type SupportPatch,
-} from "@/lib/sources";
+import { parseSources, type MessageSource } from "@/lib/sources";
 import { cn } from "@/lib/utils";
 
 type ConversationSummary = {
@@ -29,7 +22,6 @@ async function readSse(
   res: Response,
   onToken: (token: string) => void,
   onSources: (sources: MessageSource[]) => void,
-  onVerification: (patch: SupportPatch[]) => void,
 ): Promise<{ ok: boolean; error?: string }> {
   if (!res.body) return { ok: false, error: "No stream" };
   const reader = res.body.getReader();
@@ -53,15 +45,9 @@ async function readSse(
       }
       if (!data) continue;
       try {
-        const parsed = JSON.parse(data) as {
-          token?: string;
-          message?: string;
-          sources?: unknown;
-          verification?: unknown;
-        };
+        const parsed = JSON.parse(data) as { token?: string; message?: string; sources?: unknown };
         if (event === "token" && parsed.token) onToken(parsed.token);
         if (event === "sources") onSources(parseSources(parsed.sources) ?? []);
-        if (event === "verification") onVerification(parseSupportPatch(parsed.verification));
         if (event === "error") error = parsed.message || "Stream error";
       } catch {
         // ignore malformed chunk
@@ -320,11 +306,6 @@ export function ChatPanel() {
           sources = received;
           setMessages([...nextMessages, { role: "assistant", content: assistant, sources }]);
         },
-        (patch) => {
-          if (!sources) return;
-          sources = applySupportPatch(sources, patch);
-          setMessages([...nextMessages, { role: "assistant", content: assistant, sources }]);
-        },
       );
       if (!result.ok) {
         setError(result.error || t("llmApiError"));
@@ -461,12 +442,11 @@ export function ChatPanel() {
                     isAssistant && (selected ? "border-[var(--accent)]" : "border-[var(--border)]"),
                   )}
                 >
-                  <div className={isAssistant ? "chat-md" : "prose-chat"}>
+                  <div className="prose-chat">
                     {isAssistant ? (
-                      <AnswerContent
+                      <MessageContent
                         content={m.content}
                         sources={m.sources}
-                        interactive={!(streaming && idx === messages.length - 1)}
                         onCite={(n) => setSourceView({ idx, focus: n })}
                       />
                     ) : (

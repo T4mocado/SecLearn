@@ -1,5 +1,5 @@
 import { rerankPairs } from "@/lib/rerank";
-import { citationClaims, claimsBySource, supportPatch, type MessageSource } from "@/lib/sources";
+import { citationClaims, claimsBySource, type MessageSource } from "@/lib/sources";
 
 /**
  * Checks each cited clause of a finished answer against the chunk it cites and attaches the
@@ -24,10 +24,4 @@ export async function verifyCitations(answer: string, sources: MessageSource[]):
     const support = items.flatMap((item, i) => (item.source === s ? [{ claim: item.claim, score: scores[i]! }] : []));
     return support.length ? { ...s, support } : s;
   });
-}
-
-/** SSE event carrying only the check results, so chunk text is not sent a second time. */
-export function verificationEvent(sources: MessageSource[]): { event: string; data: unknown } | null {
-  const verification = supportPatch(sources);
-  return verification.length ? { event: "verification", data: { verification } } : null;
 }

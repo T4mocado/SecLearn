@@ -39,7 +39,6 @@
     "sourcesNotCited": "Không được trích dẫn",
     "sourcesChunk": "Đoạn #{n}",
     "sourcesUsedIn": "Dùng trong câu trả lời",
-    "hoverViewFull": "Xem đầy đủ trong panel nguồn →",
     "verifySupported": "Nguồn hỗ trợ",
     "verifyUnsupported": "Không tìm thấy trong nguồn",
     "verifyScore": "Điểm hậu kiểm {score} (ngưỡng {threshold})",

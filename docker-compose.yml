@@ -28,8 +28,14 @@ services:
       UPLOAD_DIR: /app/data/uploads
       AUTH_URL: http://localhost:3847
       NEXT_PUBLIC_APP_URL: http://localhost:3847
+      TRANSFORMERS_CACHE: /app/.cache/transformers
+      # Prefer product defaults unless .env overrides (compose env_file loads first; these win)
+      LLM_PROVIDER: ${LLM_PROVIDER:-deepseek}
+      EMBED_PROVIDER: ${EMBED_PROVIDER:-openai}
+      EMBED_DIM: ${EMBED_DIM:-1536}
     volumes:
       - uploads:/app/data/uploads
+      - transformers_cache:/app/.cache/transformers
     depends_on:
       postgres:
         condition: service_healthy
@@ -37,3 +43,4 @@ services:
 volumes:
   pgdata:
   uploads:
+  transformers_cache:

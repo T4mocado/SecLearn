@@ -1,5 +1,15 @@
 import OpenAI from "openai";
-import { getEnv } from "@/lib/env";
+import {
+  getEnv,
+  resolveLlmModel,
+} from "@/lib/env";
+import {
+  AppError,
+  isAppError,
+  llmApiError,
+  missingLlmKeyError,
+} from "@/lib/errors";
+import { CONTEXT_CHAR_LIMIT } from "@/lib/rag";
 
 export type ChatTurn = { role: "user" | "assistant" | "system"; content: string };
 
@@ -24,8 +34,31 @@ function buildMockAnswer(messages: ChatTurn[], context: string, locale: string):
   }
   const snippet = context.slice(0, 500).replace(/\s+/g, " ");
   return vi
-    ? `Dựa trên tài liệu SecLearn:\n\n${snippet}\n\nTóm lại: đây là kiến thức bảo mật cơ bản liên quan câu hỏi của bạn. (Chế độ demo — chưa cấu hình API key LLM.)`
-    : `Based on SecLearn materials:\n\n${snippet}\n\nIn short: this covers beginner cybersecurity related to your question. (Demo mode — LLM API key not configured.)`;
+    ? `Dựa trên tài liệu SecLearn:\n\n${snippet}\n\nTóm lại: đây là kiến thức bảo mật cơ bản liên quan câu hỏi của bạn. (Chế độ mock — LLM_PROVIDER=mock.)`
+    : `Based on SecLearn materials:\n\n${snippet}\n\nIn short: this covers beginner cybersecurity related to your question. (Mock mode — LLM_PROVIDER=mock.)`;
+}
+
+export function assertLlmConfigured(): void {
+  const env = getEnv();
+  if (env.LLM_PROVIDER === "mock") return;
+  if (env.LLM_PROVIDER === "deepseek" && !env.DEEPSEEK_API_KEY.trim()) {
+    throw missingLlmKeyError("deepseek");
+  }
+  if (env.LLM_PROVIDER === "openai" && !env.OPENAI_API_KEY.trim()) {
+    throw missingLlmKeyError("openai");
+  }
+}
+
+function createLlmClient() {
+  const env = getEnv();
+  assertLlmConfigured();
+  if (env.LLM_PROVIDER === "deepseek") {
+    return new OpenAI({
+      apiKey: env.DEEPSEEK_API_KEY,
+      baseURL: "https://api.deepseek.com",
+    });
+  }
+  return new OpenAI({ apiKey: env.OPENAI_API_KEY });
 }
 
 export async function streamChatCompletion(opts: {
@@ -41,31 +74,24 @@ export async function streamChatCompletion(opts: {
     "If context is insufficient, say so and give safe general guidance.",
     "Never invent CVE numbers or claim private data access.",
     `Prefer language: ${opts.locale === "vi" ? "Vietnamese" : "English"}.`,
-    opts.context
-      ? `Retrieved context:\n---\n${opts.context.slice(0, 6000)}\n---`
-      : "No retrieved context.",
+    ...(opts.context
+      ? [
+          "Each context passage starts with a number in brackets, e.g. [1].",
+          "When a sentence uses information from a passage, cite it inline right after that sentence, e.g. [1] or [2][3].",
+          "Only cite numbers that appear in the context. Do not cite general knowledge, and do not add a separate reference list.",
+          `Retrieved context:\n---\n${opts.context.slice(0, CONTEXT_CHAR_LIMIT)}\n---`,
+        ]
+      : ["No retrieved context."]),
   ].join("\n");
 
-  const provider =
-    env.LLM_PROVIDER === "mock" ||
-    (env.LLM_PROVIDER === "openai" && !env.OPENAI_API_KEY) ||
-    (env.LLM_PROVIDER === "deepseek" && !env.DEEPSEEK_API_KEY)
-      ? "mock"
-      : env.LLM_PROVIDER;
-
-  if (provider === "mock") {
+  // Mock ONLY when explicitly configured — never silent fallback for deepseek/openai.
+  if (env.LLM_PROVIDER === "mock") {
     return mockStream(buildMockAnswer(opts.messages, opts.context, opts.locale));
   }
 
-  const client =
-    provider === "deepseek"
-      ? new OpenAI({
-          apiKey: env.DEEPSEEK_API_KEY,
-          baseURL: "https://api.deepseek.com",
-        })
-      : new OpenAI({ apiKey: env.OPENAI_API_KEY });
-
-  const model = provider === "deepseek" ? "deepseek-chat" : "gpt-4o-mini";
+  assertLlmConfigured();
+  const client = createLlmClient();
+  const model = resolveLlmModel(env);
 
   try {
     const stream = await client.chat.completions.create(
@@ -74,19 +100,31 @@ export async function streamChatCompletion(opts: {
         stream: true,
         messages: [{ role: "system", content: system }, ...opts.messages.filter((m) => m.role !== "system")],
         temperature: 0.4,
-      },
+        // DeepSeek-flash defaults to thinking mode; disable for snappy tutor replies.
+        ...(env.LLM_PROVIDER === "deepseek"
+          ? ({ thinking: { type: "disabled" } } as Record<string, unknown>)
+          : {}),
+      } as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
       { signal: opts.signal },
     );
 
     async function* gen() {
-      for await (const chunk of stream) {
-        const token = chunk.choices[0]?.delta?.content;
-        if (token) yield token;
+      try {
+        for await (const chunk of stream) {
+          const token = chunk.choices[0]?.delta?.content;
+          if (token) yield token;
+        }
+      } catch (err) {
+        if (isAppError(err)) throw err;
+        const detail = err instanceof Error ? err.message : "stream error";
+        throw llmApiError(detail);
       }
     }
     return gen();
-  } catch {
-    return mockStream(buildMockAnswer(opts.messages, opts.context, opts.locale));
+  } catch (err) {
+    if (isAppError(err)) throw err;
+    const detail = err instanceof Error ? err.message : "request failed";
+    throw llmApiError(detail);
   }
 }
 
@@ -190,20 +228,11 @@ export async function generateQuizJson(opts: {
     ],
   };
 
-  const provider =
-    env.LLM_PROVIDER === "mock" ||
-    (env.LLM_PROVIDER === "openai" && !env.OPENAI_API_KEY) ||
-    (env.LLM_PROVIDER === "deepseek" && !env.DEEPSEEK_API_KEY)
-      ? "mock"
-      : env.LLM_PROVIDER;
+  if (env.LLM_PROVIDER === "mock") return fallback;
 
-  if (provider === "mock") return fallback;
-
-  const client =
-    provider === "deepseek"
-      ? new OpenAI({ apiKey: env.DEEPSEEK_API_KEY, baseURL: "https://api.deepseek.com" })
-      : new OpenAI({ apiKey: env.OPENAI_API_KEY });
-  const model = provider === "deepseek" ? "deepseek-chat" : "gpt-4o-mini";
+  assertLlmConfigured();
+  const client = createLlmClient();
+  const model = resolveLlmModel(env);
 
   try {
     const res = await client.chat.completions.create({
@@ -225,13 +254,41 @@ export async function generateQuizJson(opts: {
           }),
         },
       ],
-    });
+      ...(env.LLM_PROVIDER === "deepseek"
+        ? ({ thinking: { type: "disabled" } } as Record<string, unknown>)
+        : {}),
+    } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming);
+
     const raw = res.choices[0]?.message?.content;
-    if (!raw) return fallback;
+    if (!raw) {
+      throw new AppError({
+        code: "LLM_EMPTY",
+        status: 502,
+        messageVi: "LLM không trả về nội dung quiz. Thử lại hoặc đổi LLM_MODEL.",
+        messageEn: "LLM returned an empty quiz payload. Retry or change LLM_MODEL.",
+      });
+    }
     const parsed = JSON.parse(raw) as typeof fallback;
-    if (!Array.isArray(parsed.questions) || parsed.questions.length < 3) return fallback;
+    if (!Array.isArray(parsed.questions) || parsed.questions.length < 3) {
+      throw new AppError({
+        code: "LLM_INVALID_QUIZ",
+        status: 502,
+        messageVi: "LLM trả JSON quiz không hợp lệ. Thử lại.",
+        messageEn: "LLM returned an invalid quiz JSON payload. Please retry.",
+      });
+    }
     return parsed;
-  } catch {
-    return fallback;
+  } catch (err) {
+    if (isAppError(err)) throw err;
+    if (err instanceof SyntaxError) {
+      throw new AppError({
+        code: "LLM_INVALID_QUIZ",
+        status: 502,
+        messageVi: "Không parse được JSON quiz từ LLM.",
+        messageEn: "Could not parse quiz JSON from the LLM.",
+      });
+    }
+    const detail = err instanceof Error ? err.message : "request failed";
+    throw llmApiError(detail);
   }
 }

@@ -23,6 +23,26 @@ export async function requireAdmin() {
   return result;
 }
 
-export function jsonError(message: string, status = 400, code?: string) {
-  return NextResponse.json({ error: message, code }, { status });
+export function jsonError(
+  message: string,
+  status = 400,
+  code?: string,
+  extra?: Record<string, unknown>,
+) {
+  return NextResponse.json({ error: message, code, ...extra }, { status });
+}
+
+export function jsonAppError(
+  err: { code: string; status: number; messageFor: (locale?: string | null) => string; messageVi: string; messageEn: string },
+  locale?: string | null,
+) {
+  return NextResponse.json(
+    {
+      error: err.messageFor(locale),
+      code: err.code,
+      messageVi: err.messageVi,
+      messageEn: err.messageEn,
+    },
+    { status: err.status },
+  );
 }

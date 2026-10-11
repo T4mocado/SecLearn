@@ -9,6 +9,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
+      if (parsed.error.issues.some((i) => i.path[0] === "password")) {
+        return jsonError("Password is too weak", 400, "WEAK_PASSWORD");
+      }
       return jsonError("Invalid registration data", 400, "VALIDATION");
     }
 

@@ -122,6 +122,9 @@ Adds a second factor beyond the password so stolen passwords alone are not enoug
         .split(/\n## /)
         .map((c, i) => (i === 0 ? c : `## ${c}`).trim())
         .filter(Boolean);
+      const dim = Number(process.env.EMBED_DIM || "1536");
+      const embedProvider = process.env.EMBED_PROVIDER || "openai";
+
       for (let i = 0; i < chunks.length; i++) {
         const content = chunks[i]!;
         const created = await prisma.documentChunk.create({
@@ -132,13 +135,26 @@ Adds a second factor beyond the password so stolen passwords alone are not enoug
             tokenCount: Math.ceil(content.length / 4),
           },
         });
-        // Deterministic mock embedding via SQL-compatible literal
-        const { createHash } = await import("crypto");
-        const hash = createHash("sha256").update(content).digest();
-        const vec = Array.from({ length: 1536 }, (_, idx) => {
-          const b = hash[idx % hash.length]!;
-          return ((b / 255) * 2 - 1) * 0.2;
-        });
+
+        let vec: number[];
+        try {
+          if (embedProvider === "mock") {
+            throw new Error("use-hash");
+          }
+          // Same embed stack as runtime (OpenAI default / optional local) so RAG matches.
+          const { embedText } = await import("../src/lib/embed");
+          vec = await embedText(content);
+        } catch {
+          const { createHash } = await import("crypto");
+          const hash = createHash("sha256").update(content).digest();
+          vec = Array.from({ length: dim }, (_, idx) => {
+            const b = hash[idx % hash.length]!;
+            return ((b / 255) * 2 - 1) * 0.2;
+          });
+        }
+        if (vec.length !== dim) {
+          throw new Error(`Seed embed dim ${vec.length} != EMBED_DIM ${dim}`);
+        }
         const lit = `[${vec.join(",")}]`;
         await prisma.$executeRawUnsafe(
           `UPDATE "DocumentChunk" SET embedding = $1::vector WHERE id = $2`,

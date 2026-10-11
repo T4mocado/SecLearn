@@ -16,7 +16,7 @@ export function AdminNav() {
   ];
 
   return (
-    <div className="space-y-1 rounded-xl bg-white p-2">
+    <div className="space-y-1 rounded-xl bg-[var(--surface)] p-2">
       {links.map((l) => (
         <Link
           key={l.href}

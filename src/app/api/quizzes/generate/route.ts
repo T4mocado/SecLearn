@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser, jsonError } from "@/lib/session";
+import { requireUser, jsonAppError, jsonError } from "@/lib/session";
 import { generateQuizSchema } from "@/lib/validations";
-import { generateQuizJson } from "@/lib/llm";
+import { assertLlmConfigured, generateQuizJson } from "@/lib/llm";
+import { isAppError } from "@/lib/errors";
 
 export async function POST(req: Request) {
   const authz = await requireUser();
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
     }
 
     const locale = parsed.data.locale ?? authz.user.preferredLocale;
+    assertLlmConfigured();
     const generated = await generateQuizJson({
       locale,
       topicHint: parsed.data.topicHint,
@@ -69,7 +71,12 @@ export async function POST(req: Request) {
       },
       { status: 201 },
     );
-  } catch {
+  } catch (err) {
+    if (isAppError(err)) {
+      const locale = authz.user.preferredLocale;
+      return jsonAppError(err, locale);
+    }
+    console.error("[quizzes/generate]", err);
     return jsonError("Could not generate quiz", 500, "SERVER");
   }
 }

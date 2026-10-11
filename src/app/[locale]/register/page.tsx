@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { PASSWORD_RULES, failedPasswordRules } from "@/lib/validations";
+import { cn } from "@/lib/utils";
 
 export default function RegisterPage() {
   const t = useTranslations("auth");
@@ -20,9 +22,14 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const passwordOk = failedPasswordRules(password).length === 0;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!passwordOk) {
+      setError(t("passwordWeak"));
+      return;
+    }
     setLoading(true);
     setError(null);
     const res = await fetch("/api/auth/register", {
@@ -31,8 +38,15 @@ export default function RegisterPage() {
       body: JSON.stringify({ email, password, name, preferredLocale: locale }),
     });
     if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { code?: string };
       setLoading(false);
-      setError(t("registerError"));
+      setError(
+        body.code === "EMAIL_EXISTS"
+          ? t("emailExists")
+          : body.code === "WEAK_PASSWORD"
+            ? t("passwordWeak")
+            : t("registerError"),
+      );
       return;
     }
     const login = await signIn("credentials", { email, password, redirect: false });
@@ -67,8 +81,19 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
+                aria-describedby="password-rules"
               />
+              <ul id="password-rules" className="space-y-0.5 pt-1 text-xs">
+                {PASSWORD_RULES.map(({ key, test }) => {
+                  const ok = test(password);
+                  return (
+                    <li key={key} className={cn(ok ? "text-emerald-600" : "text-[var(--text-muted)]")}>
+                      {ok ? "✓" : "○"} {t(`passwordRule.${key}`)}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
             {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>

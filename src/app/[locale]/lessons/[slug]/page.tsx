@@ -47,7 +47,7 @@ export default function LessonDetailPage() {
           <>
             <h1 className="text-3xl font-semibold text-[var(--accent)]">{lesson.title}</h1>
             <p className="text-[var(--text-muted)]">{lesson.summary}</p>
-            <article className="prose-chat rounded-2xl border border-[var(--border)] bg-white p-5">
+            <article className="prose-chat rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
               {lesson.content}
             </article>
             <Button asChild>

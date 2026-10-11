@@ -1,30 +1,77 @@
 import { prisma } from "@/lib/prisma";
 import { embedText, vectorLiteral } from "@/lib/embed";
 import { getEnv } from "@/lib/env";
+import { rerankScores } from "@/lib/rerank";
 import type { DocVisibility } from "@prisma/client";
+import type { MessageSource } from "@/lib/sources";
 
 export type RetrievedChunk = {
   id: string;
   content: string;
   documentId: string;
+  documentTitle: string;
+  chunkIndex: number;
+  /** Cosine similarity (vector) or matched keyword count (keyword). */
   score: number;
+  method: "vector" | "keyword";
+  /** Cross-encoder relevance 0..1; absent when no reranker is configured or it failed. */
+  rerankScore?: number;
 };
 
+/** Upper bound on the context block in the system prompt. */
+export const CONTEXT_CHAR_LIMIT = 6000;
+
+/**
+ * Fetches RAG_CANDIDATES chunks by cosine, reorders them by cross-encoder relevance,
+ * drops those below RAG_MIN_RELEVANCE and keeps the best RAG_TOP_K.
+ */
 export async function retrieveChunks(opts: {
   query: string;
   visibilities: DocVisibility[];
 }): Promise<RetrievedChunk[]> {
   const env = getEnv();
+  const topK = env.RAG_TOP_K;
+  const limit = env.RERANK_URL.trim() ? Math.max(env.RAG_CANDIDATES, topK) : topK;
+  const candidates = await retrieveCandidates({ ...opts, limit });
+
+  let scores: number[] | null;
+  try {
+    scores = await rerankScores(opts.query, candidates.map((c) => c.content));
+  } catch (err) {
+    // Chat still works on cosine order; the missing rerank score in the sources panel shows it.
+    console.warn("[rag] rerank failed, falling back to cosine order:", err instanceof Error ? err.message : err);
+    scores = null;
+  }
+  if (!scores) return candidates.slice(0, topK);
+
+  return candidates
+    .map((c, i) => ({ ...c, rerankScore: scores[i]! }))
+    .filter((c) => c.rerankScore >= env.RAG_MIN_RELEVANCE)
+    .sort((a, b) => b.rerankScore - a.rerankScore)
+    .slice(0, topK);
+}
+
+async function retrieveCandidates(opts: {
+  query: string;
+  visibilities: DocVisibility[];
+  limit: number;
+}): Promise<RetrievedChunk[]> {
   const embedding = await embedText(opts.query);
   const lit = vectorLiteral(embedding);
-  const topK = env.RAG_TOP_K;
 
   try {
     const rows = await prisma.$queryRawUnsafe<
-      Array<{ id: string; content: string; documentId: string; score: number }>
+      Array<{
+        id: string;
+        content: string;
+        documentId: string;
+        documentTitle: string;
+        chunkIndex: number;
+        score: number;
+      }>
     >(
       `
-      SELECT c.id, c.content, c."documentId",
+      SELECT c.id, c.content, c."documentId", d.title AS "documentTitle", c."chunkIndex",
              (1 - (c.embedding <=> $1::vector))::float8 AS score
       FROM "DocumentChunk" c
       INNER JOIN "Document" d ON d.id = c."documentId"
@@ -36,9 +83,9 @@ export async function retrieveChunks(opts: {
       `,
       lit,
       opts.visibilities,
-      topK,
+      opts.limit,
     );
-    return rows;
+    return rows.map((r) => ({ ...r, method: "vector" as const }));
   } catch {
     // Fallback: keyword-ish retrieve without vector if extension/query fails
     const docs = await prisma.document.findMany({
@@ -55,18 +102,49 @@ export async function retrieveChunks(opts: {
       for (const c of d.chunks) {
         const hay = c.content.toLowerCase();
         const score = q.split(/\s+/).filter((w) => w.length > 2 && hay.includes(w)).length;
-        scored.push({ id: c.id, content: c.content, documentId: d.id, score });
+        scored.push({
+          id: c.id,
+          content: c.content,
+          documentId: d.id,
+          documentTitle: d.title,
+          chunkIndex: c.chunkIndex,
+          score,
+          method: "keyword",
+        });
       }
     }
-    return scored.sort((a, b) => b.score - a.score).slice(0, topK);
+    return scored.sort((a, b) => b.score - a.score).slice(0, opts.limit);
   }
 }
 
-export function formatContext(chunks: RetrievedChunk[]): string {
-  if (!chunks.length) return "";
-  return chunks
-    .map((c, i) => `[${i + 1}] (score=${c.score.toFixed(3)})\n${c.content}`)
-    .join("\n\n");
+/**
+ * Builds the numbered context block and returns exactly the chunks that made it in whole,
+ * so the sources shown to the user match what the model saw.
+ */
+export function buildContext(chunks: RetrievedChunk[]): { context: string; sources: MessageSource[] } {
+  const blocks: string[] = [];
+  const sources: MessageSource[] = [];
+  let length = 0;
+  for (const c of chunks) {
+    const index = sources.length + 1;
+    const block = `[${index}] (source: ${c.documentTitle})\n${c.content}`;
+    const added = (blocks.length ? 2 : 0) + block.length;
+    if (length + added > CONTEXT_CHAR_LIMIT) break;
+    blocks.push(block);
+    length += added;
+    sources.push({
+      index,
+      chunkId: c.id,
+      documentId: c.documentId,
+      documentTitle: c.documentTitle,
+      chunkIndex: c.chunkIndex,
+      content: c.content,
+      score: c.score,
+      method: c.method,
+      ...(c.rerankScore !== undefined ? { rerankScore: c.rerankScore } : {}),
+    });
+  }
+  return { context: blocks.join("\n\n"), sources };
 }
 
 export function chunkMarkdown(markdown: string, size: number, overlap: number): string[] {

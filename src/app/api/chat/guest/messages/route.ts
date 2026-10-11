@@ -1,19 +1,34 @@
 import { chatMessageSchema } from "@/lib/validations";
 import { getGuestQuota, getOrCreateGuestKey, incrementGuestQuota } from "@/lib/guest";
-import { retrieveChunks, formatContext } from "@/lib/rag";
-import { streamChatCompletion } from "@/lib/llm";
+import { retrieveChunks, buildContext } from "@/lib/rag";
+import { stripCitations } from "@/lib/sources";
+import { assertLlmConfigured, streamChatCompletion } from "@/lib/llm";
+import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
-import { jsonError } from "@/lib/session";
+import { verificationEvent, verifyCitations } from "@/lib/verify";
+import { jsonAppError, jsonError } from "@/lib/session";
+import { isAppError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  let locale: string = "vi";
   try {
     const body = await req.json();
     const parsed = chatMessageSchema.safeParse(body);
     if (!parsed.success) {
       return jsonError("Invalid message", 400, "VALIDATION");
+    }
+
+    locale = parsed.data.locale ?? "vi";
+
+    try {
+      assertLlmConfigured();
+      assertEmbedConfigured();
+    } catch (err) {
+      if (isAppError(err)) return jsonAppError(err, locale);
+      throw err;
     }
 
     const guestKey = await getOrCreateGuestKey();
@@ -27,13 +42,15 @@ export async function POST(req: Request) {
       return jsonError("Guest limit reached. Please sign in to continue.", 403, "GUEST_LIMIT");
     }
 
-    const locale = parsed.data.locale ?? "vi";
-    const history = parsed.data.history ?? [];
+    const history = (parsed.data.history ?? []).map((m) => ({
+      role: m.role,
+      content: m.role === "assistant" ? stripCitations(m.content) : m.content,
+    }));
     const chunks = await retrieveChunks({
       query: parsed.data.content,
       visibilities: ["public"],
     });
-    const context = formatContext(chunks);
+    const { context, sources } = buildContext(chunks);
     const tokens = await streamChatCompletion({
       messages: [...history, { role: "user", content: parsed.data.content }],
       context,
@@ -41,9 +58,15 @@ export async function POST(req: Request) {
       signal: req.signal,
     });
 
-    const stream = await streamLlmToSse({ tokens });
+    const stream = await streamLlmToSse({
+      tokens,
+      sources,
+      finalize: async (full) => verificationEvent(await verifyCitations(full, sources)),
+    });
     return createSseResponse(stream);
-  } catch {
+  } catch (err) {
+    if (isAppError(err)) return jsonAppError(err, locale);
+    console.error("[guest/messages]", err);
     return jsonError("Chat unavailable right now", 500, "SERVER");
   }
 }

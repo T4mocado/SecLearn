@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,6 +16,8 @@ type UserRow = {
 
 export default function AdminUsersPage() {
   const t = useTranslations("admin");
+  const { data: session } = useSession();
+  const selfId = session?.user?.id;
   const [users, setUsers] = useState<UserRow[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,22 +58,29 @@ export default function AdminUsersPage() {
                 {u.disabledAt ? ` · ${t("disabled")}` : ""}
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void patch(u.id, { role: u.role === "admin" ? "learner" : "admin" })}
-              >
-                Toggle role
-              </Button>
-              <Button
-                size="sm"
-                variant={u.disabledAt ? "secondary" : "danger"}
-                onClick={() => void patch(u.id, { disabled: !u.disabledAt })}
-              >
-                {u.disabledAt ? "Enable" : t("disabled")}
-              </Button>
-            </div>
+            {u.id === selfId ? (
+              // No role toggle or disable on your own account; other admins keep both buttons.
+              <span className="rounded-full bg-[var(--chat-user)] px-3 py-1 text-xs font-medium text-[var(--accent)]">
+                {t("you")}
+              </span>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void patch(u.id, { role: u.role === "admin" ? "learner" : "admin" })}
+                >
+                  Toggle role
+                </Button>
+                <Button
+                  size="sm"
+                  variant={u.disabledAt ? "secondary" : "danger"}
+                  onClick={() => void patch(u.id, { disabled: !u.disabledAt })}
+                >
+                  {u.disabledAt ? "Enable" : t("disabled")}
+                </Button>
+              </div>
+            )}
           </Card>
         ))}
       </div>

@@ -1,7 +1,11 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  color-scheme: light;
   --bg: #f7f7f8;
+  --bg-glow: #eef6f4;
   --surface: #ffffff;
   --border: #e5e5e5;
   --text: #0d0d0d;
@@ -12,10 +16,28 @@
   --chat-user: #e7f5f3;
   --chat-assistant: #ffffff;
   --sidebar: #f0f0f0;
+  --sidebar-hover: #e4e4e4;
   --radius: 0.75rem;
   --font-sans: var(--font-dm-sans), "Be Vietnam Pro", system-ui, sans-serif;
   --background: var(--bg);
   --foreground: var(--text);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --bg-glow: #0f2623;
+  --surface: #1a1d24;
+  --border: #2c313b;
+  --text: #ececec;
+  --text-muted: #9ca3af;
+  --accent: #0d9488;
+  --accent-hover: #14b8a6;
+  --danger: #dc2626;
+  --chat-user: #123430;
+  --chat-assistant: #1a1d24;
+  --sidebar: #14171d;
+  --sidebar-hover: #232833;
 }
 
 @theme inline {
@@ -38,8 +60,8 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   background:
-    radial-gradient(1200px 600px at 10% -10%, #eef6f4 0%, transparent 55%),
-    linear-gradient(180deg, #f7f7f8 0%, #eef6f4 100%);
+    radial-gradient(1200px 600px at 10% -10%, var(--bg-glow) 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-glow) 100%);
 }
 
 @keyframes fade-up {
@@ -84,4 +106,53 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.55;
+}
+
+/* Assistant answers rendered from Markdown (src/lib/markdown.ts). */
+.chat-md {
+  word-break: break-word;
+  line-height: 1.6;
+}
+.chat-md > * + * {
+  margin-top: 0.6em;
+}
+.chat-md h3 {
+  font-size: 1.05em;
+  font-weight: 600;
+}
+.chat-md h4 {
+  font-weight: 600;
+}
+.chat-md ul,
+.chat-md ol {
+  padding-left: 1.25rem;
+}
+.chat-md ul {
+  list-style: disc;
+}
+.chat-md ol {
+  list-style: decimal;
+}
+.chat-md li + li {
+  margin-top: 0.25em;
+}
+.chat-md strong {
+  font-weight: 600;
+}
+.chat-md code {
+  border-radius: 0.25rem;
+  background: var(--chat-user);
+  padding: 0.05em 0.3em;
+  font-size: 0.9em;
+}
+.chat-md pre {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  background: var(--chat-user);
+  padding: 0.6rem 0.75rem;
+}
+.chat-md pre code {
+  background: none;
+  padding: 0;
+  white-space: pre;
 }

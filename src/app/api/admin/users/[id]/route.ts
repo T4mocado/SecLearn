@@ -18,6 +18,10 @@ export async function PATCH(req: Request, { params }: Params) {
     if (id === authz.user.id && parsed.data.disabled) {
       return jsonError("Cannot disable yourself", 400, "VALIDATION");
     }
+    // The UI hides these buttons on your own row; this also stops an admin locking themselves out via the API.
+    if (id === authz.user.id && parsed.data.role !== undefined && parsed.data.role !== authz.user.role) {
+      return jsonError("Cannot change your own role", 400, "VALIDATION");
+    }
 
     const user = await prisma.user.update({
       where: { id },

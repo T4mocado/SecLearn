@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { requireUser, jsonError } from "@/lib/session";
+import { requireUser, jsonAppError, jsonError } from "@/lib/session";
 import { chatMessageSchema } from "@/lib/validations";
-import { retrieveChunks, formatContext } from "@/lib/rag";
-import { streamChatCompletion } from "@/lib/llm";
+import { retrieveChunks, buildContext } from "@/lib/rag";
+import { stripCitations } from "@/lib/sources";
+import { assertLlmConfigured, streamChatCompletion } from "@/lib/llm";
+import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
+import { verificationEvent, verifyCitations } from "@/lib/verify";
+import { isAppError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +29,16 @@ export async function POST(req: Request, { params }: Params) {
     const body = await req.json();
     const parsed = chatMessageSchema.safeParse(body);
     if (!parsed.success) return jsonError("Invalid message", 400, "VALIDATION");
+
+    const locale = parsed.data.locale ?? conversation.locale ?? authz.user.preferredLocale;
+
+    try {
+      assertLlmConfigured();
+      assertEmbedConfigured();
+    } catch (err) {
+      if (isAppError(err)) return jsonAppError(err, locale);
+      throw err;
+    }
 
     await prisma.message.create({
       data: {
@@ -50,12 +64,11 @@ export async function POST(req: Request, { params }: Params) {
       query: parsed.data.content,
       visibilities: ["public", "authenticated"],
     });
-    const context = formatContext(chunks);
-    const locale = parsed.data.locale ?? conversation.locale ?? authz.user.preferredLocale;
+    const { context, sources } = buildContext(chunks);
 
     const history = conversation.messages.map((m) => ({
       role: m.role as "user" | "assistant" | "system",
-      content: m.content,
+      content: m.role === "assistant" ? stripCitations(m.content) : m.content,
     }));
 
     const tokens = await streamChatCompletion({
@@ -65,8 +78,15 @@ export async function POST(req: Request, { params }: Params) {
       signal: req.signal,
     });
 
+    // Set before onDone runs, so the stored message keeps the citation check.
+    let finalSources = sources;
     const stream = await streamLlmToSse({
       tokens,
+      sources,
+      finalize: async (full) => {
+        finalSources = await verifyCitations(full, sources);
+        return verificationEvent(finalSources);
+      },
       onDone: async (full) => {
         if (!full.trim()) {
           full =
@@ -79,6 +99,7 @@ export async function POST(req: Request, { params }: Params) {
             conversationId: conversation.id,
             role: "assistant",
             content: full,
+            sources: finalSources,
           },
         });
         await prisma.conversation.update({
@@ -89,7 +110,13 @@ export async function POST(req: Request, { params }: Params) {
     });
 
     return createSseResponse(stream);
-  } catch {
+  } catch (err) {
+    if (isAppError(err)) {
+      const accept = req.headers.get("accept-language") || "";
+      const loc = accept.toLowerCase().startsWith("vi") ? "vi" : "en";
+      return jsonAppError(err, loc);
+    }
+    console.error("[conversations/messages]", err);
     return jsonError("Chat unavailable right now", 500, "SERVER");
   }
 }

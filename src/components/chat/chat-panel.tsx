@@ -4,10 +4,19 @@ import { useCallback, useEffect, useRef, useState, startTransition } from "react
 import { useSession } from "next-auth/react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
-import { SendHorizonal, Plus, Trash2 } from "lucide-react";
+import { SendHorizonal, Plus, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { AnswerContent } from "@/components/chat/answer-content";
+import { SourcesPanel } from "@/components/chat/sources-panel";
 import { clearDraft, loadDraft, saveDraft, type DraftMessage } from "@/lib/draft";
+import {
+  applySupportPatch,
+  parseSources,
+  parseSupportPatch,
+  type MessageSource,
+  type SupportPatch,
+} from "@/lib/sources";
 import { cn } from "@/lib/utils";
 
 type ConversationSummary = {
@@ -19,6 +28,8 @@ type ConversationSummary = {
 async function readSse(
   res: Response,
   onToken: (token: string) => void,
+  onSources: (sources: MessageSource[]) => void,
+  onVerification: (patch: SupportPatch[]) => void,
 ): Promise<{ ok: boolean; error?: string }> {
   if (!res.body) return { ok: false, error: "No stream" };
   const reader = res.body.getReader();
@@ -42,8 +53,15 @@ async function readSse(
       }
       if (!data) continue;
       try {
-        const parsed = JSON.parse(data) as { token?: string; message?: string };
+        const parsed = JSON.parse(data) as {
+          token?: string;
+          message?: string;
+          sources?: unknown;
+          verification?: unknown;
+        };
         if (event === "token" && parsed.token) onToken(parsed.token);
+        if (event === "sources") onSources(parseSources(parsed.sources) ?? []);
+        if (event === "verification") onVerification(parseSupportPatch(parsed.verification));
         if (event === "error") error = parsed.message || "Stream error";
       } catch {
         // ignore malformed chunk
@@ -66,6 +84,7 @@ export function ChatPanel() {
   const [showLimit, setShowLimit] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [sourceView, setSourceView] = useState<{ idx: number; focus: number | null } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const migratedRef = useRef(false);
@@ -114,7 +133,10 @@ export function ChatPanel() {
           const res = await fetch("/api/chat/conversations/migrate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: draft, locale }),
+            body: JSON.stringify({
+              messages: draft.map(({ role, content }) => ({ role, content })),
+              locale,
+            }),
           });
           if (res.ok) {
             const data = (await res.json()) as {
@@ -122,6 +144,7 @@ export function ChatPanel() {
             };
             clearDraft();
             setActiveId(data.conversation.id);
+            setSourceView(null);
             setMessages(
               data.conversation.messages.map((m) => ({
                 role: m.role as "user" | "assistant",
@@ -149,23 +172,29 @@ export function ChatPanel() {
   const loadConversation = async (id: string) => {
     setError(null);
     setActiveId(id);
+    setSourceView(null);
     const res = await fetch(`/api/chat/conversations/${id}`);
     if (!res.ok) {
       setError(t("error"));
       return;
     }
     const data = (await res.json()) as {
-      conversation: { messages: Array<{ role: string; content: string }> };
+      conversation: { messages: Array<{ role: string; content: string; sources?: unknown }> };
     };
     setMessages(
       data.conversation.messages
         .filter((m) => m.role === "user" || m.role === "assistant")
-        .map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+        .map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          sources: m.role === "assistant" ? parseSources(m.sources) : undefined,
+        })),
     );
   };
 
   const newChat = async () => {
     setError(null);
+    setSourceView(null);
     abortRef.current?.abort();
     if (session?.user) {
       const res = await fetch("/api/chat/conversations", {
@@ -191,6 +220,7 @@ export function ChatPanel() {
     if (activeId === id) {
       setActiveId(null);
       setMessages([]);
+      setSourceView(null);
     }
     await refreshConversations();
   };
@@ -210,6 +240,11 @@ export function ChatPanel() {
     const nextMessages: DraftMessage[] = [...messages, { role: "user", content }];
     setMessages(nextMessages);
     setStreaming(true);
+
+    const rollback = () => {
+      setMessages(history);
+      setSourceView((v) => (v && v.idx >= history.length ? null : v));
+    };
 
     let conversationId = activeId;
     try {
@@ -238,32 +273,63 @@ export function ChatPanel() {
         body: JSON.stringify({
           content,
           locale,
-          history: session?.user ? undefined : history,
+          history: session?.user ? undefined : history.map(({ role, content }) => ({ role, content })),
         }),
       });
 
-      if (res.status === 403) {
-        const body = (await res.json().catch(() => ({}))) as { code?: string };
-        if (body.code === "GUEST_LIMIT") {
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as {
+          code?: string;
+          error?: string;
+          messageVi?: string;
+          messageEn?: string;
+        };
+        if (res.status === 403 && body.code === "GUEST_LIMIT") {
           setShowLimit(true);
-          setMessages(history);
+          rollback();
           setStreaming(false);
           await refreshQuota();
           return;
         }
+        const friendly =
+          (locale === "vi" ? body.messageVi : body.messageEn) ||
+          body.error ||
+          (body.code === "LLM_KEY_MISSING"
+            ? t("llmKeyMissing")
+            : body.code === "EMBED_KEY_MISSING" || body.code === "EMBED_API_ERROR"
+              ? t("embedError")
+              : body.code === "LLM_API_ERROR"
+                ? t("llmApiError")
+                : t("error"));
+        setError(friendly);
+        rollback();
+        setStreaming(false);
+        return;
       }
-      if (!res.ok) throw new Error("send failed");
 
       let assistant = "";
-      setMessages([...nextMessages, { role: "assistant", content: "" }]);
-      const result = await readSse(res, (token) => {
-        assistant += token;
-        setMessages([...nextMessages, { role: "assistant", content: assistant }]);
-      });
+      let sources: MessageSource[] | null = null;
+      setMessages([...nextMessages, { role: "assistant", content: "", sources }]);
+      const result = await readSse(
+        res,
+        (token) => {
+          assistant += token;
+          setMessages([...nextMessages, { role: "assistant", content: assistant, sources }]);
+        },
+        (received) => {
+          sources = received;
+          setMessages([...nextMessages, { role: "assistant", content: assistant, sources }]);
+        },
+        (patch) => {
+          if (!sources) return;
+          sources = applySupportPatch(sources, patch);
+          setMessages([...nextMessages, { role: "assistant", content: assistant, sources }]);
+        },
+      );
       if (!result.ok) {
-        setError(result.error || t("error"));
-      }
-      if (!assistant.trim()) {
+        setError(result.error || t("llmApiError"));
+        if (!assistant.trim()) rollback();
+      } else if (!assistant.trim()) {
         setMessages([
           ...nextMessages,
           {
@@ -272,6 +338,7 @@ export function ChatPanel() {
               locale === "vi"
                 ? "Xin lỗi, mình chưa tạo được câu trả lời. Vui lòng thử lại."
                 : "Sorry, no answer was generated. Please try again.",
+            sources,
           },
         ]);
       }
@@ -280,7 +347,7 @@ export function ChatPanel() {
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
         setError(t("error"));
-        setMessages(history);
+        rollback();
       }
     } finally {
       setStreaming(false);
@@ -290,10 +357,14 @@ export function ChatPanel() {
 
   const suggestions = [t("suggestions.1"), t("suggestions.2"), t("suggestions.3")];
 
+  const selectedSourceMessage =
+    sourceView && messages[sourceView.idx]?.role === "assistant" ? messages[sourceView.idx] : null;
+  const closeSources = useCallback(() => setSourceView(null), []);
+
   return (
     <div className="flex min-h-0 flex-1">
       {session?.user && (
-        <div className="hidden w-56 shrink-0 flex-col border-r border-[var(--border)] bg-white/50 p-3 lg:flex">
+        <div className="hidden w-56 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]/50 p-3 lg:flex">
           <Button className="mb-3 w-full" variant="secondary" onClick={() => void newChat()}>
             <Plus className="h-4 w-4" />
             {t("new")}
@@ -353,7 +424,7 @@ export function ChatPanel() {
                   <button
                     key={s}
                     onClick={() => void send(s)}
-                    className="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-left text-sm transition hover:border-[var(--accent)]"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-left text-sm transition hover:border-[var(--accent)]"
                   >
                     {s}
                   </button>
@@ -361,38 +432,75 @@ export function ChatPanel() {
               </div>
             </div>
           ) : (
-            messages.map((m, idx) => (
-              <div
-                key={`${idx}-${m.role}`}
-                className={cn(
-                  "msg-enter max-w-[92%] rounded-2xl px-4 py-3 text-sm shadow-sm",
-                  m.role === "user"
-                    ? "ml-auto bg-[var(--chat-user)]"
-                    : "mr-auto border border-[var(--border)] bg-[var(--chat-assistant)]",
-                )}
-              >
-                <div className="prose-chat">{m.content || (streaming && idx === messages.length - 1 ? "" : "")}</div>
-                {streaming && idx === messages.length - 1 && m.role === "assistant" && !m.content && (
-                  <div className="flex gap-1 py-1">
-                    <span className="typing-dot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-                    <span className="typing-dot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-                    <span className="typing-dot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+            messages.map((m, idx) => {
+              const isAssistant = m.role === "assistant";
+              const selected = isAssistant && sourceView?.idx === idx;
+              return (
+                <div
+                  key={`${idx}-${m.role}`}
+                  {...(isAssistant && {
+                    role: "button",
+                    tabIndex: 0,
+                    "aria-pressed": selected,
+                    title: t("viewSources"),
+                    onClick: () => {
+                      if (window.getSelection()?.toString()) return;
+                      setSourceView(selected ? null : { idx, focus: null });
+                    },
+                    onKeyDown: (e: React.KeyboardEvent) => {
+                      if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
+                      e.preventDefault();
+                      setSourceView(selected ? null : { idx, focus: null });
+                    },
+                  })}
+                  className={cn(
+                    "msg-enter max-w-[92%] rounded-2xl px-4 py-3 text-sm shadow-sm",
+                    m.role === "user"
+                      ? "ml-auto bg-[var(--chat-user)]"
+                      : "mr-auto cursor-pointer border bg-[var(--chat-assistant)] transition-colors hover:border-[var(--accent)]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
+                    isAssistant && (selected ? "border-[var(--accent)]" : "border-[var(--border)]"),
+                  )}
+                >
+                  <div className={isAssistant ? "chat-md" : "prose-chat"}>
+                    {isAssistant ? (
+                      <AnswerContent
+                        content={m.content}
+                        sources={m.sources}
+                        interactive={!(streaming && idx === messages.length - 1)}
+                        onCite={(n) => setSourceView({ idx, focus: n })}
+                      />
+                    ) : (
+                      m.content
+                    )}
                   </div>
-                )}
-              </div>
-            ))
+                  {streaming && idx === messages.length - 1 && isAssistant && !m.content && (
+                    <div className="flex gap-1 py-1">
+                      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+                      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+                      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+                    </div>
+                  )}
+                  {isAssistant && m.sources && m.sources.length > 0 && (
+                    <div className="mt-2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                      <FileText className="h-3 w-3" />
+                      {t("sourcesCount", { count: m.sources.length })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-[var(--danger)]">
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 dark:border-red-900 dark:bg-red-950/40 py-2 text-sm text-[var(--danger)]">
               {error}
             </div>
           )}
           <div ref={bottomRef} />
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#eef6f4] via-[#eef6f4cc] to-transparent px-4 pb-4 pt-10">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[var(--bg-glow)] via-[var(--bg-glow)]/80 to-transparent px-4 pb-4 pt-10">
           <form
-            className="pointer-events-auto mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-[var(--border)] bg-white p-2 shadow-sm"
+            className="pointer-events-auto mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-sm"
             onSubmit={(e) => {
               e.preventDefault();
               void send();
@@ -422,9 +530,19 @@ export function ChatPanel() {
         </div>
       </div>
 
+      {selectedSourceMessage && sourceView && (
+        <SourcesPanel
+          content={selectedSourceMessage.content}
+          sources={selectedSourceMessage.sources}
+          focusIndex={sourceView.focus}
+          streaming={streaming && sourceView.idx === messages.length - 1}
+          onClose={closeSources}
+        />
+      )}
+
       {showLimit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-2xl bg-[var(--surface)] p-6 shadow-xl">
             <h2 className="text-lg font-semibold">{t("limitTitle")}</h2>
             <p className="mt-2 text-sm text-[var(--text-muted)]">{t("limitBody")}</p>
             <div className="mt-5 flex gap-2">

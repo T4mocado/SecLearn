@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
+import { themeInitScript } from "@/lib/theme-script";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -14,7 +15,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={`${dmSans.variable} h-full`}>
+    <html lang="vi" className={`${dmSans.variable} h-full`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-full antialiased">{children}</body>
     </html>
   );

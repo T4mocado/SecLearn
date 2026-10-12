@@ -33,6 +33,10 @@ const envSchema = z.object({
   /** Reranked chunks scoring below this (0..1) are dropped. Kept low: bge-reranker scores Vietnamese
    *  questions against English chunks far lower (~0.01-0.05 when relevant) than same-language pairs. */
   RAG_MIN_RELEVANCE: z.coerce.number().min(0).max(1).default(0.01),
+  /** Rerank keeps at least this many chunks when at least one passes RAG_MIN_RELEVANCE (none pass = off topic). */
+  RAG_MIN_KEEP: z.coerce.number().int().min(0).default(2),
+  /** Also retrieve with an English translation of a non-English question (one short LLM call). */
+  RAG_TRANSLATE_QUERY: z.enum(["on", "off"]).default("on"),
   /** Post-answer LLM judgement of each chunk's relevance (one extra LLM call per answer). */
   RAG_JUDGE: z.enum(["on", "off"]).default("on"),
   CHUNK_SIZE: z.coerce.number().int().positive().default(800),

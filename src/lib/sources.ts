@@ -17,7 +17,14 @@ export type MessageSource = {
   judge?: SourceJudgement;
 };
 
-export type CitationSupport = { claim: string; score: number };
+export type CitationSupport = {
+  claim: string;
+  score: number;
+  /** Character range of the chunk sentence that best matches the claim. Absent on old messages. */
+  evidence?: TextRange;
+};
+
+export type TextRange = { start: number; end: number };
 
 /** LLM-as-judge scores, 0..100 integers. */
 export type SourceJudgement = {
@@ -122,10 +129,20 @@ export function isSupported(score: number): boolean {
 }
 
 const CITATION_RE = /\[(\d{1,2})\]/g;
+/** Fenced blocks (also an unclosed one while streaming) and inline code spans. */
+const CODE_RE = /```[\s\S]*?(?:```|$)|`[^`\n]*`/g;
+
+/**
+ * Blanks out code so `arr[1]` in a snippet is not taken for a citation. Keeps every offset
+ * (and newline) in place, so positions found in the result apply to the original text.
+ */
+export function maskCode(content: string): string {
+  return content.replace(CODE_RE, (code) => code.replace(/[^\n]/g, " "));
+}
 
 export function citedIndexes(content: string, sourceCount: number): Set<number> {
   const cited = new Set<number>();
-  for (const match of content.matchAll(CITATION_RE)) {
+  for (const match of maskCode(content).matchAll(CITATION_RE)) {
     const n = Number(match[1]);
     if (n >= 1 && n <= sourceCount) cited.add(n);
   }
@@ -160,35 +177,85 @@ function cleanExcerpt(text: string): string {
     .trim();
 }
 
-/** One valid `[n]` marker in an answer, with the clause it backs. */
-export type CitationClaim = { index: number; claim: string; at: number };
+/**
+ * One valid `[n]` marker in an answer, with the clause it backs.
+ * `at` is the marker's offset; `start`..`end` is the clause in the answer text (shared by grouped markers).
+ */
+export type CitationClaim = { index: number; claim: string; at: number; start: number; end: number };
 
 /**
  * Every valid `[n]` marker with the answer text it cites, without citation markers.
  * Handles both "Sentence [1]." and "Sentence. [1]" and grouped markers like "[2][3]".
  * With several markers in one sentence ("A [1], B [2]"), each marker gets only its own clause.
- * Shared by the server-side check and the sources panel, so both see the same claims.
+ * Markers inside code are ignored. Shared by the server-side check, the sources panel and the
+ * answer renderer, so all see the same claims.
  */
 export function citationClaims(content: string, sourceCount: number): CitationClaim[] {
+  const masked = maskCode(content);
   const out: CitationClaim[] = [];
-  for (const match of content.matchAll(CITATION_RE)) {
+  for (const match of masked.matchAll(CITATION_RE)) {
     const n = Number(match[1]);
     if (n < 1 || n > sourceCount) continue;
     // Text before this marker, minus markers right before it ("[2][3]") and the sentence's own terminator.
-    const head = content
+    const head = masked
       .slice(0, match.index)
       .replace(TRAILING_CITATIONS_RE, "")
       .trimEnd()
       .replace(/[.!?]$/, "");
-    let start = 0;
-    for (const end of head.matchAll(SENTENCE_END_RE)) start = end.index + 1;
-    const sentence = head.slice(start);
-    const previous = [...sentence.matchAll(CITATION_RE)].at(-1);
-    const clause = previous ? cleanExcerpt(sentence.slice(previous.index + previous[0].length)) : "";
-    const claim = (clause.length >= CLAUSE_MIN ? clause : cleanExcerpt(sentence)).slice(0, CLAUSE_MAX);
-    if (claim) out.push({ index: n, claim, at: match.index });
+    const end = head.length;
+    let sentenceStart = 0;
+    for (const boundary of head.matchAll(SENTENCE_END_RE)) sentenceStart = boundary.index + 1;
+    const previous = [...head.slice(sentenceStart).matchAll(CITATION_RE)].at(-1);
+    // Claim text comes from the original, so code the clause mentions is checked too.
+    const clauseStart = previous ? sentenceStart + previous.index + previous[0].length : sentenceStart;
+    const clause = previous ? cleanExcerpt(content.slice(clauseStart, end)) : "";
+    let start = clause.length >= CLAUSE_MIN ? clauseStart : sentenceStart;
+    const claim = cleanExcerpt(content.slice(start, end)).slice(0, CLAUSE_MAX);
+    while (start < end && /[\s,;:–—-]/.test(content[start]!)) start++;
+    if (claim) out.push({ index: n, claim, at: match.index, start, end });
   }
   return out;
+}
+
+/** A cited clause of the answer and every source it cites ("A [2][3]" gives one clause citing 2 and 3). */
+export type CitedClause = { start: number; end: number; claim: string; indexes: number[] };
+
+export function citedClauses(content: string, sourceCount: number): CitedClause[] {
+  const byRange = new Map<string, CitedClause>();
+  for (const { index, claim, start, end } of citationClaims(content, sourceCount)) {
+    const key = `${start}:${end}`;
+    const clause = byRange.get(key);
+    if (!clause) byRange.set(key, { start, end, claim, indexes: [index] });
+    else if (!clause.indexes.includes(index)) clause.indexes.push(index);
+  }
+  return [...byRange.values()];
+}
+
+const EVIDENCE_MIN = 15;
+const EVIDENCE_MAX_SENTENCES = 40;
+/**
+ * Chunks from PDFs wrap lines mid-sentence, so a single newline is not a boundary; a blank line,
+ * or a line starting a list item or heading, is.
+ */
+const CHUNK_SENTENCE_END_RE = /[.!?](?=\s)|\n\s*\n|\n(?=[ \t]*(?:[-*+•]|\d+[.)]|#{1,6})\s)/g;
+
+/** Sentence ranges of a chunk (trimmed, at least EVIDENCE_MIN chars), for picking the evidence of a claim. */
+export function splitSentences(text: string): TextRange[] {
+  const out: TextRange[] = [];
+  let from = 0;
+  const push = (to: number) => {
+    let start = from;
+    let end = to;
+    while (start < end && /\s/.test(text[start]!)) start++;
+    while (end > start && /\s/.test(text[end - 1]!)) end--;
+    if (end - start >= EVIDENCE_MIN) out.push({ start, end });
+  };
+  for (const boundary of text.matchAll(CHUNK_SENTENCE_END_RE)) {
+    push(boundary.index + 1);
+    from = boundary.index + 1;
+  }
+  push(text.length);
+  return out.slice(0, EVIDENCE_MAX_SENTENCES);
 }
 
 /** Distinct claims per cited source, in answer order. */
@@ -206,8 +273,12 @@ export function truncateClaim(claim: string): string {
   return claim.length > EXCERPT_MAX ? `${claim.slice(0, EXCERPT_MAX).trimEnd()}…` : claim;
 }
 
+export function supportFor(source: MessageSource | undefined, claim: string): CitationSupport | undefined {
+  return source?.support?.find((s) => s.claim === claim);
+}
+
 export function supportScore(source: MessageSource | undefined, claim: string): number | undefined {
-  return source?.support?.find((s) => s.claim === claim)?.score;
+  return supportFor(source, claim)?.score;
 }
 
 /** Old answers cite numbers from their own context; drop them so the model doesn't mix them up with the new one. */
@@ -228,6 +299,26 @@ function isSupportList(value: unknown): value is CitationSupport[] {
   );
 }
 
+function isRangeIn(value: unknown, length: number): value is TextRange {
+  const r = value as TextRange | null;
+  return (
+    !!r &&
+    typeof r === "object" &&
+    Number.isInteger(r.start) &&
+    Number.isInteger(r.end) &&
+    r.start >= 0 &&
+    r.start < r.end &&
+    r.end <= length
+  );
+}
+
+/** Keeps a valid support list, dropping any evidence range that does not fit the chunk. */
+function cleanSupport(value: unknown, contentLength: number): CitationSupport[] | undefined {
+  if (!isSupportList(value)) return undefined;
+  if (value.every((x) => x.evidence === undefined || isRangeIn(x.evidence, contentLength))) return value;
+  return value.map(({ evidence, ...x }) => (isRangeIn(evidence, contentLength) ? { ...x, evidence } : x));
+}
+
 export function parseSources(value: unknown): MessageSource[] | null {
   if (!Array.isArray(value)) return null;
   return value
@@ -241,7 +332,7 @@ export function parseSources(value: unknown): MessageSource[] | null {
     )
     .map((s) => {
       // Drafts live in localStorage; a malformed check result must not crash the panel.
-      const support = s.support === undefined || isSupportList(s.support) ? s.support : undefined;
+      const support = s.support === undefined ? undefined : cleanSupport(s.support, s.content.length);
       const judge = s.judge === undefined ? undefined : (toJudgement(s.judge) ?? undefined);
       if (support === s.support && judge === s.judge) return s;
       return { ...s, support, judge };

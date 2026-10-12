@@ -19,66 +19,6 @@ import {
 } from "@/lib/sources";
 import { cn } from "@/lib/utils";
 
-const CITATION_SPLIT_RE = /(\[\d{1,2}\])/g;
-
-/**
- * Renders message text with valid `[n]` markers as buttons that open source n.
- * A marker whose clause the citation check found unsupported is shown in the warning colour.
- */
-export function MessageContent({
-  content,
-  sources,
-  onCite,
-}: {
-  content: string;
-  sources?: MessageSource[] | null;
-  onCite: (index: number) => void;
-}) {
-  const t = useTranslations("chat");
-  const count = sources?.length ?? 0;
-  if (!count) return <>{content}</>;
-  const checked = sources!.some((s) => s.support);
-  const claimAt = new Map(checked ? citationClaims(content, count).map((c) => [c.at, c.claim]) : []);
-  // Start offset of each piece, to match a marker with its claim from citationClaims.
-  const pieces: Array<{ part: string; at: number }> = [];
-  let at = 0;
-  for (const part of content.split(CITATION_SPLIT_RE)) {
-    pieces.push({ part, at });
-    at += part.length;
-  }
-  return (
-    <>
-      {pieces.map(({ part, at }, i) => {
-        const n = /^\[(\d{1,2})\]$/.exec(part)?.[1];
-        const index = n ? Number(n) : 0;
-        if (index < 1 || index > count) return part;
-        const claim = claimAt.get(at);
-        const score = claim === undefined ? undefined : supportScore(sources!.find((s) => s.index === index), claim);
-        const unsupported = score !== undefined && !isSupported(score);
-        return (
-          <button
-            key={i}
-            type="button"
-            title={unsupported ? t("verifyUnsupported") : undefined}
-            onClick={(e) => {
-              e.stopPropagation();
-              onCite(index);
-            }}
-            className={cn(
-              "mx-0.5 inline-flex h-4 min-w-4 -translate-y-0.5 items-center justify-center rounded px-1 align-middle text-[10px] font-semibold hover:text-white",
-              unsupported
-                ? "bg-amber-100 text-amber-700 ring-1 ring-amber-400 hover:bg-amber-600 dark:bg-amber-950 dark:text-amber-300"
-                : "bg-[var(--chat-user)] text-[var(--accent)] hover:bg-[var(--accent)]",
-            )}
-          >
-            {index}
-          </button>
-        );
-      })}
-    </>
-  );
-}
-
 const VERDICT_STYLE: Record<JudgeVerdict, string> = {
   relevant: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   partial: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
@@ -91,7 +31,7 @@ const VERDICT_KEY = {
   irrelevant: "judgeIrrelevant",
 } as const;
 
-function VerdictPill({ verdict }: { verdict: JudgeVerdict }) {
+export function VerdictPill({ verdict }: { verdict: JudgeVerdict }) {
   const t = useTranslations("chat");
   return (
     <span className={cn("rounded px-1.5 py-px text-[11px] font-medium", VERDICT_STYLE[verdict])}>

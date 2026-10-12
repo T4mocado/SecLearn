@@ -147,3 +147,24 @@ test("parseSources keeps a valid judge and drops a malformed one", () => {
   assert.equal(out[1]?.judge, undefined);
   assert.equal(out[2]?.judge, undefined);
 });
+
+test("parseSources keeps evidence that fits the chunk and drops the rest", () => {
+  const s = source(1, { content: "0123456789" });
+  const out = parseSources([
+    {
+      ...s,
+      support: [
+        { claim: "a", score: 0.5, evidence: { start: 2, end: 6 } },
+        { claim: "b", score: 0.5, evidence: { start: 4, end: 99 } },
+        { claim: "c", score: 0.5, evidence: { start: 5, end: 5 } },
+        { claim: "d", score: 0.5 },
+      ],
+    },
+  ])!;
+  assert.deepEqual(out[0]?.support, [
+    { claim: "a", score: 0.5, evidence: { start: 2, end: 6 } },
+    { claim: "b", score: 0.5 },
+    { claim: "c", score: 0.5 },
+    { claim: "d", score: 0.5 },
+  ]);
+});

@@ -7,7 +7,8 @@ import Link from "next/link";
 import { SendHorizonal, Plus, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageContent, SourcesPanel } from "@/components/chat/sources-panel";
+import { MessageContent } from "@/components/chat/answer-markdown";
+import { SourcesPanel } from "@/components/chat/sources-panel";
 import { clearDraft, loadDraft, saveDraft, type DraftMessage } from "@/lib/draft";
 import { parseSources, type MessageSource } from "@/lib/sources";
 import { cn } from "@/lib/utils";
@@ -442,17 +443,15 @@ export function ChatPanel() {
                     isAssistant && (selected ? "border-[var(--accent)]" : "border-[var(--border)]"),
                   )}
                 >
-                  <div className="prose-chat">
-                    {isAssistant ? (
-                      <MessageContent
-                        content={m.content}
-                        sources={m.sources}
-                        onCite={(n) => setSourceView({ idx, focus: n })}
-                      />
-                    ) : (
-                      m.content
-                    )}
-                  </div>
+                  {isAssistant ? (
+                    <MessageContent
+                      content={m.content}
+                      sources={m.sources}
+                      onCite={(n) => setSourceView({ idx, focus: n })}
+                    />
+                  ) : (
+                    <div className="prose-chat">{m.content}</div>
+                  )}
                   {streaming && idx === messages.length - 1 && isAssistant && !m.content && (
                     <div className="flex gap-1 py-1">
                       <span className="typing-dot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />

@@ -100,3 +100,24 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
   `credentialsSchema` trong `src/lib/auth.ts` vẫn `min(6)`: nếu siết ở đó, tài khoản cũ và admin seed (`change-me`) sẽ không đăng nhập được.
 - Chữ hoa/thường kiểm theo Unicode (`\p{Lu}`/`\p{Ll}`) nên "Ă/ă" hợp lệ; khoảng trắng không tính là ký tự đặc biệt.
 - API trả `WEAK_PASSWORD` / `EMAIL_EXISTS` để form hiện đúng thông báo thay vì "Email có thể đã tồn tại" cho mọi lỗi.
+
+## 15. `arr[1]` trong code bị coi là trích dẫn
+- **Triệu chứng:** Câu trả lời có code mẫu như `` `arr[1]` `` hay `list[1]` trong khối ``` thì `[1]` bị hiện thành nút nguồn và bị đưa vào hậu kiểm.
+- **Cách xử lý:** `maskCode()` trong `src/lib/sources.ts` thay code (cả khối ``` chưa đóng khi đang stream) bằng khoảng trắng, giữ nguyên vị trí ký tự;
+  `citedIndexes` và `citationClaims` tìm `[n]` trên bản đã che. Khi render Markdown, plugin `remark-citations` bỏ qua node `code`/`inlineCode`.
+
+## 16. Câu bằng chứng trong chunk PDF bị cụt
+- **Triệu chứng:** Popover tô "stopped 99.9% of account compromises." thay vì cả câu, vì chunk từ PDF xuống dòng giữa câu.
+- **Cách xử lý:** `splitSentences` chỉ tách ở dấu kết câu, dòng trống, hoặc dòng bắt đầu mục danh sách/tiêu đề; một `\n` đơn không còn là ranh giới câu.
+
+## 17. Câu hỏi tiếng Việt chỉ còn 1 nguồn (reranker chéo ngôn ngữ)
+- **Triệu chứng:** "Mật khẩu mạnh cần những gì?" chỉ có 1 đoạn (rerank 0,157), còn "What makes a strong password?" có 5 đoạn (0,87–0,34).
+  19/20 ứng viên của câu tiếng Việt chỉ được 0,003–0,0045, dưới ngưỡng 0,01 (xem #10).
+- **Cách xử lý:**
+  - `searchQueries` (`src/lib/query.ts`): câu hỏi có chữ ngoài ASCII được LLM dịch sang tiếng Anh (khoảng 100 token, timeout 8 giây, lỗi thì dùng câu gốc).
+    Truy xuất bằng cả hai câu, rerank lấy điểm cao hơn của hai câu (tài liệu tiếng Việt không bị thiệt). Tắt bằng `RAG_TRANSLATE_QUERY=off`.
+  - `selectByRelevance` (`src/lib/rerank.ts`): khi có ít nhất 1 đoạn vượt ngưỡng thì giữ tối thiểu `RAG_MIN_KEEP` (mặc định 2);
+    không đoạn nào vượt ngưỡng (câu lạc đề) thì không giữ đoạn nào.
+- **Kết quả:** "Mật khẩu mạnh" từ 1 lên 5 đoạn (0,90–0,32); "xác thực đa yếu tố" 4 lên 5 (0,98–0,66); "nấu phở" vẫn 0.
+  Chậm thêm khoảng 1 giây trước token đầu (dịch, cộng thêm một lần embed và rerank).
+- **Hạn chế:** Tiếng Việt không dấu ("phong chong xss") bị coi là tiếng Anh và không được dịch.

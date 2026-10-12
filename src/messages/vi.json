@@ -64,7 +64,9 @@
     "judgeSummary": "AI đánh giá: {relevant}/{total} đoạn sát câu hỏi",
     "judgePending": "AI đang đánh giá các đoạn tài liệu…",
     "judgeUnavailable": "Chưa có đánh giá AI cho câu trả lời này (RAG_JUDGE tắt, gọi model lỗi, hoặc tin nhắn cũ).",
-    "judgeMissing": "AI không chấm đoạn này."
+    "judgeMissing": "AI không chấm đoạn này.",
+    "hoverHint": "Bấm vào câu để mở trong panel nguồn",
+    "hoverEvidence": "Câu khớp nhất được tô vàng · bấm để mở panel nguồn"
   },
   "auth": {
     "email": "Email",

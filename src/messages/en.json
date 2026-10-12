@@ -64,7 +64,9 @@
     "judgeSummary": "AI judgement: {relevant}/{total} chunks on topic",
     "judgePending": "The AI is evaluating the chunks…",
     "judgeUnavailable": "No AI judgement for this answer (RAG_JUDGE off, the model call failed, or an older message).",
-    "judgeMissing": "The AI did not score this chunk."
+    "judgeMissing": "The AI did not score this chunk.",
+    "hoverHint": "Click the sentence to open it in the sources panel",
+    "hoverEvidence": "Best-matching sentence highlighted · click to open the sources panel"
   },
   "auth": {
     "email": "Email",

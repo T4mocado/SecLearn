@@ -128,16 +128,28 @@ export async function streamChatCompletion(opts: {
   }
 }
 
+type CompletionOptions = {
+  system: string;
+  user: string;
+  temperature?: number;
+  maxTokens?: number;
+  signal?: AbortSignal;
+};
+
 /**
  * One non-streaming JSON-mode completion; returns the raw reply text. Callers parse and validate it.
  * Not for mock mode: callers must handle LLM_PROVIDER=mock themselves.
  */
-export async function completeJson(opts: {
-  system: string;
-  user: string;
-  temperature?: number;
-  signal?: AbortSignal;
-}): Promise<string> {
+export function completeJson(opts: CompletionOptions): Promise<string> {
+  return complete(opts, true);
+}
+
+/** One short non-streaming plain-text completion. Not for mock mode, like `completeJson`. */
+export function completeText(opts: CompletionOptions): Promise<string> {
+  return complete(opts, false);
+}
+
+async function complete(opts: CompletionOptions, json: boolean): Promise<string> {
   const env = getEnv();
   const client = createLlmClient();
   try {
@@ -145,7 +157,8 @@ export async function completeJson(opts: {
       {
         model: resolveLlmModel(env),
         temperature: opts.temperature ?? 0,
-        response_format: { type: "json_object" },
+        ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+        ...(json ? { response_format: { type: "json_object" } } : {}),
         messages: [
           { role: "system", content: opts.system },
           { role: "user", content: opts.user },

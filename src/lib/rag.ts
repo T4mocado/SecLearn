@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { embedText, vectorLiteral } from "@/lib/embed";
 import { getEnv } from "@/lib/env";
-import { rerankScores } from "@/lib/rerank";
+import { bestScores, rerankScores, selectByRelevance } from "@/lib/rerank";
+import { searchQueries } from "@/lib/query";
 import type { DocVisibility } from "@prisma/client";
 import type { MessageSource } from "@/lib/sources";
 
@@ -22,8 +23,10 @@ export type RetrievedChunk = {
 export const CONTEXT_CHAR_LIMIT = 6000;
 
 /**
- * Fetches RAG_CANDIDATES chunks by cosine, reorders them by cross-encoder relevance,
- * drops those below RAG_MIN_RELEVANCE and keeps the best RAG_TOP_K.
+ * Fetches RAG_CANDIDATES chunks by cosine for the question and, when it is not English, for its
+ * English translation too. Reorders the union by cross-encoder relevance (best score over both
+ * queries, so neither English nor Vietnamese chunks are penalised for the language) and keeps the
+ * best RAG_TOP_K above RAG_MIN_RELEVANCE, at least RAG_MIN_KEEP when any passes.
  */
 export async function retrieveChunks(opts: {
   query: string;
@@ -32,11 +35,15 @@ export async function retrieveChunks(opts: {
   const env = getEnv();
   const topK = env.RAG_TOP_K;
   const limit = env.RERANK_URL.trim() ? Math.max(env.RAG_CANDIDATES, topK) : topK;
-  const candidates = await retrieveCandidates({ ...opts, limit });
+  const queries = await searchQueries(opts.query);
+  const candidates = mergeCandidates(
+    await Promise.all(queries.map((query) => retrieveCandidates({ query, visibilities: opts.visibilities, limit }))),
+  );
 
   let scores: number[] | null;
   try {
-    scores = await rerankScores(opts.query, candidates.map((c) => c.content));
+    const perQuery = await Promise.all(queries.map((q) => rerankScores(q, candidates.map((c) => c.content))));
+    scores = perQuery.every((s) => s !== null) ? bestScores(perQuery as number[][]) : null;
   } catch (err) {
     // Chat still works on cosine order; the missing rerank score in the sources panel shows it.
     console.warn("[rag] rerank failed, falling back to cosine order:", err instanceof Error ? err.message : err);
@@ -44,11 +51,20 @@ export async function retrieveChunks(opts: {
   }
   if (!scores) return candidates.slice(0, topK);
 
-  return candidates
-    .map((c, i) => ({ ...c, rerankScore: scores[i]! }))
-    .filter((c) => c.rerankScore >= env.RAG_MIN_RELEVANCE)
-    .sort((a, b) => b.rerankScore - a.rerankScore)
-    .slice(0, topK);
+  return selectByRelevance(
+    candidates.map((c, i) => ({ ...c, rerankScore: scores[i]! })),
+    { topK, minRelevance: env.RAG_MIN_RELEVANCE, minKeep: env.RAG_MIN_KEEP },
+  );
+}
+
+/** Union of each query's candidates, best retrieval score per chunk, highest first. */
+function mergeCandidates(lists: RetrievedChunk[][]): RetrievedChunk[] {
+  const byId = new Map<string, RetrievedChunk>();
+  for (const c of lists.flat()) {
+    const seen = byId.get(c.id);
+    if (!seen || c.score > seen.score) byId.set(c.id, c);
+  }
+  return [...byId.values()].sort((a, b) => b.score - a.score);
 }
 
 async function retrieveCandidates(opts: {

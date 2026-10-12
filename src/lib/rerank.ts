@@ -31,3 +31,23 @@ export function rerankScores(query: string, documents: string[]): Promise<number
 export function rerankPairs(pairs: Array<[string, string]>): Promise<number[] | null> {
   return postRerank({ pairs }, pairs.length);
 }
+
+/** Element-wise best score of each document over several queries (original + translated question). */
+export function bestScores(perQuery: number[][]): number[] {
+  return perQuery[0]!.map((_, i) => Math.max(...perQuery.map((scores) => scores[i]!)));
+}
+
+/**
+ * Highest-scoring items first, those below `minRelevance` dropped, at most `topK`. When at least one
+ * item passes, at least `minKeep` are kept: cross-lingual scores sit far below the threshold even for
+ * relevant chunks. When none pass, the question is off topic and nothing is kept.
+ */
+export function selectByRelevance<T extends { rerankScore: number }>(
+  items: T[],
+  opts: { topK: number; minRelevance: number; minKeep: number },
+): T[] {
+  const sorted = [...items].sort((a, b) => b.rerankScore - a.rerankScore);
+  const passing = sorted.filter((c) => c.rerankScore >= opts.minRelevance).length;
+  if (!passing) return [];
+  return sorted.slice(0, Math.min(opts.topK, Math.max(passing, opts.minKeep)));
+}

@@ -13,9 +13,102 @@ export type MessageSource = {
   rerankScore?: number;
   /** Post-answer check: how well this chunk backs each answer clause citing it (0..1). Absent = not checked. */
   support?: CitationSupport[];
+  /** Post-answer LLM judgement of this chunk. Absent = not judged (judge off, failed, or old message). */
+  judge?: SourceJudgement;
 };
 
 export type CitationSupport = { claim: string; score: number };
+
+/** LLM-as-judge scores, 0..100 integers. */
+export type SourceJudgement = {
+  /** How closely the chunk addresses the user's question. */
+  questionRelevance: number;
+  /** How much of the answer's content comes from this chunk. */
+  answerContribution: number;
+  /** One sentence explaining the scores, in the chat language. */
+  reason: string;
+};
+
+export type JudgeVerdict = "relevant" | "partial" | "irrelevant";
+
+/** Verdict thresholds on questionRelevance; derived rather than asked for so label and score never disagree. */
+export const RELEVANT_MIN = 70;
+export const PARTIAL_MIN = 40;
+
+export function judgeVerdict(j: SourceJudgement): JudgeVerdict {
+  if (j.questionRelevance >= RELEVANT_MIN) return "relevant";
+  if (j.questionRelevance >= PARTIAL_MIN) return "partial";
+  return "irrelevant";
+}
+
+const REASON_MAX = 300;
+
+function toScore(value: unknown): number | null {
+  const n = typeof value === "string" ? Number(value) : value;
+  if (typeof n !== "number" || !Number.isFinite(n)) return null;
+  return Math.round(Math.min(100, Math.max(0, n)));
+}
+
+function toJudgement(value: unknown): SourceJudgement | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Record<string, unknown>;
+  const questionRelevance = toScore(v.questionRelevance);
+  const answerContribution = toScore(v.answerContribution);
+  if (questionRelevance === null || answerContribution === null) return null;
+  const reason = typeof v.reason === "string" ? v.reason.trim().slice(0, REASON_MAX) : "";
+  return { questionRelevance, answerContribution, reason };
+}
+
+/**
+ * Parses the judge's reply `{"sources": [{index, questionRelevance, answerContribution, reason}]}`.
+ * Tolerates a code fence around the JSON; drops entries with an out-of-range index or non-numeric
+ * scores, clamps scores to 0..100 and keeps the first entry for a repeated index.
+ * Returns null when the reply is not usable at all.
+ */
+export function parseJudgement(raw: string, sourceCount: number): Map<number, SourceJudgement> | null {
+  const json = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  const list = Array.isArray(parsed) ? parsed : (parsed as { sources?: unknown } | null)?.sources;
+  if (!Array.isArray(list)) return null;
+  const out = new Map<number, SourceJudgement>();
+  for (const item of list) {
+    const index = Number((item as { index?: unknown } | null)?.index);
+    if (!Number.isInteger(index) || index < 1 || index > sourceCount || out.has(index)) continue;
+    const judgement = toJudgement(item);
+    if (judgement) out.set(index, judgement);
+  }
+  return out.size ? out : null;
+}
+
+/**
+ * Display priority, most important first: AI answer contribution, then AI question relevance,
+ * then cross-encoder relevance, then retrieval order. Judged sources rank above unjudged ones
+ * (a partial judge reply), which keeps this a total order instead of mixing score scales.
+ */
+export function compareByPriority(a: MessageSource, b: MessageSource): number {
+  const key = (s: MessageSource) => [
+    s.judge ? 1 : 0,
+    s.judge?.answerContribution ?? 0,
+    s.judge?.questionRelevance ?? 0,
+    s.rerankScore ?? -1,
+    -s.index,
+  ];
+  const ka = key(a);
+  const kb = key(b);
+  for (let i = 0; i < ka.length; i++) {
+    if (ka[i] !== kb[i]) return kb[i]! - ka[i]!;
+  }
+  return 0;
+}
+
+export function prioritySources(sources: MessageSource[]): MessageSource[] {
+  return [...sources].sort(compareByPriority);
+}
 
 /**
  * Cross-encoder score from which a cited clause counts as backed by its chunk. On 13 real pairs, backed
@@ -39,17 +132,13 @@ export function citedIndexes(content: string, sourceCount: number): Set<number> 
   return cited;
 }
 
-/** Cited sources first, then the rest; within each group by relevance (rerank score, else retrieval order). */
+/** Cited sources first, then the rest; within each group by `compareByPriority`. */
 export function orderSources(
   sources: MessageSource[],
   cited: Set<number>,
 ): { cited: MessageSource[]; unused: MessageSource[] } {
   // Never renumber: `index` is what the answer text cites, only the display order changes.
-  const byRelevance = (a: MessageSource, b: MessageSource) =>
-    a.rerankScore !== undefined && b.rerankScore !== undefined && a.rerankScore !== b.rerankScore
-      ? b.rerankScore - a.rerankScore
-      : a.index - b.index;
-  const sorted = [...sources].sort(byRelevance);
+  const sorted = prioritySources(sources);
   return {
     cited: sorted.filter((s) => cited.has(s.index)),
     unused: sorted.filter((s) => !cited.has(s.index)),
@@ -152,7 +241,9 @@ export function parseSources(value: unknown): MessageSource[] | null {
     )
     .map((s) => {
       // Drafts live in localStorage; a malformed check result must not crash the panel.
-      if (s.support === undefined || isSupportList(s.support)) return s;
-      return { ...s, support: undefined };
+      const support = s.support === undefined || isSupportList(s.support) ? s.support : undefined;
+      const judge = s.judge === undefined ? undefined : (toJudgement(s.judge) ?? undefined);
+      if (support === s.support && judge === s.judge) return s;
+      return { ...s, support, judge };
     });
 }

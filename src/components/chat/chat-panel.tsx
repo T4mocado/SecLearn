@@ -516,6 +516,7 @@ export function ChatPanel() {
           sources={selectedSourceMessage.sources}
           focusIndex={sourceView.focus}
           streaming={streaming && sourceView.idx === messages.length - 1}
+          onFocus={(focus) => setSourceView({ idx: sourceView.idx, focus })}
           onClose={closeSources}
         />
       )}

@@ -128,6 +128,41 @@ export async function streamChatCompletion(opts: {
   }
 }
 
+/**
+ * One non-streaming JSON-mode completion; returns the raw reply text. Callers parse and validate it.
+ * Not for mock mode: callers must handle LLM_PROVIDER=mock themselves.
+ */
+export async function completeJson(opts: {
+  system: string;
+  user: string;
+  temperature?: number;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const env = getEnv();
+  const client = createLlmClient();
+  try {
+    const res = await client.chat.completions.create(
+      {
+        model: resolveLlmModel(env),
+        temperature: opts.temperature ?? 0,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: opts.system },
+          { role: "user", content: opts.user },
+        ],
+        ...(env.LLM_PROVIDER === "deepseek"
+          ? ({ thinking: { type: "disabled" } } as Record<string, unknown>)
+          : {}),
+      } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+      { signal: opts.signal },
+    );
+    return res.choices[0]?.message?.content ?? "";
+  } catch (err) {
+    if (isAppError(err)) throw err;
+    throw llmApiError(err instanceof Error ? err.message : "request failed");
+  }
+}
+
 export async function generateQuizJson(opts: {
   locale: string;
   topicHint?: string;

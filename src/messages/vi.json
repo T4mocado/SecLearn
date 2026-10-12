@@ -52,7 +52,19 @@
       "1": "Mật khẩu mạnh cần những gì?",
       "2": "Làm sao nhận biết email phishing?",
       "3": "2FA giúp bảo vệ tài khoản thế nào?"
-    }
+    },
+    "tabSources": "Nguồn",
+    "tabRelevance": "Mức độ liên quan",
+    "judgeRelevant": "Sát câu hỏi",
+    "judgePartial": "Liên quan một phần",
+    "judgeIrrelevant": "Không liên quan",
+    "judgeContribution": "Đóng góp vào câu trả lời",
+    "judgeQuestion": "Liên quan câu hỏi",
+    "judgeCrossEncoder": "Cross-encoder {pct}%",
+    "judgeSummary": "AI đánh giá: {relevant}/{total} đoạn sát câu hỏi",
+    "judgePending": "AI đang đánh giá các đoạn tài liệu…",
+    "judgeUnavailable": "Chưa có đánh giá AI cho câu trả lời này (RAG_JUDGE tắt, gọi model lỗi, hoặc tin nhắn cũ).",
+    "judgeMissing": "AI không chấm đoạn này."
   },
   "auth": {
     "email": "Email",

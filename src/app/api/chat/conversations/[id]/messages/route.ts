@@ -6,7 +6,7 @@ import { stripCitations } from "@/lib/sources";
 import { assertLlmConfigured, streamChatCompletion } from "@/lib/llm";
 import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
-import { verifyCitations } from "@/lib/verify";
+import { finalizeSources } from "@/lib/verify";
 import { isAppError } from "@/lib/errors";
 
 export const runtime = "nodejs";
@@ -78,12 +78,17 @@ export async function POST(req: Request, { params }: Params) {
       signal: req.signal,
     });
 
-    // Set before onDone runs, so the stored message keeps the citation check.
+    // Set before onDone runs, so the stored message keeps the citation check and judgement.
     let finalSources = sources;
     const stream = await streamLlmToSse({
       tokens,
       sources,
-      finalizeSources: async (full) => (finalSources = await verifyCitations(full, sources)),
+      finalizeSources: async function* (full) {
+        for await (const step of finalizeSources({ question: parsed.data.content, answer: full, sources, locale })) {
+          finalSources = step;
+          yield step;
+        }
+      },
       onDone: async (full) => {
         if (!full.trim()) {
           full =

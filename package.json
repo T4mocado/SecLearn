@@ -12,6 +12,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reindex": "tsx --env-file=.env scripts/reindex-all.ts",
     "smoke": "tsx scripts/smoke.ts",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "postinstall": "prisma generate"
   },
   "dependencies": {

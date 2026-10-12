@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CircleCheck, FileText, TriangleAlert, X } from "lucide-react";
+import { CircleCheck, FileText, Sparkles, TriangleAlert, X } from "lucide-react";
 import {
   citationClaims,
   citedIndexes,
   claimsBySource,
   isSupported,
+  judgeVerdict,
   orderSources,
+  prioritySources,
   SUPPORT_THRESHOLD,
   supportScore,
   truncateClaim,
+  type JudgeVerdict,
   type MessageSource,
 } from "@/lib/sources";
 import { cn } from "@/lib/utils";
@@ -76,21 +79,72 @@ export function MessageContent({
   );
 }
 
+const VERDICT_STYLE: Record<JudgeVerdict, string> = {
+  relevant: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+  partial: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  irrelevant: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+};
+
+const VERDICT_KEY = {
+  relevant: "judgeRelevant",
+  partial: "judgePartial",
+  irrelevant: "judgeIrrelevant",
+} as const;
+
+function VerdictPill({ verdict }: { verdict: JudgeVerdict }) {
+  const t = useTranslations("chat");
+  return (
+    <span className={cn("rounded px-1.5 py-px text-[11px] font-medium", VERDICT_STYLE[verdict])}>
+      {t(VERDICT_KEY[verdict])}
+    </span>
+  );
+}
+
+function ScoreBar({ label, value, tone }: { label: string; value: number; tone: "accent" | "muted" }) {
+  return (
+    <div>
+      <div className="flex justify-between text-[11px] text-[var(--text-muted)]">
+        <span>{label}</span>
+        <span className="font-medium tabular-nums text-[var(--text)]">{value}%</span>
+      </div>
+      <div
+        role="meter"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={value}
+        className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-[var(--border)]"
+      >
+        <div
+          className={cn("h-full rounded-full", tone === "accent" ? "bg-[var(--accent)]" : "bg-[var(--text-muted)]")}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+type Tab = "sources" | "relevance";
+
 export function SourcesPanel({
   content,
   sources,
   focusIndex,
   streaming,
+  onFocus,
   onClose,
 }: {
   content: string;
   sources: MessageSource[] | null | undefined;
   focusIndex: number | null;
   streaming: boolean;
+  onFocus: (index: number) => void;
   onClose: () => void;
 }) {
   const t = useTranslations("chat");
   const listRef = useRef<HTMLDivElement>(null);
+  const [tab, setTab] = useState<Tab>("sources");
+  const judged = sources?.filter((s) => s.judge) ?? [];
   const cited = sources ? citedIndexes(content, sources.length) : new Set<number>();
   const ordered = orderSources(sources ?? [], cited);
   const claims = streaming || !sources ? new Map<number, string[]>() : claimsBySource(citationClaims(content, sources.length));
@@ -128,6 +182,7 @@ export function SourcesPanel({
             </div>
             <div className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-[var(--text-muted)]">
               <span>{t("sourcesChunk", { n: s.chunkIndex + 1 })}</span>
+              {s.judge && <VerdictPill verdict={judgeVerdict(s.judge)} />}
               {s.rerankScore !== undefined && (
                 <span className="font-medium text-[var(--text)]">
                   {t("sourcesRelevance", { pct: Math.round(s.rerankScore * 100) })}
@@ -182,6 +237,64 @@ export function SourcesPanel({
     );
   };
 
+  const renderRelevance = (list: MessageSource[]) => {
+    if (!judged.length) {
+      return (
+        <p className="text-sm text-[var(--text-muted)]">{streaming ? t("judgePending") : t("judgeUnavailable")}</p>
+      );
+    }
+    return (
+      <ol className="space-y-3">
+        {prioritySources(list).map((s, rank) => (
+          <li key={s.index}>
+            <button
+              type="button"
+              data-source-index={s.index}
+              onClick={() => {
+                setTab("sources");
+                onFocus(s.index);
+              }}
+              className={cn(
+                "w-full rounded-xl border bg-[var(--bg)] p-3 text-left text-sm transition hover:border-[var(--accent)]/60",
+                focusIndex === s.index
+                  ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/30"
+                  : "border-[var(--border)]",
+              )}
+            >
+              <div className="mb-2 flex items-center gap-2">
+                <span className="w-6 shrink-0 text-xs font-semibold tabular-nums text-[var(--text-muted)]">
+                  #{rank + 1}
+                </span>
+                <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded bg-[var(--chat-user)] px-1 text-xs font-semibold text-[var(--accent)]">
+                  {s.index}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-medium" title={s.documentTitle}>
+                  {s.documentTitle}
+                </span>
+                {s.judge && <VerdictPill verdict={judgeVerdict(s.judge)} />}
+              </div>
+              {s.judge ? (
+                <div className="space-y-1.5">
+                  <ScoreBar label={t("judgeContribution")} value={s.judge.answerContribution} tone="accent" />
+                  <ScoreBar label={t("judgeQuestion")} value={s.judge.questionRelevance} tone="muted" />
+                  {s.judge.reason && <p className="pt-1 text-xs text-[var(--text)]">{s.judge.reason}</p>}
+                </div>
+              ) : (
+                <p className="text-xs text-[var(--text-muted)]">{t("judgeMissing")}</p>
+              )}
+              <div className="mt-2 flex flex-wrap gap-x-2 text-[11px] text-[var(--text-muted)]">
+                <span>{t("sourcesChunk", { n: s.chunkIndex + 1 })}</span>
+                {s.rerankScore !== undefined && (
+                  <span>{t("judgeCrossEncoder", { pct: Math.round(s.rerankScore * 100) })}</span>
+                )}
+              </div>
+            </button>
+          </li>
+        ))}
+      </ol>
+    );
+  };
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -229,6 +342,14 @@ export function SourcesPanel({
                 {t("verifySummary", { supported: checks.filter(isSupported).length, total: checks.length })}
               </p>
             )}
+            {judged.length > 0 && (
+              <p className="text-xs text-[var(--text-muted)]">
+                {t("judgeSummary", {
+                  relevant: judged.filter((s) => judgeVerdict(s.judge!) === "relevant").length,
+                  total: sources!.length,
+                })}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -240,8 +361,33 @@ export function SourcesPanel({
           </button>
         </div>
 
+        {sources && sources.length > 0 && (
+          <div role="tablist" className="flex gap-1 border-b border-[var(--border)] px-4">
+            {(["sources", "relevance"] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={tab === key}
+                onClick={() => setTab(key)}
+                className={cn(
+                  "-mb-px inline-flex items-center gap-1 border-b-2 px-2 py-2 text-xs font-medium transition",
+                  tab === key
+                    ? "border-[var(--accent)] text-[var(--accent)]"
+                    : "border-transparent text-[var(--text-muted)] hover:text-[var(--text)]",
+                )}
+              >
+                {key === "relevance" && <Sparkles className="h-3.5 w-3.5" aria-hidden />}
+                {key === "sources" ? t("tabSources") : t("tabRelevance")}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div ref={listRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
-          {!sources ? (
+          {tab === "relevance" && sources && sources.length > 0 ? (
+            renderRelevance(sources)
+          ) : !sources ? (
             <p className="text-sm text-[var(--text-muted)]">{t("sourcesUnavailable")}</p>
           ) : sources.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)]">{t("sourcesEmpty")}</p>

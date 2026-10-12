@@ -1,3 +1,4 @@
+import { judgeSources } from "@/lib/judge";
 import { rerankPairs } from "@/lib/rerank";
 import { citationClaims, claimsBySource, type MessageSource } from "@/lib/sources";
 
@@ -24,4 +25,20 @@ export async function verifyCitations(answer: string, sources: MessageSource[]):
     const support = items.flatMap((item, i) => (item.source === s ? [{ claim: item.claim, score: scores[i]! }] : []));
     return support.length ? { ...s, support } : s;
   });
+}
+
+/**
+ * Post-answer checks in order of speed. Yields the sources after each step, so the panel shows the
+ * citation check while the slower LLM judgement is still running; the last value is the one to store.
+ */
+export async function* finalizeSources(opts: {
+  question: string;
+  answer: string;
+  sources: MessageSource[];
+  locale: string;
+}): AsyncGenerator<MessageSource[], void, unknown> {
+  const verified = await verifyCitations(opts.answer, opts.sources);
+  yield verified;
+  const judged = await judgeSources({ ...opts, sources: verified });
+  if (judged !== verified) yield judged;
 }

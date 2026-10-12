@@ -33,6 +33,8 @@ const envSchema = z.object({
   /** Reranked chunks scoring below this (0..1) are dropped. Kept low: bge-reranker scores Vietnamese
    *  questions against English chunks far lower (~0.01-0.05 when relevant) than same-language pairs. */
   RAG_MIN_RELEVANCE: z.coerce.number().min(0).max(1).default(0.01),
+  /** Post-answer LLM judgement of each chunk's relevance (one extra LLM call per answer). */
+  RAG_JUDGE: z.enum(["on", "off"]).default("on"),
   CHUNK_SIZE: z.coerce.number().int().positive().default(800),
   CHUNK_OVERLAP: z.coerce.number().int().nonnegative().default(80),
   /** Documents ingested at the same time; the embed server must accept that many parallel requests. */
@@ -114,7 +116,7 @@ export function validateProviderConfigAtBoot(): {
   }
   if (!warnings.length) {
     console.info(
-      `[seclearn:env] providers ready: LLM=${env.LLM_PROVIDER}/${resolveLlmModel(env)} EMBED=${env.EMBED_PROVIDER}/${resolveEmbedModel(env)} dim=${env.EMBED_DIM} rerank=${env.RERANK_URL.trim() ? "on" : "off"}`,
+      `[seclearn:env] providers ready: LLM=${env.LLM_PROVIDER}/${resolveLlmModel(env)} EMBED=${env.EMBED_PROVIDER}/${resolveEmbedModel(env)} dim=${env.EMBED_DIM} rerank=${env.RERANK_URL.trim() ? "on" : "off"} judge=${env.RAG_JUDGE}`,
     );
   }
   return { ok: warnings.length === 0, warnings };

@@ -52,7 +52,19 @@
       "1": "What makes a strong password?",
       "2": "How do I spot a phishing email?",
       "3": "How does 2FA protect accounts?"
-    }
+    },
+    "tabSources": "Sources",
+    "tabRelevance": "Relevance",
+    "judgeRelevant": "On topic",
+    "judgePartial": "Partly relevant",
+    "judgeIrrelevant": "Off topic",
+    "judgeContribution": "Contribution to answer",
+    "judgeQuestion": "Relevance to question",
+    "judgeCrossEncoder": "Cross-encoder {pct}%",
+    "judgeSummary": "AI judgement: {relevant}/{total} chunks on topic",
+    "judgePending": "The AI is evaluating the chunks…",
+    "judgeUnavailable": "No AI judgement for this answer (RAG_JUDGE off, the model call failed, or an older message).",
+    "judgeMissing": "The AI did not score this chunk."
   },
   "auth": {
     "email": "Email",

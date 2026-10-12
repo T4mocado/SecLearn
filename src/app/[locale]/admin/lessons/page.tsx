@@ -78,7 +78,7 @@ export default function AdminLessonsPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-8">
+    <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-8 overflow-y-auto">
       <h1 className="text-2xl font-semibold text-[var(--accent)]">{t("lessons")}</h1>
       <Card className="space-y-3">
         <form className="space-y-3" onSubmit={save}>

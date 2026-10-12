@@ -277,7 +277,7 @@ export default function AdminDocumentsPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-8">
+    <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-8 overflow-y-auto">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-[var(--accent)]">{t("documents")}</h1>
         <p className="text-sm text-[var(--text-muted)]">{t("ingestHint")}</p>

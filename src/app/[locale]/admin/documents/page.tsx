@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { FileUp, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { ExternalLink, FileUp, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -389,7 +389,16 @@ export default function AdminDocumentsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="font-medium">{d.title}</div>
+                    <a
+                      href={`/api/admin/documents/${d.id}/file`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={t("openDocument")}
+                      className="inline-flex items-center gap-1 font-medium hover:text-[var(--accent)] hover:underline"
+                    >
+                      {d.title}
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" aria-hidden />
+                    </a>
                     <span
                       className={cn(
                         "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",

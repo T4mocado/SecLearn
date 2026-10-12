@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { CircleCheck, FileText, TriangleAlert } from "lucide-react";
 import { VerdictPill } from "@/components/chat/sources-panel";
 import { remarkCitations } from "@/lib/remark-citations";
+import { uncitedSentences } from "@/lib/grounding";
 import {
   citationClaims,
   citedClauses,
@@ -45,10 +46,13 @@ function clauseOf(target: EventTarget | null): { el: HTMLElement; clause: number
 export function MessageContent({
   content,
   sources,
+  streaming = false,
   onCite,
 }: {
   content: string;
   sources?: MessageSource[] | null;
+  /** While streaming, the last sentence has no citation yet: don't mark uncited sentences. */
+  streaming?: boolean;
   onCite: (index: number) => void;
 }) {
   const t = useTranslations("chat");
@@ -60,6 +64,7 @@ export function MessageContent({
   const claims = count ? citationClaims(content, count) : [];
   const clauses = count ? citedClauses(content, count) : [];
   const claimAt = new Map(claims.map((c) => [c.at, c.claim]));
+  const uncited = streaming ? [] : uncitedSentences(content, count);
 
   const cancelClose = () => {
     if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
@@ -129,6 +134,13 @@ export function MessageContent({
           </button>
         );
       }
+      if (props.dataUncited) {
+        return (
+          <span className="uncited-sentence" title={t("uncitedTooltip")}>
+            {children}
+          </span>
+        );
+      }
       if (clause !== undefined) {
         return (
           <span data-clause={clause} className="cited-clause">
@@ -178,7 +190,7 @@ export function MessageContent({
         <style>{`[data-answer="${scope}"] [data-clause="${active!.clause}"]{background:var(--cite-hover)}`}</style>
       )}
       <Markdown
-        remarkPlugins={[remarkGfm, [remarkCitations, { content, sourceCount: count, claims, clauses }]]}
+        remarkPlugins={[remarkGfm, [remarkCitations, { content, sourceCount: count, claims, clauses, uncited }]]}
         components={components}
       >
         {content}

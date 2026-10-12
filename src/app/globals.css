@@ -19,6 +19,7 @@
   --sidebar-hover: #e4e4e4;
   --cite-hover: rgb(15 118 110 / 0.14);
   --cite-evidence: rgb(250 204 21 / 0.45);
+  --uncited: #b45309;
   --radius: 0.75rem;
   --font-sans: var(--font-dm-sans), "Be Vietnam Pro", system-ui, sans-serif;
   --background: var(--bg);
@@ -42,6 +43,7 @@
   --sidebar-hover: #232833;
   --cite-hover: rgb(20 184 166 / 0.22);
   --cite-evidence: rgb(202 138 4 / 0.45);
+  --uncited: #f59e0b;
 }
 
 @theme inline {
@@ -208,6 +210,12 @@ body {
 .chat-markdown hr {
   margin: 1em 0;
   border-color: var(--border);
+}
+.chat-markdown .uncited-sentence {
+  text-decoration: underline dotted var(--uncited);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  cursor: help;
 }
 .chat-markdown .cited-clause {
   border-radius: 0.2em;

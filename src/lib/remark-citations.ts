@@ -1,5 +1,5 @@
 import type { Nodes, Parent, Root, Text } from "mdast";
-import type { CitationClaim, CitedClause } from "@/lib/sources";
+import type { CitationClaim, CitedClause, TextRange } from "@/lib/sources";
 
 /**
  * Remark plugin for answer text: turns valid `[n]` markers into citation nodes and wraps the
@@ -10,13 +10,18 @@ import type { CitationClaim, CitedClause } from "@/lib/sources";
  * inside its range gets the clause's position in `clauses` as key. Where clauses overlap, the
  * earlier one wins. Code nodes are never touched, matching `maskCode`.
  *
- * Rendered as `<span data-cite={n} data-at={offset} data-clause={i}>` and `<span data-clause={i}>`.
+ * Sentences in `uncited` (statements without a citation, see `uncitedSentences`) are wrapped the
+ * same way so they can be marked.
+ *
+ * Rendered as `<span data-cite={n} data-at={offset} data-clause={i}>`, `<span data-clause={i}>`
+ * and `<span data-uncited>`.
  */
 export type RemarkCitationsOptions = {
   content: string;
   sourceCount: number;
   claims: CitationClaim[];
   clauses: CitedClause[];
+  uncited?: TextRange[];
 };
 
 const MARKER_RE = /\[(\d{1,2})\]/g;
@@ -44,13 +49,21 @@ function clauseNode(value: string, clause: number) {
   };
 }
 
-/** Splits text at absolute offset `from` into plain and clause-wrapped pieces. */
-function splitByClauses(value: string, from: number, clauses: CitedClause[]): unknown[] {
+function uncitedNode(value: string) {
+  return {
+    type: "uncitedSentence",
+    data: { hName: "span", hProperties: { dataUncited: true } },
+    children: [{ type: "text", value }],
+  };
+}
+
+/** Splits text at absolute offset `from` into plain, clause-wrapped and uncited pieces. */
+function splitByRanges(value: string, from: number, clauses: CitedClause[], uncited: TextRange[]): unknown[] {
   const to = from + value.length;
   const cuts = new Set([from, to]);
-  for (const c of clauses) {
-    if (c.start > from && c.start < to) cuts.add(c.start);
-    if (c.end > from && c.end < to) cuts.add(c.end);
+  for (const r of [...clauses, ...uncited]) {
+    if (r.start > from && r.start < to) cuts.add(r.start);
+    if (r.end > from && r.end < to) cuts.add(r.end);
   }
   const points = [...cuts].sort((a, b) => a - b);
   const out: unknown[] = [];
@@ -59,7 +72,9 @@ function splitByClauses(value: string, from: number, clauses: CitedClause[]): un
     const b = points[i + 1]!;
     const piece = value.slice(a - from, b - from);
     const clause = clauses.findIndex((c) => c.start <= a && b <= c.end);
-    out.push(clause >= 0 ? clauseNode(piece, clause) : { type: "text", value: piece });
+    if (clause >= 0) out.push(clauseNode(piece, clause));
+    else if (uncited.some((u) => u.start <= a && b <= u.end)) out.push(uncitedNode(piece));
+    else out.push({ type: "text", value: piece });
   }
   return out;
 }
@@ -74,15 +89,18 @@ function transformText(node: Text, opts: RemarkCitationsOptions): unknown[] | nu
     startOffset !== undefined && endOffset !== undefined && opts.content.slice(startOffset, endOffset) === value
       ? startOffset
       : null;
-  const overlapsClause =
-    base !== null && opts.clauses.some((c) => c.start < base + value.length && c.end > base);
+  const uncited = opts.uncited ?? [];
+  const overlapsRange =
+    base !== null && [...opts.clauses, ...uncited].some((r) => r.start < base + value.length && r.end > base);
 
   const out: unknown[] = [];
   let last = 0;
   const pushText = (from: number, to: number) => {
     if (to <= from) return;
     const piece = value.slice(from, to);
-    out.push(...(overlapsClause ? splitByClauses(piece, base! + from, opts.clauses) : [{ type: "text", value: piece }]));
+    out.push(
+      ...(overlapsRange ? splitByRanges(piece, base! + from, opts.clauses, uncited) : [{ type: "text", value: piece }]),
+    );
   };
   let markers = 0;
   for (const match of value.matchAll(MARKER_RE)) {
@@ -96,7 +114,7 @@ function transformText(node: Text, opts: RemarkCitationsOptions): unknown[] | nu
     last = match.index + match[0].length;
     markers++;
   }
-  if (!markers && !overlapsClause) return null;
+  if (!markers && !overlapsRange) return null;
   pushText(last, value.length);
   return out;
 }

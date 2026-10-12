@@ -121,3 +121,27 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
 - **Kết quả:** "Mật khẩu mạnh" từ 1 lên 5 đoạn (0,90–0,32); "xác thực đa yếu tố" 4 lên 5 (0,98–0,66); "nấu phở" vẫn 0.
   Chậm thêm khoảng 1 giây trước token đầu (dịch, cộng thêm một lần embed và rerank).
 - **Hạn chế:** Tiếng Việt không dấu ("phong chong xss") bị coi là tiếng Anh và không được dịch.
+
+## 18. Model trả lời bằng kiến thức ngoài tài liệu
+- **Triệu chứng:** Prompt cũ cho phép "give safe general guidance". "Cách nấu phở bò?" (0 nguồn) vẫn nhận công thức nấu phở;
+  câu hỏi phishing có 3 câu không trích dẫn, gồm cả thông tin tự thêm ("email, ngân hàng, mạng xã hội").
+- **Cách xử lý (`src/lib/grounding.ts`):**
+  - Prompt chặt: chỉ dùng các đoạn được đánh số, mỗi câu nêu sự kiện phải có `[n]`, phần không có trong tài liệu thì nói rõ.
+    `temperature` 0,2.
+  - Không có nguồn nào thì route trả câu cố định `noSourcesAnswer()`, không gọi LLM.
+  - `uncitedSentences()` gạch chân chấm các câu nêu sự kiện mà thiếu `[n]` (bỏ qua tiêu đề, code, bảng, câu dẫn ":", câu ngắn,
+    câu "tài liệu không đề cập"). Không đánh dấu khi đang stream.
+- **Kết quả:** câu phishing từ 3 câu không có nguồn xuống 0, và câu trả lời nói rõ phần tài liệu không đề cập.
+
+## 19. Viết lại câu hỏi nối tiếp: model bịa chủ đề
+- **Triệu chứng:** "Trả lời ngắn gọn" khi chưa có hội thoại được viết lại thành "what is the NIST Cybersecurity Framework",
+  kéo về 5 đoạn NIST không liên quan (rerank 0,99). Thêm luật `NONE` chung thì "Trả lời ngắn gọn" **có** hội thoại cũng thành `NONE`.
+- **Cách xử lý:** `rewritePrompt(hasConversation)` tách hai trường hợp. Có hội thoại thì câu như "ngắn gọn hơn" tìm theo chủ đề câu hỏi trước,
+  `NONE` chỉ dành cho lời chào. Không có hội thoại thì tin nhắn không có chủ đề trả `NONE`, chỉ tìm bằng câu gốc, ra 0 nguồn và nhận câu cố định.
+- **Kiểm tra:** "Trả lời ngắn gọn" / "Xin chào" / "Giải thích thêm đi" (mới) cho 0 nguồn. "Trả lời ngắn gọn" và "Còn MFA thì sao?"
+  (có hội thoại) cho 5 nguồn đúng chủ đề.
+
+## 20. Mở PDF: không gắn CSP cho file PDF
+- **Lưu ý:** `GET /api/admin/documents/[id]/file` gửi `nosniff` nhưng không gửi CSP cho PDF, vì trình xem PDF của Chrome là plugin,
+  `sandbox`/`object-src` có thể chặn nó (không kiểm chứng được trong browser pane, pane chỉ tải file về). Tài liệu seed (markdown)
+  trả `text/plain` kèm `default-src 'none'; sandbox`. File ngoài `UPLOAD_DIR`, thiếu file, hay đường dẫn là thư mục đều trả 404.

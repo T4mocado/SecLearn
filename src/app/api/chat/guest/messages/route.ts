@@ -3,6 +3,7 @@ import { getGuestQuota, getOrCreateGuestKey, incrementGuestQuota } from "@/lib/g
 import { retrieveChunks, buildContext } from "@/lib/rag";
 import { stripCitations } from "@/lib/sources";
 import { assertLlmConfigured, streamChatCompletion } from "@/lib/llm";
+import { fixedAnswer, noSourcesAnswer } from "@/lib/grounding";
 import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
 import { finalizeSources } from "@/lib/verify";
@@ -49,14 +50,18 @@ export async function POST(req: Request) {
     const chunks = await retrieveChunks({
       query: parsed.data.content,
       visibilities: ["public"],
+      history,
     });
     const { context, sources } = buildContext(chunks);
-    const tokens = await streamChatCompletion({
-      messages: [...history, { role: "user", content: parsed.data.content }],
-      context,
-      locale,
-      signal: req.signal,
-    });
+    // Nothing relevant in the documents: answering would mean using the model's own knowledge.
+    const tokens = sources.length
+      ? await streamChatCompletion({
+          messages: [...history, { role: "user", content: parsed.data.content }],
+          context,
+          locale,
+          signal: req.signal,
+        })
+      : fixedAnswer(noSourcesAnswer(locale));
 
     const stream = await streamLlmToSse({
       tokens,

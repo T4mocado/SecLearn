@@ -3,6 +3,7 @@ import { embedText, vectorLiteral } from "@/lib/embed";
 import { getEnv } from "@/lib/env";
 import { bestScores, rerankScores, selectByRelevance } from "@/lib/rerank";
 import { searchQueries } from "@/lib/query";
+import type { ChatTurn } from "@/lib/llm";
 import type { DocVisibility } from "@prisma/client";
 import type { MessageSource } from "@/lib/sources";
 
@@ -31,11 +32,13 @@ export const CONTEXT_CHAR_LIMIT = 6000;
 export async function retrieveChunks(opts: {
   query: string;
   visibilities: DocVisibility[];
+  /** Earlier turns, to rewrite a follow-up ("Trả lời ngắn gọn") into a standalone search query. */
+  history?: ChatTurn[];
 }): Promise<RetrievedChunk[]> {
   const env = getEnv();
   const topK = env.RAG_TOP_K;
   const limit = env.RERANK_URL.trim() ? Math.max(env.RAG_CANDIDATES, topK) : topK;
-  const queries = await searchQueries(opts.query);
+  const queries = await searchQueries(opts.query, opts.history);
   const candidates = mergeCandidates(
     await Promise.all(queries.map((query) => retrieveCandidates({ query, visibilities: opts.visibilities, limit }))),
   );

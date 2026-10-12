@@ -66,7 +66,8 @@
     "judgeUnavailable": "No AI judgement for this answer (RAG_JUDGE off, the model call failed, or an older message).",
     "judgeMissing": "The AI did not score this chunk.",
     "hoverHint": "Click the sentence to open it in the sources panel",
-    "hoverEvidence": "Best-matching sentence highlighted · click to open the sources panel"
+    "hoverEvidence": "Best-matching sentence highlighted · click to open the sources panel",
+    "uncitedTooltip": "This sentence has no citation, so it may not come from the SecLearn documents"
   },
   "auth": {
     "email": "Email",
@@ -152,7 +153,8 @@
     "toastFailed": "Processing “{title}” failed.",
     "toastDeleted": "Document deleted.",
     "deleteError": "Could not delete document.",
-    "visibilityError": "Could not update visibility."
+    "visibilityError": "Could not update visibility.",
+    "openDocument": "Open the document in a new tab"
   },
   "common": {
     "loading": "Loading...",

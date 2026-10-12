@@ -4,6 +4,7 @@ import { chatMessageSchema } from "@/lib/validations";
 import { retrieveChunks, buildContext } from "@/lib/rag";
 import { stripCitations } from "@/lib/sources";
 import { assertLlmConfigured, streamChatCompletion } from "@/lib/llm";
+import { fixedAnswer, noSourcesAnswer } from "@/lib/grounding";
 import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
 import { finalizeSources } from "@/lib/verify";
@@ -60,23 +61,27 @@ export async function POST(req: Request, { params }: Params) {
       });
     }
 
-    const chunks = await retrieveChunks({
-      query: parsed.data.content,
-      visibilities: ["public", "authenticated"],
-    });
-    const { context, sources } = buildContext(chunks);
-
     const history = conversation.messages.map((m) => ({
       role: m.role as "user" | "assistant" | "system",
       content: m.role === "assistant" ? stripCitations(m.content) : m.content,
     }));
 
-    const tokens = await streamChatCompletion({
-      messages: [...history, { role: "user", content: parsed.data.content }],
-      context,
-      locale,
-      signal: req.signal,
+    const chunks = await retrieveChunks({
+      query: parsed.data.content,
+      visibilities: ["public", "authenticated"],
+      history,
     });
+    const { context, sources } = buildContext(chunks);
+
+    // Nothing relevant in the documents: answering would mean using the model's own knowledge.
+    const tokens = sources.length
+      ? await streamChatCompletion({
+          messages: [...history, { role: "user", content: parsed.data.content }],
+          context,
+          locale,
+          signal: req.signal,
+        })
+      : fixedAnswer(noSourcesAnswer(locale));
 
     // Set before onDone runs, so the stored message keeps the citation check and judgement.
     let finalSources = sources;

@@ -10,6 +10,7 @@ import {
   missingLlmKeyError,
 } from "@/lib/errors";
 import { CONTEXT_CHAR_LIMIT } from "@/lib/rag";
+import { groundedSystemPrompt } from "@/lib/grounding";
 
 export type ChatTurn = { role: "user" | "assistant" | "system"; content: string };
 
@@ -68,21 +69,8 @@ export async function streamChatCompletion(opts: {
   signal?: AbortSignal;
 }): Promise<AsyncGenerator<string, void, unknown>> {
   const env = getEnv();
-  const system = [
-    "You are SecLearn, a friendly beginner cybersecurity tutor.",
-    "Answer clearly using the retrieved context when relevant.",
-    "If context is insufficient, say so and give safe general guidance.",
-    "Never invent CVE numbers or claim private data access.",
-    `Prefer language: ${opts.locale === "vi" ? "Vietnamese" : "English"}.`,
-    ...(opts.context
-      ? [
-          "Each context passage starts with a number in brackets, e.g. [1].",
-          "When a sentence uses information from a passage, cite it inline right after that sentence, e.g. [1] or [2][3].",
-          "Only cite numbers that appear in the context. Do not cite general knowledge, and do not add a separate reference list.",
-          `Retrieved context:\n---\n${opts.context.slice(0, CONTEXT_CHAR_LIMIT)}\n---`,
-        ]
-      : ["No retrieved context."]),
-  ].join("\n");
+  // Callers answer an empty context with noSourcesAnswer() instead of calling the model.
+  const system = groundedSystemPrompt(opts.context.slice(0, CONTEXT_CHAR_LIMIT), opts.locale);
 
   // Mock ONLY when explicitly configured — never silent fallback for deepseek/openai.
   if (env.LLM_PROVIDER === "mock") {
@@ -99,7 +87,7 @@ export async function streamChatCompletion(opts: {
         model,
         stream: true,
         messages: [{ role: "system", content: system }, ...opts.messages.filter((m) => m.role !== "system")],
-        temperature: 0.4,
+        temperature: 0.2,
         // DeepSeek-flash defaults to thinking mode; disable for snappy tutor replies.
         ...(env.LLM_PROVIDER === "deepseek"
           ? ({ thinking: { type: "disabled" } } as Record<string, unknown>)

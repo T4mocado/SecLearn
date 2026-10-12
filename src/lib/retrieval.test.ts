@@ -63,3 +63,38 @@ test("searchQueries does not call the LLM in mock mode or when the question is E
   assert.deepEqual(await searchQueries("Mật khẩu mạnh?"), ["Mật khẩu mạnh?"]);
   assert.deepEqual(await searchQueries("strong password"), ["strong password"]);
 });
+
+test("historyForRewrite keeps the last turns, shortened and without citations", async () => {
+  const { historyForRewrite } = await import("./query");
+  const long = "Mật khẩu mạnh nên dài [1]. " + "x".repeat(400);
+  const out = historyForRewrite([
+    { role: "user", content: "câu cũ nhất" },
+    { role: "assistant", content: "trả lời cũ nhất" },
+    { role: "user", content: "Mật khẩu mạnh cần những gì?" },
+    { role: "assistant", content: long },
+    { role: "user", content: "Còn MFA thì sao?" },
+    { role: "assistant", content: "MFA chặn 99.9% [2]." },
+  ]);
+  const lines = out.split("\n");
+  assert.equal(lines.length, 4);
+  assert.equal(lines[0], "User: Mật khẩu mạnh cần những gì?");
+  assert.ok(lines[1]!.startsWith("Assistant: Mật khẩu mạnh nên dài.") && lines[1]!.endsWith("…"));
+  assert.ok(lines[1]!.length <= "Assistant: ".length + 301);
+  assert.equal(lines[3], "Assistant: MFA chặn 99.9%.");
+  assert.equal(historyForRewrite([]), "");
+});
+
+test("searchQueries does not call the LLM in mock mode even with history", async () => {
+  const { searchQueries } = await import("./query");
+  assert.deepEqual(await searchQueries("Trả lời ngắn gọn", [{ role: "user", content: "XSS là gì?" }]), ["Trả lời ngắn gọn"]);
+});
+
+test("rewritePrompt: NONE for any topicless message alone, only greetings within a conversation", async () => {
+  const { rewritePrompt } = await import("./query");
+  const alone = rewritePrompt(false);
+  assert.match(alone, /instruction like "shorter" or "explain more"\), reply exactly NONE/);
+  assert.match(alone, /Never invent a topic/);
+  const followUp = rewritePrompt(true);
+  assert.match(followUp, /topic of the previous question/);
+  assert.match(followUp, /NONE only for greetings or thanks/);
+});

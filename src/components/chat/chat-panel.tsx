@@ -447,6 +447,7 @@ export function ChatPanel() {
                     <MessageContent
                       content={m.content}
                       sources={m.sources}
+                      streaming={streaming && idx === messages.length - 1}
                       onCite={(n) => setSourceView({ idx, focus: n })}
                     />
                   ) : (

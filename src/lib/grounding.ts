@@ -58,6 +58,25 @@ export function conversationSystemPrompt(locale: string): string {
   ].join(" ");
 }
 
+const OLDER_QUESTION_CHARS = 200;
+
+/**
+ * Added to the system prompt when the oldest turns are not sent (history over its limit): their
+ * questions only, numbered in order, so "the first vulnerability" still resolves (docs/ERRORS.md #25).
+ * Questions carry no facts; the answers, which do, stay out.
+ */
+export function olderQuestionsNote(questions: string[]): string {
+  if (!questions.length) return "";
+  const lines = questions.map((q, i) => {
+    const flat = q.replace(/\s+/g, " ").trim();
+    return `${i + 1}. ${flat.length > OLDER_QUESTION_CHARS ? `${flat.slice(0, OLDER_QUESTION_CHARS)}…` : flat}`;
+  });
+  return [
+    "Earlier in this conversation, before the messages below, the user asked (oldest first; answers not shown):",
+    ...lines,
+  ].join("\n");
+}
+
 /**
  * Appended to the latest question when there are earlier turns. Earlier answers reach the model
  * without their [n] markers (they point at older passages), and in long chats the model copied that

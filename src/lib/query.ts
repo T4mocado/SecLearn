@@ -4,9 +4,8 @@ import { stripCitations } from "@/lib/sources";
 
 const REWRITE_TIMEOUT_MS = 8_000;
 const REWRITE_MAX_TOKENS = 120;
-/** Earlier user questions sent for rewriting, and characters kept from each; plus the last answer. */
-const HISTORY_QUESTIONS = 10;
-const QUESTION_CHARS = 200;
+/** Characters kept from each earlier user question sent for rewriting (all of them), and from the last answer. */
+const QUESTION_CHARS = 120;
 const ANSWER_CHARS = 300;
 /** The rewrite model's answer when a message has nothing to search for. */
 const NO_TOPIC = "NONE";
@@ -40,17 +39,18 @@ function cleanRewrite(raw: string): string {
     .trim();
 }
 
-const shorten = (text: string, max: number) => {
+const shorten =(text: string, max: number) => {
   const flat = stripCitations(text).replace(/\s+/g, " ").trim();
   return flat.length > max ? `${flat.slice(0, max)}…` : flat;
 };
 
 /**
  * Every earlier user question (numbered, so "the first topic" or "the second vulnerability" can be
- * resolved however far back it is) and the last answer, shortened. Cheap in tokens.
+ * resolved however far back it is) and the last answer, shortened. Cheap in tokens. Keeping only the
+ * last 10 questions lost the first topic from the 11th question on (docs/ERRORS.md #25).
  */
 export function historyForRewrite(history: ChatTurn[]): string {
-  const questions = history.filter((m) => m.role === "user").slice(-HISTORY_QUESTIONS);
+  const questions = history.filter((m) => m.role === "user");
   if (!questions.length) return "";
   const lastAnswer = history.findLast((m) => m.role === "assistant");
   return [

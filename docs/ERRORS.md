@@ -202,3 +202,22 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
 - **Cách xử lý:** nạp `orderBy: desc, take: 40` rồi đảo lại thứ tự thời gian.
 - **Kết quả:** gửi tiếp vào đúng hội thoại đó (lượt 23–25, đã có hơn 40 tin nhắn): "cách làm đó" được giải thích là thu hồi JWT
   (TSL, denylist), nguồn JWT Cheat Sheet #38–#41 (rerank 0,81–0,95). "Câu hỏi ngay trước câu này" trả đúng lượt 24.
+
+## 25. Hội thoại dài: bước viết lại quên chủ đề đầu tiên, lịch sử gửi lại không giới hạn
+- **Triệu chứng** (22 câu liên tiếp, xem #24):
+  1. Câu 19 "Lỗ hổng đầu tiên chúng ta bàn có liên quan gì đến Content Security Policy không?" được viết lại thành
+     "first vulnerability discussed relation to Content Security Policy", không có chữ XSS. Truy xuất lấy 4 đoạn rerank ≤ 0,13,
+     không có CSP Cheat Sheet. Câu trả lời vẫn đúng chỉ vì model trả lời thấy cả lịch sử.
+  2. Mỗi câu hỏi gửi lại toàn bộ lịch sử: 40 tin nhắn ≈ 28 000 ký tự, cộng 6 000 ký tự đoạn tài liệu.
+- **Nguyên nhân:** `historyForRewrite` chỉ giữ 10 câu hỏi gần nhất (câu 1 ra khỏi cửa sổ từ câu 11), trong khi model trả lời nhận
+  nguyên 40 tin nhắn: hai bên nhìn hai phiên bản lịch sử khác nhau. Không có giới hạn ký tự cho lịch sử.
+- **Cách xử lý:**
+  - Route nạp tối đa 200 tin nhắn mới nhất (~100 lượt). `answerQuestion` bỏ lượt bị từ chối một lần rồi chia cho hai nơi dùng.
+  - Bước viết lại nhận **mọi** câu hỏi trước, mỗi câu 120 ký tự.
+  - `splitHistory` (`src/lib/chat-answer.ts`): model trả lời nhận các lượt mới nhất nguyên văn trong `HISTORY_CHAR_LIMIT` = 12 000 ký tự
+    (trọn tin nhắn, bắt đầu từ một câu hỏi, luôn có lượt cuối). Câu hỏi của các lượt cũ hơn được liệt kê đánh số trong system prompt
+    (`olderQuestionsNote`), không kèm câu trả lời. Trong giới hạn thì prompt không đổi.
+- **Kết quả** (chạy lại 22 câu): câu 19 viết lại thành "first vulnerability XSS Content Security Policy CSP", nguồn gồm
+  XSS Prevention và CSP Cheat Sheet, rerank cao nhất 0,78 (trước 0,13). Lịch sử gửi đi ≤ 12 000 ký tự từ câu 9. Câu 10
+  ("câu hỏi đầu tiên") và câu 13 ("chủ đề thứ hai") vẫn đúng khi câu 1 chỉ còn trong danh sách câu hỏi cũ. Câu 22 vẫn đúng (#24).
+- **Đánh đổi:** tóm tắt hội thoại dài chỉ biết câu hỏi của các lượt đã cắt, không biết câu trả lời (câu 11: mục XSS chỉ ghi tên chủ đề).

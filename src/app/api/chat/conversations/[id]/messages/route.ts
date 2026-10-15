@@ -14,8 +14,11 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
-/** Earlier messages sent with a question: the most recent ones. */
-const HISTORY_MESSAGES = 40;
+/**
+ * Earlier messages loaded with a question, the most recent ones (~100 turns): the query rewrite sees
+ * all their questions, the answer only the latest turns that fit HISTORY_CHAR_LIMIT (docs/ERRORS.md #25).
+ */
+const HISTORY_MESSAGES = 200;
 
 export async function POST(req: Request, { params }: Params) {
   const authz = await requireUser();
@@ -25,7 +28,7 @@ export async function POST(req: Request, { params }: Params) {
   try {
     const conversation = await prisma.conversation.findFirst({
       where: { id, userId: authz.user.id },
-      // Newest first so `take` keeps the latest turns: ascending kept the first 40, and from the
+      // Newest first so `take` keeps the latest turns: ascending kept the oldest, and from the
       // 22nd question on the model no longer saw the previous one (docs/ERRORS.md #24).
       include: { messages: { orderBy: { createdAt: "desc" }, take: HISTORY_MESSAGES } },
     });

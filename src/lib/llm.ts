@@ -10,7 +10,12 @@ import {
   missingLlmKeyError,
 } from "@/lib/errors";
 import { CONTEXT_CHAR_LIMIT } from "@/lib/rag";
-import { citationReminder, conversationSystemPrompt, groundedSystemPrompt } from "@/lib/grounding";
+import {
+  citationReminder,
+  conversationSystemPrompt,
+  groundedSystemPrompt,
+  olderQuestionsNote,
+} from "@/lib/grounding";
 
 export type ChatTurn = { role: "user" | "assistant" | "system"; content: string };
 
@@ -68,13 +73,17 @@ type ChatRequest = {
   locale: string;
   /** `documents` (default): grounded in `context`. `conversation`: about the chat itself, no passages. */
   mode?: "documents" | "conversation";
+  /** Questions of the earlier turns left out of `messages` (history over its limit), oldest first. */
+  olderQuestions?: string[];
 };
 
 /** System prompt plus turns as sent to the model; the citation reminder rides on the latest question. */
 export function chatRequestMessages(opts: ChatRequest): ChatTurn[] {
   const turns = opts.messages.filter((m) => m.role !== "system");
+  const note = olderQuestionsNote(opts.olderQuestions ?? []);
+  const withNote = (system: string) => (note ? `${system}\n\n${note}` : system);
   if (opts.mode === "conversation") {
-    return [{ role: "system", content: conversationSystemPrompt(opts.locale) }, ...turns];
+    return [{ role: "system", content: withNote(conversationSystemPrompt(opts.locale)) }, ...turns];
   }
   // Callers answer an empty context with noSourcesAnswer() instead of calling the model.
   const system = groundedSystemPrompt(opts.context.slice(0, CONTEXT_CHAR_LIMIT), opts.locale);
@@ -82,7 +91,7 @@ export function chatRequestMessages(opts: ChatRequest): ChatTurn[] {
   if (turns.length > 1 && last?.role === "user") {
     turns[turns.length - 1] = { ...last, content: last.content + citationReminder(opts.locale) };
   }
-  return [{ role: "system", content: system }, ...turns];
+  return [{ role: "system", content: withNote(system) }, ...turns];
 }
 
 export async function streamChatCompletion(

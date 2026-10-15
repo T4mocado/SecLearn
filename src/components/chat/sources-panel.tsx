@@ -18,6 +18,7 @@ import {
   type MessageSource,
 } from "@/lib/sources";
 import { cn } from "@/lib/utils";
+import { scrollIntoContainer } from "@/lib/scroll";
 
 const VERDICT_STYLE: Record<JudgeVerdict, string> = {
   relevant: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
@@ -250,9 +251,8 @@ export function SourcesPanel({
       list.scrollTo({ top: 0 });
       return;
     }
-    list
-      .querySelector(`[data-source-index="${focusIndex}"]`)
-      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const card = list.querySelector<HTMLElement>(`[data-source-index="${focusIndex}"]`);
+    if (card) scrollIntoContainer(list, card);
   }, [focusIndex, sources]);
 
   return (
@@ -265,7 +265,7 @@ export function SourcesPanel({
       />
       <aside
         aria-label={t("sourcesTitle")}
-        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-xl xl:sticky xl:top-0 xl:z-auto xl:h-screen xl:w-96 xl:max-w-none xl:shrink-0 xl:shadow-none"
+        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-xl xl:sticky xl:top-0 xl:z-auto xl:h-full xl:w-96 xl:max-w-none xl:shrink-0 xl:shadow-none"
       >
         <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-3">
           <div className="min-w-0">

@@ -338,3 +338,9 @@ export function parseSources(value: unknown): MessageSource[] | null {
       return { ...s, support, judge };
     });
 }
+
+/** Chunk ids of the sources an answer actually cites, in source order. */
+export function citedChunkIds(content: string, sources: MessageSource[]): string[] {
+  const cited = citedIndexes(content, sources.length);
+  return sources.filter((s) => cited.has(s.index)).map((s) => s.chunkId);
+}

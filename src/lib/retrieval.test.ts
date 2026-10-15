@@ -64,24 +64,36 @@ test("searchQueries does not call the LLM in mock mode or when the question is E
   assert.deepEqual(await searchQueries("strong password"), ["strong password"]);
 });
 
-test("historyForRewrite keeps the last turns, shortened and without citations", async () => {
+test("historyForRewrite lists every earlier question in order plus the last answer, shortened", async () => {
   const { historyForRewrite } = await import("./query");
   const long = "Mật khẩu mạnh nên dài [1]. " + "x".repeat(400);
   const out = historyForRewrite([
-    { role: "user", content: "câu cũ nhất" },
-    { role: "assistant", content: "trả lời cũ nhất" },
+    { role: "user", content: "SQL injection là gì?" },
+    { role: "assistant", content: "SQLi là ... [1]" },
+    { role: "user", content: "Còn XSS thì sao?" },
+    { role: "assistant", content: "XSS là ... [2]" },
     { role: "user", content: "Mật khẩu mạnh cần những gì?" },
     { role: "assistant", content: long },
-    { role: "user", content: "Còn MFA thì sao?" },
-    { role: "assistant", content: "MFA chặn 99.9% [2]." },
   ]);
   const lines = out.split("\n");
-  assert.equal(lines.length, 4);
-  assert.equal(lines[0], "User: Mật khẩu mạnh cần những gì?");
-  assert.ok(lines[1]!.startsWith("Assistant: Mật khẩu mạnh nên dài.") && lines[1]!.endsWith("…"));
-  assert.ok(lines[1]!.length <= "Assistant: ".length + 301);
-  assert.equal(lines[3], "Assistant: MFA chặn 99.9%.");
+  assert.deepEqual(lines.slice(0, 4), [
+    "Earlier questions (oldest first):",
+    "1. SQL injection là gì?",
+    "2. Còn XSS thì sao?",
+    "3. Mật khẩu mạnh cần những gì?",
+  ]);
+  assert.ok(lines[4]!.startsWith("Last answer: Mật khẩu mạnh nên dài.") && lines[4]!.endsWith("…"));
+  assert.ok(lines[4]!.length <= "Last answer: ".length + 301);
+  assert.equal(lines.length, 5);
   assert.equal(historyForRewrite([]), "");
+});
+
+test("historyForRewrite keeps only the last 10 questions", async () => {
+  const { historyForRewrite } = await import("./query");
+  const history = Array.from({ length: 12 }, (_, i) => ({ role: "user" as const, content: `câu ${i + 1}` }));
+  const lines = historyForRewrite(history).split("\n");
+  assert.equal(lines.length, 11);
+  assert.equal(lines[1], "1. câu 3");
 });
 
 test("searchQueries does not call the LLM in mock mode even with history", async () => {
@@ -94,7 +106,44 @@ test("rewritePrompt: NONE for any topicless message alone, only greetings within
   const alone = rewritePrompt(false);
   assert.match(alone, /instruction like "shorter" or "explain more"\), reply exactly NONE/);
   assert.match(alone, /Never invent a topic/);
+  assert.doesNotMatch(alone, /CONVERSATION/);
   const followUp = rewritePrompt(true);
   assert.match(followUp, /topic of the previous question/);
   assert.match(followUp, /NONE only for greetings or thanks/);
+  assert.match(followUp, /about the conversation itself.*reply exactly CONVERSATION/);
+  assert.match(followUp, /"the second vulnerability" counts topics in the order/);
+  assert.match(followUp, /do not add terms from earlier questions/);
+});
+
+test("planSearch in mock mode searches with the message and never calls the LLM", async () => {
+  const { planSearch } = await import("./query");
+  assert.deepEqual(await planSearch("Tóm tắt lại", [{ role: "user", content: "XSS là gì?" }]), {
+    intent: "search",
+    queries: ["Tóm tắt lại"],
+  });
+});
+
+test("chatRequestMessages adds the citation reminder only to a follow-up question", async () => {
+  const { chatRequestMessages } = await import("./llm");
+  const first = chatRequestMessages({ messages: [{ role: "user", content: "XSS là gì?" }], context: "[1] x", locale: "vi" });
+  assert.equal(first.length, 2);
+  assert.equal(first[1]!.content, "XSS là gì?");
+
+  const history = [
+    { role: "user" as const, content: "SQLi là gì?" },
+    { role: "assistant" as const, content: "SQLi là ..." },
+    { role: "user" as const, content: "Còn XSS?" },
+  ];
+  const follow = chatRequestMessages({ messages: history, context: "[1] x", locale: "vi" });
+  assert.match(follow[0]!.content, /ONLY from the numbered SecLearn document passages/);
+  assert.equal(follow[1]!.content, "SQLi là gì?");
+  assert.match(follow[3]!.content, /^Còn XSS\?\n\n\(Hãy gắn \[n\] sau mỗi câu/);
+  // "Answer only from the passages above" made the model refuse relevant follow-ups (ERRORS.md #22).
+  assert.doesNotMatch(follow[3]!.content, /chỉ dựa trên|ở trên/);
+  assert.equal(history[2]!.content, "Còn XSS?", "caller's history is not mutated");
+
+  const chat = chatRequestMessages({ messages: history, context: "", locale: "vi", mode: "conversation" });
+  assert.match(chat[0]!.content, /asking about this conversation itself/);
+  assert.match(chat[0]!.content, /do not use citation numbers/);
+  assert.equal(chat[3]!.content, "Còn XSS?");
 });

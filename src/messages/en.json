@@ -46,7 +46,7 @@
     "sourcesRelevance": "Relevance {pct}%",
     "sourcesSimilarity": "Similarity {score}",
     "sourcesKeyword": "{score} keyword matches",
-    "sourcesEmpty": "No related document chunks were found; the answer is from the model's general knowledge.",
+    "sourcesEmpty": "This answer uses no document chunks: nothing related was found in the documents, or the question was about the conversation itself.",
     "sourcesUnavailable": "No source data for this answer (it was created before this feature existed, or migrated from a guest session).",
     "suggestions": {
       "1": "What makes a strong password?",

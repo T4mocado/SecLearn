@@ -145,3 +145,60 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
 - **Lưu ý:** `GET /api/admin/documents/[id]/file` gửi `nosniff` nhưng không gửi CSP cho PDF, vì trình xem PDF của Chrome là plugin,
   `sandbox`/`object-src` có thể chặn nó (không kiểm chứng được trong browser pane, pane chỉ tải file về). Tài liệu seed (markdown)
   trả `text/plain` kèm `default-src 'none'; sandbox`. File ngoài `UPLOAD_DIR`, thiếu file, hay đường dẫn là thư mục đều trả 404.
+
+## 21. Quản lý ngữ cảnh: tóm tắt bị từ chối, viết lại câu hỏi nhầm chủ đề, mất trích dẫn ở lượt sau
+- **Phát hiện bằng hội thoại 10 câu** (SQLi, rồi XSS, so sánh, "câu đầu tiên", ORM, tóm tắt, "lỗ hổng thứ hai"). LLM không quên ngữ cảnh
+  vì nhận đủ lịch sử, nhưng các bước xung quanh làm hỏng 5/10 câu:
+  1. "Tóm tắt lại những gì đã thảo luận": viết lại trả `NONE`, 0 nguồn, nên nhận câu cố định "không tìm thấy".
+  2. Viết lại câu hỏi chỉ thấy 4 tin nhắn cuối: "lỗ hổng thứ hai" (XSS ở câu 5) thành truy vấn SQLi/ORM;
+     "Còn XSS thì sao?" bị trộn "prepared statement parameterized query".
+  3. Từ câu 6 trở đi câu trả lời không còn `[n]` (câu 6, 8, 10). Lịch sử gửi cho LLM đã bị xoá `[n]` và model bắt chước.
+     A/B câu so sánh: xoá `[n]` thì 1/2 lần không trích dẫn, giữ `[n]` thì 2/2 lần trích dẫn đủ.
+  4. "Câu hỏi đầu tiên mình hỏi là gì?" kéo về 3 đoạn tài liệu "Security Questions" không liên quan.
+- **Cách xử lý:**
+  - `planSearch` (`src/lib/query.ts`) trả thêm `intent`. `CONVERSATION` cho câu hỏi về chính hội thoại thì không truy xuất, không nguồn;
+    LLM trả lời bằng `conversationSystemPrompt` chỉ từ lịch sử. Hỏi lại câu trả lời trước ở dạng khác ("Trả lời ngắn gọn lại ý vừa rồi")
+    vẫn đi tìm tài liệu để giữ trích dẫn.
+  - `historyForRewrite` gửi tối đa 10 câu hỏi trước (đánh số, mỗi câu 200 ký tự) cùng câu trả lời cuối (300 ký tự).
+    Prompt dặn đếm chủ đề theo thứ tự, không thêm thuật ngữ của câu hỏi cũ, và truy vấn phải bằng tiếng Anh.
+  - `citationReminder` được nối vào câu hỏi mới nhất khi có lịch sử (chỉ trong lời gọi LLM, không lưu).
+  - `answerQuestion` (`src/lib/chat-answer.ts`) gom logic chung của hai route chat.
+- **Kết quả:** 10/10 câu đúng. Mọi câu trả lời từ tài liệu đều có `[n]`; câu 7 và câu 9 trả lời từ hội thoại, không kèm nguồn.
+  Phân loại ổn định 18/18 (6 trường hợp, mỗi trường hợp 3 lần).
+- **Chưa xử lý:** route nạp lịch sử bằng `orderBy: asc, take: 40`, tức 40 tin nhắn **cũ nhất**. Từ lượt 21 trở đi, các lượt mới nhất
+  không được gửi cho LLM. Đã sửa ở #24.
+
+## 22. Hỏi tiếp về câu trả lời trước thì bị từ chối dù tài liệu có
+- **Triệu chứng:** Sau câu trả lời về phòng tránh DDoS, "nói cho tôi biết nhiều hơn về giới hạn tài nguyên" và "nói thêm về phòng chống DoS
+  ở mức ứng dụng" đều nhận "Các đoạn tài liệu được đánh số ở trên không đề cập…", dù truy xuất đã lấy đúng đoạn
+  (DoS Cheat Sheet #19, AI chấm sát câu hỏi 85%; 5 đoạn rerank 0,64–0,76).
+- **Nguyên nhân** (chạy lại đúng 2 lượt với lịch sử và nguồn trong DB, mỗi biến thể 3 lần):
+  1. Câu nhắc của #21 ("Trả lời *chỉ* dựa trên các đoạn… *ở trên*") làm model quá khắt khe: từ chối 6/6; bỏ câu nhắc 5/6;
+     câu nhắc chỉ yêu cầu gắn [n] 2/6.
+  2. Model chép lời từ chối cũ trong lịch sử: không có câu nhắc vẫn lặp nguyên văn câu từ chối trước 3/3.
+  3. Luật 3 bị hiểu quá sát chữ (đòi một mục đúng tên chủ đề). Đoạn gốc của ý "giới hạn tài nguyên" (Docker #23) không được lấy lại.
+- **Cách xử lý:**
+  - `citationReminder` chỉ yêu cầu gắn [n].
+  - Luật 3: nội dung liên quan được tính dù khác tên gọi; trả lời phần có trước, chỉ từ chối khi không có đoạn nào liên quan.
+  - `withoutRefusals` bỏ cả cặp câu hỏi và lời từ chối khỏi lịch sử gửi LLM. Nếu chỉ bỏ lời từ chối, model trả lời bù câu hỏi bị bỏ lửng
+    bằng dữ liệu của câu trả lời cũ và gắn sai [n] (3/3).
+  - `carryChunkIds`: các đoạn câu trả lời trước đã trích dẫn được thêm vào ứng viên trước bước rerank (chỉ cho người dùng đăng nhập).
+- **Kết quả:** từ chối 0/6 (trước là 6/6). Còn 1/3 lần câu "DoS ở mức ứng dụng" chèn chi tiết Docker từ câu trả lời cũ và gắn [4] sai;
+  hậu kiểm chấm 0,001 nên giao diện cảnh báo.
+
+## 23. Mở panel nguồn rồi gửi câu hỏi: cả khung bị đẩy lên 49px
+- **Nguyên nhân:** Panel nguồn `xl:h-screen` (100vh) nằm dưới thanh tài khoản desktop cao 49px (`py-1.5`, avatar 36px, viền 1px),
+  nên tràn 49px. Thẻ gốc `overflow-hidden` giấu phần tràn, nhưng `scrollIntoView` (cuộn xuống cuối mỗi token) cuộn được cả thẻ
+  `overflow-hidden`. Mô phỏng ở 1920×1000: panel đóng 0px, panel mở 49px.
+- **Cách xử lý:** panel dùng `xl:h-full`. Cuộn xuống cuối và cuộn tới thẻ nguồn dùng `scrollToEnd` / `scrollIntoContainer`
+  (`src/lib/scroll.ts`), chỉ cuộn đúng khung chứa, không dùng `scrollIntoView`. Trong mô phỏng, mỗi cách đều cho 0px.
+
+## 24. Hội thoại dài hơn 40 tin nhắn: model không thấy các lượt mới nhất
+- **Triệu chứng:** Chạy 22 câu liên tiếp. Ở câu 22, "Giải thích chi tiết hơn về cách làm đó" (ngay sau câu hỏi về thu hồi JWT) nhận
+  "câu hỏi trước của bạn hỏi 'JWT nên lưu ở đâu phía client?'", tức câu 20.
+- **Nguyên nhân:** route `conversations/[id]/messages` nạp lịch sử bằng `orderBy: asc, take: 40`, tức 40 tin nhắn **cũ nhất**.
+  Từ câu 22 (42 tin nhắn trước đó), các lượt mới nhất bị bỏ khỏi cả lời gọi LLM, bước viết lại câu hỏi và `carryChunkIds`
+  (lấy nhầm nguồn của câu trả lời 20). Câu viết lại của câu 22 là "JWT client-side storage best practices".
+- **Cách xử lý:** nạp `orderBy: desc, take: 40` rồi đảo lại thứ tự thời gian.
+- **Kết quả:** gửi tiếp vào đúng hội thoại đó (lượt 23–25, đã có hơn 40 tin nhắn): "cách làm đó" được giải thích là thu hồi JWT
+  (TSL, denylist), nguồn JWT Cheat Sheet #38–#41 (rerank 0,81–0,95). "Câu hỏi ngay trước câu này" trả đúng lượt 24.

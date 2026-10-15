@@ -12,6 +12,7 @@ import { SourcesPanel } from "@/components/chat/sources-panel";
 import { clearDraft, loadDraft, saveDraft, type DraftMessage } from "@/lib/draft";
 import { parseSources, type MessageSource } from "@/lib/sources";
 import { cn } from "@/lib/utils";
+import { scrollToEnd } from "@/lib/scroll";
 
 type ConversationSummary = {
   id: string;
@@ -72,12 +73,12 @@ export function ChatPanel() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sourceView, setSourceView] = useState<{ idx: number; focus: number | null } | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const migratedRef = useRef(false);
 
   const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesRef.current) scrollToEnd(messagesRef.current);
   };
 
   const refreshQuota = useCallback(async () => {
@@ -394,7 +395,10 @@ export function ChatPanel() {
           </div>
         </div>
 
-        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 overflow-y-auto px-4 pb-36 pt-2">
+        <div
+          ref={messagesRef}
+          className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 overflow-y-auto px-4 pb-36 pt-2"
+        >
           {messages.length === 0 ? (
             <div className="msg-enter flex flex-1 flex-col items-center justify-center text-center">
               <h1 className="text-4xl font-semibold tracking-tight text-[var(--accent)] md:text-5xl">
@@ -475,7 +479,6 @@ export function ChatPanel() {
               {error}
             </div>
           )}
-          <div ref={bottomRef} />
         </div>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[var(--bg-glow)] via-[var(--bg-glow)]/80 to-transparent px-4 pb-4 pt-10">

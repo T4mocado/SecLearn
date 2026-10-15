@@ -1,9 +1,7 @@
 import { chatMessageSchema } from "@/lib/validations";
 import { getGuestQuota, getOrCreateGuestKey, incrementGuestQuota } from "@/lib/guest";
-import { retrieveChunks, buildContext } from "@/lib/rag";
-import { stripCitations } from "@/lib/sources";
-import { assertLlmConfigured, streamChatCompletion } from "@/lib/llm";
-import { fixedAnswer, noSourcesAnswer } from "@/lib/grounding";
+import { assertLlmConfigured } from "@/lib/llm";
+import { answerQuestion } from "@/lib/chat-answer";
 import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
 import { finalizeSources } from "@/lib/verify";
@@ -43,25 +41,15 @@ export async function POST(req: Request) {
       return jsonError("Guest limit reached. Please sign in to continue.", 403, "GUEST_LIMIT");
     }
 
-    const history = (parsed.data.history ?? []).map((m) => ({
-      role: m.role,
-      content: m.role === "assistant" ? stripCitations(m.content) : m.content,
-    }));
-    const chunks = await retrieveChunks({
-      query: parsed.data.content,
-      visibilities: ["public"],
+    // As sent by the client: answerQuestion drops refusals and strips the [n] markers itself.
+    const history = (parsed.data.history ?? []).map((m) => ({ role: m.role, content: m.content }));
+    const { tokens, sources } = await answerQuestion({
+      question: parsed.data.content,
       history,
+      visibilities: ["public"],
+      locale,
+      signal: req.signal,
     });
-    const { context, sources } = buildContext(chunks);
-    // Nothing relevant in the documents: answering would mean using the model's own knowledge.
-    const tokens = sources.length
-      ? await streamChatCompletion({
-          messages: [...history, { role: "user", content: parsed.data.content }],
-          context,
-          locale,
-          signal: req.signal,
-        })
-      : fixedAnswer(noSourcesAnswer(locale));
 
     const stream = await streamLlmToSse({
       tokens,

@@ -46,7 +46,7 @@
     "sourcesRelevance": "Độ liên quan {pct}%",
     "sourcesSimilarity": "Tương đồng {score}",
     "sourcesKeyword": "Khớp {score} từ khoá",
-    "sourcesEmpty": "Không tìm thấy đoạn tài liệu liên quan; câu trả lời dựa trên kiến thức chung của model.",
+    "sourcesEmpty": "Câu trả lời này không dùng đoạn tài liệu nào: không tìm thấy nội dung liên quan trong tài liệu, hoặc câu hỏi là về chính cuộc hội thoại.",
     "sourcesUnavailable": "Không có dữ liệu nguồn cho câu trả lời này (tin nhắn được tạo trước khi có tính năng này, hoặc được chuyển từ phiên khách).",
     "suggestions": {
       "1": "Mật khẩu mạnh cần những gì?",

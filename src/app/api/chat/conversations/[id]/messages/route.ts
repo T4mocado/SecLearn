@@ -1,10 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser, jsonAppError, jsonError } from "@/lib/session";
 import { chatMessageSchema } from "@/lib/validations";
-import { retrieveChunks, buildContext } from "@/lib/rag";
-import { stripCitations } from "@/lib/sources";
-import { assertLlmConfigured, streamChatCompletion } from "@/lib/llm";
-import { fixedAnswer, noSourcesAnswer } from "@/lib/grounding";
+import { citedChunkIds, parseSources } from "@/lib/sources";
+import { assertLlmConfigured } from "@/lib/llm";
+import { answerQuestion } from "@/lib/chat-answer";
 import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
 import { finalizeSources } from "@/lib/verify";
@@ -15,6 +14,9 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
+/** Earlier messages sent with a question: the most recent ones. */
+const HISTORY_MESSAGES = 40;
+
 export async function POST(req: Request, { params }: Params) {
   const authz = await requireUser();
   if (authz.error) return authz.error;
@@ -23,9 +25,12 @@ export async function POST(req: Request, { params }: Params) {
   try {
     const conversation = await prisma.conversation.findFirst({
       where: { id, userId: authz.user.id },
-      include: { messages: { orderBy: { createdAt: "asc" }, take: 40 } },
+      // Newest first so `take` keeps the latest turns: ascending kept the first 40, and from the
+      // 22nd question on the model no longer saw the previous one (docs/ERRORS.md #24).
+      include: { messages: { orderBy: { createdAt: "desc" }, take: HISTORY_MESSAGES } },
     });
     if (!conversation) return jsonError("Not found", 404, "NOT_FOUND");
+    conversation.messages.reverse();
 
     const body = await req.json();
     const parsed = chatMessageSchema.safeParse(body);
@@ -61,27 +66,21 @@ export async function POST(req: Request, { params }: Params) {
       });
     }
 
+    // As stored: answerQuestion drops refusals and strips the [n] markers itself.
     const history = conversation.messages.map((m) => ({
       role: m.role as "user" | "assistant" | "system",
-      content: m.role === "assistant" ? stripCitations(m.content) : m.content,
+      content: m.content,
     }));
+    const lastAnswer = conversation.messages.findLast((m) => m.role === "assistant");
 
-    const chunks = await retrieveChunks({
-      query: parsed.data.content,
-      visibilities: ["public", "authenticated"],
+    const { tokens, sources } = await answerQuestion({
+      question: parsed.data.content,
       history,
+      visibilities: ["public", "authenticated"],
+      locale,
+      carryChunkIds: lastAnswer ? citedChunkIds(lastAnswer.content, parseSources(lastAnswer.sources) ?? []) : [],
+      signal: req.signal,
     });
-    const { context, sources } = buildContext(chunks);
-
-    // Nothing relevant in the documents: answering would mean using the model's own knowledge.
-    const tokens = sources.length
-      ? await streamChatCompletion({
-          messages: [...history, { role: "user", content: parsed.data.content }],
-          context,
-          locale,
-          signal: req.signal,
-        })
-      : fixedAnswer(noSourcesAnswer(locale));
 
     // Set before onDone runs, so the stored message keeps the citation check and judgement.
     let finalSources = sources;

@@ -31,13 +31,72 @@ export function groundedSystemPrompt(context: string, locale: string): string {
     "Rules:",
     "1. Use only facts stated in the passages. Do not add facts, examples, numbers, tools or advice from your own knowledge, even when you are sure they are correct.",
     "2. Cite every sentence that states a fact right after it, e.g. [1] or [2][3]. Only cite numbers that appear below, and do not add a separate reference list.",
-    `3. If the passages cover only part of the question, answer that part and say plainly which part the documents do not cover (e.g. "${locale === "vi" ? "Tài liệu không đề cập đến" : "The documents do not cover"} ..."). If they do not answer it at all, say so in one or two sentences and stop.`,
+    "3. A passage is relevant when it has information on the subject, even in other words or without a heading of that name " +
+      '(e.g. "limit file upload size" is about limiting resources). Answer first with what the relevant passages say. ' +
+      `Then, if part of the question is not covered, say which part (e.g. "${locale === "vi" ? "Tài liệu không đề cập đến" : "The documents do not cover"} ..."). ` +
+      "Only when no passage has anything on the subject, say so in one or two sentences.",
     "4. You may rephrase, translate, summarise and structure the passages (headings, lists). Passages may be in English.",
     "5. Earlier answers in this conversation were also based on the documents; you may refer to them, but do not add facts that are not in the passages below.",
     "6. Never invent CVE numbers or claim access to private data.",
     `Answer in ${locale === "vi" ? "Vietnamese" : "English"}.`,
     `Passages:\n---\n${context}\n---`,
   ].join("\n");
+}
+
+/**
+ * Questions about the conversation itself ("summarise", "what did I ask first") are answered from
+ * the earlier messages only: they were document-based, and nothing new may be added.
+ */
+export function conversationSystemPrompt(locale: string): string {
+  return [
+    "You are SecLearn, a beginner cybersecurity tutor. The user is asking about this conversation itself",
+    "(for example a summary of what was discussed, or what they asked earlier).",
+    "Answer only from the earlier messages of this conversation. Do not add facts, examples or advice that are not in them,",
+    "and do not use citation numbers like [1].",
+    "If the user actually asks for new information, say that you can answer it if they ask it as a question about the documents.",
+    `Answer in ${locale === "vi" ? "Vietnamese" : "English"}.`,
+  ].join(" ");
+}
+
+/**
+ * Appended to the latest question when there are earlier turns. Earlier answers reach the model
+ * without their [n] markers (they point at older passages), and in long chats the model copied that
+ * style and stopped citing (docs/ERRORS.md #21); restating the rule right before the question keeps it.
+ * Only about citing: "answer only from the passages above" made it refuse follow-ups whose passages
+ * were relevant, 6/6 times (docs/ERRORS.md #22).
+ */
+export function citationReminder(locale: string): string {
+  return locale === "vi"
+    ? "\n\n(Hãy gắn [n] sau mỗi câu nêu thông tin lấy từ các đoạn tài liệu, kể cả khi các câu trả lời trước không có [n].)"
+    : "\n\n(Put [n] after every sentence that states information from the passages, even though earlier answers show no [n].)";
+}
+
+/** Short replies saying the documents lack something: the fixed reply, or a model refusal. */
+const REFUSAL_RE =
+  /không (?:tìm thấy nội dung liên quan|đề cập|có thông tin)|không thể (?:nói|trả lời)|could not find anything related|do(?:es)? not (?:cover|mention)|can(?:not|'t) (?:answer|say more)/i;
+const REFUSAL_MAX = 400;
+
+/** Needs the stored answer with its [n] markers: a short cited answer saying part is missing is not a refusal. */
+export function isRefusal(content: string): boolean {
+  return content.length <= REFUSAL_MAX && REFUSAL_RE.test(content) && !/\[\d{1,2}\]/.test(content);
+}
+
+/**
+ * Earlier turns as sent to the model, without refused exchanges: a refused follow-up was copied
+ * word for word by the next one, 3/3 times, though its passages were relevant (docs/ERRORS.md #22).
+ * The question goes too: left unanswered, the model answered it again from older answers and cited
+ * the new passages for those facts (3/3).
+ */
+export function withoutRefusals<T extends { role: string; content: string }>(history: T[]): T[] {
+  const out: T[] = [];
+  for (const m of history) {
+    if (m.role === "assistant" && isRefusal(m.content)) {
+      if (out.at(-1)?.role === "user") out.pop();
+      continue;
+    }
+    out.push(m);
+  }
+  return out;
 }
 
 const CITATION_RE = /\[(\d{1,2})\]/g;

@@ -10,7 +10,7 @@ import {
   missingLlmKeyError,
 } from "@/lib/errors";
 import { CONTEXT_CHAR_LIMIT } from "@/lib/rag";
-import { groundedSystemPrompt } from "@/lib/grounding";
+import { citationReminder, conversationSystemPrompt, groundedSystemPrompt } from "@/lib/grounding";
 
 export type ChatTurn = { role: "user" | "assistant" | "system"; content: string };
 
@@ -62,15 +62,34 @@ function createLlmClient() {
   return new OpenAI({ apiKey: env.OPENAI_API_KEY });
 }
 
-export async function streamChatCompletion(opts: {
+type ChatRequest = {
   messages: ChatTurn[];
   context: string;
   locale: string;
-  signal?: AbortSignal;
-}): Promise<AsyncGenerator<string, void, unknown>> {
-  const env = getEnv();
+  /** `documents` (default): grounded in `context`. `conversation`: about the chat itself, no passages. */
+  mode?: "documents" | "conversation";
+};
+
+/** System prompt plus turns as sent to the model; the citation reminder rides on the latest question. */
+export function chatRequestMessages(opts: ChatRequest): ChatTurn[] {
+  const turns = opts.messages.filter((m) => m.role !== "system");
+  if (opts.mode === "conversation") {
+    return [{ role: "system", content: conversationSystemPrompt(opts.locale) }, ...turns];
+  }
   // Callers answer an empty context with noSourcesAnswer() instead of calling the model.
   const system = groundedSystemPrompt(opts.context.slice(0, CONTEXT_CHAR_LIMIT), opts.locale);
+  const last = turns.at(-1);
+  if (turns.length > 1 && last?.role === "user") {
+    turns[turns.length - 1] = { ...last, content: last.content + citationReminder(opts.locale) };
+  }
+  return [{ role: "system", content: system }, ...turns];
+}
+
+export async function streamChatCompletion(
+  opts: ChatRequest & { signal?: AbortSignal },
+): Promise<AsyncGenerator<string, void, unknown>> {
+  const env = getEnv();
+  const messages = chatRequestMessages(opts);
 
   // Mock ONLY when explicitly configured — never silent fallback for deepseek/openai.
   if (env.LLM_PROVIDER === "mock") {
@@ -86,7 +105,7 @@ export async function streamChatCompletion(opts: {
       {
         model,
         stream: true,
-        messages: [{ role: "system", content: system }, ...opts.messages.filter((m) => m.role !== "system")],
+        messages,
         temperature: 0.2,
         // DeepSeek-flash defaults to thinking mode; disable for snappy tutor replies.
         ...(env.LLM_PROVIDER === "deepseek"

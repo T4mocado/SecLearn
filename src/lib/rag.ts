@@ -34,13 +34,23 @@ export async function retrieveChunks(opts: {
   visibilities: DocVisibility[];
   /** Earlier turns, to rewrite a follow-up ("Trả lời ngắn gọn") into a standalone search query. */
   history?: ChatTurn[];
+  /** Queries already planned by the caller (`planSearch`); skips the rewrite call. */
+  queries?: string[];
+  /**
+   * Chunks the previous answer cited, added to the candidates: "tell me more about X" must see the
+   * passage X came from, which a fresh search may miss (docs/ERRORS.md #22). Reranked like the rest.
+   */
+  carryChunkIds?: string[];
 }): Promise<RetrievedChunk[]> {
   const env = getEnv();
   const topK = env.RAG_TOP_K;
   const limit = env.RERANK_URL.trim() ? Math.max(env.RAG_CANDIDATES, topK) : topK;
-  const queries = await searchQueries(opts.query, opts.history);
+  const queries = opts.queries?.length ? opts.queries : await searchQueries(opts.query, opts.history);
   const candidates = mergeCandidates(
-    await Promise.all(queries.map((query) => retrieveCandidates({ query, visibilities: opts.visibilities, limit }))),
+    await Promise.all([
+      ...queries.map((query) => retrieveCandidates({ query, visibilities: opts.visibilities, limit })),
+      fetchChunksById(opts.carryChunkIds ?? [], opts.visibilities, queries.at(-1)!),
+    ]),
   );
 
   let scores: number[] | null;
@@ -58,6 +68,35 @@ export async function retrieveChunks(opts: {
     candidates.map((c, i) => ({ ...c, rerankScore: scores[i]! })),
     { topK, minRelevance: env.RAG_MIN_RELEVANCE, minKeep: env.RAG_MIN_KEEP },
   );
+}
+
+/** Specific chunks (still ready and visible), scored by cosine against `query` like search results. */
+async function fetchChunksById(ids: string[], visibilities: DocVisibility[], query: string): Promise<RetrievedChunk[]> {
+  if (!ids.length) return [];
+  try {
+    const lit = vectorLiteral(await embedText(query));
+    const rows = await prisma.$queryRawUnsafe<
+      Array<{ id: string; content: string; documentId: string; documentTitle: string; chunkIndex: number; score: number }>
+    >(
+      `
+      SELECT c.id, c.content, c."documentId", d.title AS "documentTitle", c."chunkIndex",
+             (1 - (c.embedding <=> $1::vector))::float8 AS score
+      FROM "DocumentChunk" c
+      INNER JOIN "Document" d ON d.id = c."documentId"
+      WHERE c.id = ANY($2::text[])
+        AND d.status = 'ready'
+        AND d.visibility::text = ANY($3::text[])
+        AND c.embedding IS NOT NULL
+      `,
+      lit,
+      ids,
+      visibilities,
+    );
+    return rows.map((r) => ({ ...r, method: "vector" as const }));
+  } catch (err) {
+    console.warn("[rag] could not load the previous answer's chunks:", err instanceof Error ? err.message : err);
+    return [];
+  }
 }
 
 /** Union of each query's candidates, best retrieval score per chunk, highest first. */

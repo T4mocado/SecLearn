@@ -5,10 +5,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { groundedSystemPrompt, noSourcesAnswer, uncitedSentences } from "./grounding";
+import { groundedSystemPrompt, isRefusal, noSourcesAnswer, uncitedSentences, withoutRefusals } from "./grounding";
 import { inlineDisposition, isInsideDir } from "./document-file";
 import { remarkCitations } from "./remark-citations";
-import { citationClaims, citedClauses } from "./sources";
+import { citationClaims, citedChunkIds, citedClauses, type MessageSource } from "./sources";
 
 const texts = (content: string, count = 3) => uncitedSentences(content, count).map((r) => content.slice(r.start, r.end));
 
@@ -23,6 +23,44 @@ test("the prompt forbids outside knowledge and requires citations", () => {
   assert.match(prompt, /Answer in Vietnamese/);
   assert.ok(prompt.includes("[1] (source: A)\nText"));
   assert.doesNotMatch(prompt, /general guidance/);
+  // Related content counts even under another name; refuse only when nothing is related (ERRORS.md #22).
+  assert.match(prompt, /even in other words or without a heading of that name/);
+  assert.match(prompt, /Only when no passage has anything on the subject/);
+});
+
+// --- Refusals are not fed back to the model ---
+
+const REFUSED_DOS =
+  "Các đoạn tài liệu được đánh số ở trên không đề cập đến \"phòng chống DoS ở mức ứng dụng\" như một mục riêng, nên tôi không thể nói thêm về chủ đề này dựa trên các đoạn đó.";
+
+test("isRefusal: fixed reply and short refusals, not cited or long answers", () => {
+  assert.equal(isRefusal(noSourcesAnswer("vi")), true);
+  assert.equal(isRefusal(noSourcesAnswer("en")), true);
+  assert.equal(isRefusal(REFUSED_DOS), true);
+  assert.equal(isRefusal("The documents do not cover resource limits, so I cannot say more."), true);
+  assert.equal(isRefusal("Tài liệu không đề cập đến WAF, nhưng nêu cần giới hạn kích thước request [1]."), false);
+  assert.equal(isRefusal(`${"Giới hạn tài nguyên gồm bộ nhớ, CPU và số tiến trình. ".repeat(10)}Tài liệu không đề cập đến WAF.`), false);
+  assert.equal(isRefusal("Câu hỏi đầu tiên bạn hỏi mình là: \"SQL injection là gì?\""), false);
+});
+
+test("withoutRefusals drops refused exchanges, question included", () => {
+  const history = [
+    { role: "user", content: "DDoS là gì?" },
+    { role: "assistant", content: "DoS làm cạn tài nguyên [1]." },
+    { role: "user", content: "nói thêm về DoS ở mức ứng dụng" },
+    { role: "assistant", content: REFUSED_DOS },
+    { role: "user", content: "nói thêm về giới hạn tài nguyên" },
+  ];
+  assert.deepEqual(
+    withoutRefusals(history).map((m) => m.content),
+    ["DDoS là gì?", "DoS làm cạn tài nguyên [1].", "nói thêm về giới hạn tài nguyên"],
+  );
+});
+
+test("citedChunkIds returns the chunks an answer cites", () => {
+  const sources = [1, 2, 3].map((index) => ({ index, chunkId: `c${index}` }) as MessageSource);
+  assert.deepEqual(citedChunkIds("Giới hạn tài nguyên [3]. Thiết kế chịu lỗi [1][9].", sources), ["c1", "c3"]);
+  assert.deepEqual(citedChunkIds("Không có trích dẫn.", sources), []);
 });
 
 test("the no-sources reply says the documents lack it, in the chat language", () => {

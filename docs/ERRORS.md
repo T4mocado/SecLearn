@@ -333,3 +333,64 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
   - Câu tiếng Anh đầu tiên không có lịch sử không qua bước viết lại, nên không được tách chủ đề.
   - Menu nên được bỏ lúc ingest (`pdf-cleanup`) rồi reindex; đoạn "A10 …" không mang tiêu đề mục "OWASP Top 10" nên model khó nối hai ý.
   - Bộ 3 lần cuối, câu 18–19 chép nguyên câu tiếng Anh của tài liệu vào câu trả lời tiếng Việt; lần chạy trước cùng code thì không. Chưa rõ nguyên nhân.
+
+## 30. Đoạn tài liệu bị cắt giữa câu; menu trang web lẫn vào kho (lỗi H)
+- **Triệu chứng:** câu trả lời có "…", "(phần nội dung tiếp theo không có trong đoạn trích)" (bộ 3: 2–5 câu mỗi lần chạy), hậu kiểm chấm 0,000.
+  Đoạn "A10 Server-Side Request Forgery (SSRF)" nằm giữa một đoạn về Monitoring, không mang tiêu đề mục.
+- **Nguyên nhân:**
+  - `chunkMarkdown` cắt cứng mỗi 800 ký tự tại dấu cách: 5298/5684 đoạn (93%) kết thúc giữa câu, 4668 (82%) bắt đầu giữa câu.
+  - 138/141 tài liệu là trang OWASP Cheat Sheet in ra PDF: đầu trang có "Skip to content", menu liệt kê mọi cheat sheet và hai mục lục; cuối trang có
+    footer "©Copyright … Made with Material for MkDocs". Menu là 769 đoạn (#29 lọc lúc truy xuất). Tiêu đề mục in dạng "Monitoring¶".
+- **Cách xử lý:**
+  - `removeSiteChrome` (`src/lib/pdf-cleanup.ts`, gọi trong `extractPdfText`): với trang OWASP in ra, bỏ mọi thứ trước tiêu đề `¶` đầu tiên và footer;
+    đổi dòng "Tiêu đề¶" thành "## Tiêu đề". Tài liệu khác (WSTG, NIST) giữ nguyên.
+  - `chunkMarkdown` chuyển sang `src/lib/chunking.ts` và viết lại: tách câu (dấu . ! ? rồi khoảng trắng; xuống dòng đơn không phải ranh giới vì PDF
+    ngắt dòng giữa câu; mảnh < 25 ký tự như "2." nhập vào câu sau), gom câu đến 800 ký tự. Tiêu đề mở đoạn mới khi đoạn đang gom đã ≥ 25% kích thước;
+    đoạn bắt đầu giữa mục mang tiêu đề mục ở đầu. Chồng lấp bằng các câu trọn vẹn ở cuối vừa 80 ký tự. Khối không có dấu câu dài hơn 800 ký tự (code,
+    danh sách) cắt ở xuống dòng.
+  - Đánh chỉ mục lại toàn bộ (`npm run db:reindex`, 76 giây, 141/141 tài liệu). Bản cũ sao lưu ở schema `seclearn_backup`
+    (`DocumentChunk_20261016`, `Document_20261016`), ngoài schema `public` nên `prisma db push` không đụng tới.
+- **Kết quả:**
+  - Kho mới: 5945 đoạn, trung bình 578 ký tự (trước 786). Kết thúc không có dấu câu 15,6% (còn lại là code, danh sách, mục lục WSTG); bắt đầu bằng chữ
+    thường 83 đoạn (1,4%); 0 đoạn menu; 71,9% đoạn bắt đầu bằng tiêu đề mục. Đoạn A10 của DotNet giờ là `## A10 Server-Side Request Forgery (SSRF)` + nội dung.
+  - 7 ca truy xuất của #29: 11/13 → 12/13 chủ đề. "Lưu mật khẩu trong database" lấy được đoạn khuyến nghị Argon2id (0,86, trước 0,05).
+  - Chạy lại 2 bộ 20 câu: trích dẫn yếu (< 0,1) bộ 2 13,7% → 8,7%, bộ 3 13,4% → 4,3% (chung 13,5% → 6,4%). Không câu trả lời nào còn "…" hay
+    "phần tiếp theo không có trong đoạn trích". "IDOR thuộc mục nào trong OWASP Top 10" trả lời BAC xếp số một OWASP Top Ten 2021, nhắc
+    "A01 Broken Access Control" (chưa xử lý ở #29). "SSRF thuộc mục nào" trả lời A10 từ hai nguồn. "Lưu mật khẩu" trả lời Argon2id, bcrypt, PBKDF2 kèm salt.
+  - 76/76 test qua (7 test mới trong `src/lib/chunking.test.ts`), lint sạch.
+- **Chưa xử lý / lưu ý:**
+  - Thời gian trả lời trung bình 8,6–8,7 giây (chạy tuần tự), cao hơn lần đầu (6,5–7,4). Bước viết lại câu hỏi lần này mất 1,2–1,6 giây (trước 0,6–1,0),
+    tức DeepSeek chậm hơn; chưa tách được phần do kho mới.
+  - Các câu trả lời cũ lưu `chunkId` của kho cũ: với hội thoại cũ, đoạn mang sang (#26) không còn tìm thấy; panel nguồn vẫn hiện vì nguồn lưu kèm nội dung.
+  - Câu 4 bộ 2 vẫn gắn 8 ý lấy từ câu trả lời trước (các bước kiểm thử IDOR) vào `[1]`: lỗi #26, không phải do cắt đoạn.
+  - WSTG và NIST không có tiêu đề `¶`, nên đoạn của chúng không mang tiêu đề mục. Bộ lọc menu lúc truy xuất (#29) vẫn giữ cho tài liệu tải lên sau này.
+
+## 31. Đoạn điểm rerank rất thấp vẫn được dùng; bước dịch trả NONE cho câu hỏi thật (lỗi G)
+- **Triệu chứng:** câu trả lời dùng nguồn rerank 0,01–0,06 (Docker DoS trong câu về phòng chống IDOR, "châu Âu" với nguồn 0,01–0,02, câu CVE với nguồn
+  0,03–0,09). Trong 322 câu trả lời đã lưu, nguồn < 0,3 vẫn được trích 60–75%, câu gắn vào chúng yếu (< 0,1) 15–24% so với 8–10% ở nguồn ≥ 0,5,
+  judge chấm độ liên quan 40–52 so với 68–79. Theo tỷ lệ với nguồn tốt nhất cùng câu: dưới 0,1 lần thì 40–43% câu gắn vào là yếu, từ 0,1 lần trở lên 11–14%.
+- **Nguyên nhân:**
+  - `RAG_MIN_RELEVANCE` = 0,01 và `RAG_MIN_KEEP` = 2 đặt cho câu tiếng Việt chỉ rerank bằng chính nó (#10, #17); từ #17 câu tiếng Việt có bản dịch
+    tiếng Anh, nhưng ngưỡng vẫn áp cho mọi câu.
+  - Bước dịch (câu đầu, chưa có lịch sử) trả `NONE` cho "Mật khẩu mạnh cần những gì?" (5/6 lần với prompt cũ, 6/6 sau #29) và "Có nên log mật khẩu không?"
+    (6/6): luật "không có chủ đề thì NONE" bị hiểu rộng. Hai câu đó chỉ được rerank bằng tiếng Việt (0,85 và 0,53, nhiều đoạn kèm theo < 0,2).
+  - Tiếng Việt không dấu không được dịch (#17): "phong chong clickjacking the nao" (chưa có lịch sử) tốt nhất 0,021.
+- **Cách xử lý:**
+  - `relevanceFloor` (`src/lib/rag.ts`): khi có câu truy vấn tiếng Anh, bỏ đoạn < `RAG_MIN_RELEVANCE_EN` (0,05) và đoạn < `RAG_RELATIVE_MIN` (0,1) lần đoạn
+    tốt nhất, không bù `RAG_MIN_KEEP` (`selectByRelevance` nhận `relativeMin`). Khi chỉ có câu tiếng Việt (bước dịch lỗi) giữ 0,01 và tối thiểu 2 đoạn.
+  - `rewritePrompt(false)`: `NONE` chỉ cho câu chào, cảm ơn, hay yêu cầu về câu trả lời ("ngắn hơn"); câu về chủ đề bảo mật dù bằng từ thường thì dịch.
+    Chạy 3 lần: "Mật khẩu mạnh", "log mật khẩu" dịch đúng 3/3; "Cảm ơn bạn", "Trả lời ngắn gọn", "Xin chào", "Giải thích kỹ hơn", "Nấu phở" vẫn `NONE` 3/3.
+  - `needsTranslation` (`src/lib/query.ts`) nhận cả tiếng Việt không dấu: một cặp từ ("la gi", "the nao", "phong chong"…) hoặc 2 từ không có trong tiếng Anh
+    ("khong", "duoc"…). Câu tiếng Anh có "the", "co" không bị nhận nhầm (test).
+  - Ứng viên tìm theo từ khóa (#29) giảm từ 20 xuống 10 (`KEYWORD_CANDIDATES`): 7 ca truy xuất vẫn 12/13, truy xuất 0,64–1,4 giây (trước 0,8–2,3).
+- **Kết quả:**
+  - 18 câu thăm dò (`scratch-ctx/g/battery.ts`): mọi câu có trong tài liệu còn nguồn (tốt nhất 0,13–1,0; "Mật khẩu mạnh" 0,97, "log mật khẩu" 0,98,
+    "phong chong clickjacking the nao" 0,97). Luật Việt Nam, CVE-2021-44228, phở, thời tiết, Bitcoin: không nguồn, câu trả lời cố định không gọi LLM.
+    "Nhận biết email phishing" và "ransomware" (tốt nhất 0,010–0,015, kho không có) nay cũng nhận câu trả lời cố định.
+  - Chạy lại 2 bộ 20 câu (tuần tự, so với #30): trích dẫn yếu 8,7% → 6,1% và 4,3% → 3,0% (chung 6,4% → 4,5%); thời gian trung bình 8,6 → 7,9 và
+    8,7 → 8,1 giây, chậm nhất 15,9 → 11,6 giây. Không câu trả lời nào còn dùng nguồn < 0,05 (trước: 3 câu). "Châu Âu" còn 2 nguồn đúng chủ đề (MFA/GDPR 0,30).
+  - 78/78 test qua, lint sạch.
+- **Chưa xử lý / lưu ý:**
+  - Câu prompt injection về CVE vẫn giữ 2 đoạn Micro Frontend (0,15 và 0,07, vượt cả hai ngưỡng); model từ chối đúng nhưng kể nội dung lạc đề.
+  - Câu viết lại lẫn tiếng Việt ("DDoS Distributed Denial of Service là gì") bị coi là không phải tiếng Anh, nên dùng ngưỡng cũ.
+  - Ngưỡng 0,05 dựa trên 18 câu thăm dò và 2 bộ 20 câu; chủ đề có trong kho nhưng ít nội dung có thể bị từ chối. Đổi qua `RAG_MIN_RELEVANCE_EN`.

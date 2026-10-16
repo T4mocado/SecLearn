@@ -36,6 +36,38 @@ function edgeIndexes(count: number): Array<{ i: number; side: "top" | "bottom" }
   return out;
 }
 
+/** A heading as the cheat-sheet site prints it: "Monitoring¶". */
+const PILCROW_HEADING_RE = /^(\S.{0,150}?)\s*¶\s*$/;
+const FOOTER_START_RE = /^©Copyright \d{4} - Cheat Sheets Series Team/;
+const FOOTER_END_RE = /Made with Material for MkDocs/;
+
+/**
+ * OWASP cheat sheets printed from the website start with the site's chrome: "Skip to content", the menu
+ * listing every cheat sheet, and two tables of contents before the first "Title¶" heading; they end with
+ * the site footer. The menu alone was 743 of 5684 chunks (docs/ERRORS.md #29, #30). Drops both and turns
+ * "Heading¶" lines into "## Heading", so chunks can start at sections. Other documents keep their text.
+ */
+export function removeSiteChrome(text: string): string {
+  let lines = text.split("\n");
+  const printedSite = lines.slice(0, 5).some((l) => l.trim() === "Skip to content") && text.includes("OWASP Cheat Sheet Series");
+  if (printedSite) {
+    const first = lines.findIndex((l) => PILCROW_HEADING_RE.test(l.trim()));
+    if (first > 0) lines = lines.slice(first);
+    const footer = lines.findIndex((l) => FOOTER_START_RE.test(l.trim()));
+    if (footer >= 0) {
+      const end = lines.findIndex((l, i) => i >= footer && FOOTER_END_RE.test(l));
+      lines = [...lines.slice(0, footer), ...(end >= 0 ? lines.slice(end + 1) : [])];
+    }
+  }
+  return lines
+    .map((l) => {
+      const heading = PILCROW_HEADING_RE.exec(l.trim());
+      return heading ? `## ${heading[1]}` : l;
+    })
+    .join("\n")
+    .trim();
+}
+
 /**
  * Removes running headers/footers (book/chapter titles, organisation names, URLs, page numbers)
  * by finding edge lines that repeat across many pages. Body text is never touched.

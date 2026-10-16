@@ -30,11 +30,16 @@ const envSchema = z.object({
   RERANK_URL: z.string().optional().default(""),
   /** Vector candidates fetched for the reranker to choose RAG_TOP_K from. */
   RAG_CANDIDATES: z.coerce.number().int().positive().default(20),
-  /** Reranked chunks scoring below this (0..1) are dropped. Kept low: bge-reranker scores Vietnamese
-   *  questions against English chunks far lower (~0.01-0.05 when relevant) than same-language pairs. */
+  /** Reranked chunks scoring below this (0..1) are dropped when only a non-English query scored them (the
+   *  translation failed): bge-reranker scores Vietnamese against English chunks ~0.01-0.05 when relevant. */
   RAG_MIN_RELEVANCE: z.coerce.number().min(0).max(1).default(0.01),
   /** Rerank keeps at least this many chunks when at least one passes RAG_MIN_RELEVANCE (none pass = off topic). */
   RAG_MIN_KEEP: z.coerce.number().int().min(0).default(2),
+  /** Floor when an English query scored the chunks (the question was English or translated). Below it, cited
+   *  chunks drew twice the weak citations; questions whose best chunk was below it were not in the documents. */
+  RAG_MIN_RELEVANCE_EN: z.coerce.number().min(0).max(1).default(0.05),
+  /** With an English query, chunks scoring under this share of the best one are dropped (40% weak citations below). */
+  RAG_RELATIVE_MIN: z.coerce.number().min(0).max(1).default(0.1),
   /** Also retrieve with an English translation of a non-English question (one short LLM call). */
   RAG_TRANSLATE_QUERY: z.enum(["on", "off"]).default("on"),
   /** Post-answer LLM judgement of each chunk's relevance (one extra LLM call per answer). */

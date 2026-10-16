@@ -2,12 +2,12 @@ import { mkdir, writeFile, unlink } from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { getEnv } from "@/lib/env";
-import { chunkMarkdown } from "@/lib/rag";
+import { chunkMarkdown } from "@/lib/chunking";
 import { randomUUID } from "crypto";
 import { assertEmbedConfigured, embedTexts, vectorLiteral } from "@/lib/embed";
 import { isAppError } from "@/lib/errors";
 import { sanitizeTextForDb } from "@/lib/text-sanitize";
-import { removeHeadersFooters } from "@/lib/pdf-cleanup";
+import { removeHeadersFooters, removeSiteChrome } from "@/lib/pdf-cleanup";
 import { enqueueDocument } from "@/lib/ingest-queue";
 
 /** Abort ingest when the embed backend looks down (server off, 402/429) instead of trying every chunk. */
@@ -54,7 +54,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
     console.error("[ingest] pdf-parse failed:", err);
     throw new Error(`PDF parse failed: ${detail} / Không đọc được PDF: ${detail}`);
   }
-  if (!result.pages?.length) return sanitizeTextForDb(result.text || "");
+  if (!result.pages?.length) return sanitizeTextForDb(removeSiteChrome(result.text || ""));
   const { text, removed } = removeHeadersFooters(result.pages.map((p) => p.text));
   if (removed.length) {
     console.info(
@@ -62,7 +62,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
       removed.slice(0, 20),
     );
   }
-  return sanitizeTextForDb(text);
+  return sanitizeTextForDb(removeSiteChrome(text));
 }
 
 function toMarkdown(text: string, title: string): string {

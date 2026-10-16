@@ -27,10 +27,22 @@ export type SearchPlan = { intent: "search" | "conversation"; queries: string[] 
  * Most of the corpus is English, and the cross-encoder scores a Vietnamese question against an
  * English chunk ~100x lower than the same question in English (docs/ERRORS.md #10, #17), so
  * retrieval also searches with an English version of a non-English question.
- * Unaccented Vietnamese ("phong chong xss") looks like English and is not translated.
  */
 export function needsTranslation(query: string): boolean {
-  return NON_ENGLISH_RE.test(query);
+  return NON_ENGLISH_RE.test(query) || looksUnaccentedVietnamese(query);
+}
+
+/** Word pairs of unaccented Vietnamese that English text does not contain. */
+const VI_PAIRS_RE = /\b(?:la gi|the nao|tai sao|lam sao|co nen|phong chong|bao mat|tan cong|mat khau|nhu the|cach nao|nhung gi)\b/i;
+/** Unaccented Vietnamese words that are not English words. */
+const VI_WORDS_RE = /\b(?:khong|duoc|nhung|cua|nen|voi|cach|chong|gi|nao|sao|dang|nhu)\b/gi;
+
+/**
+ * Vietnamese typed without accents ("phong chong clickjacking the nao") has only ASCII letters. Searched
+ * as it is, nothing scored above 0.021, so the stricter threshold refused it (docs/ERRORS.md #31).
+ */
+function looksUnaccentedVietnamese(query: string): boolean {
+  return VI_PAIRS_RE.test(query) || new Set(query.toLowerCase().match(VI_WORDS_RE) ?? []).size >= 2;
 }
 
 /** Search queries at most per message: one per topic of a comparison. */
@@ -96,8 +108,11 @@ export function rewritePrompt(hasConversation: boolean): string {
       "Translate the user's message into an English search query for cybersecurity documentation.",
       "Keep technical terms, acronyms and product names. Do not answer it. Reply with the query only.",
       QUERY_SHAPE,
-      `If the message has no topic to search for (a greeting, thanks, or an instruction like "shorter" or "explain more"), ` +
+      `If the message has no subject to search for (only a greeting, thanks, or an instruction about the answer itself like "shorter" or "explain more"), ` +
         `reply exactly ${NO_TOPIC}. Never invent a topic.`,
+      // "Mật khẩu mạnh cần những gì?" came back NONE 5/6 times (docs/ERRORS.md #31).
+      'A question about a security subject, even in everyday words ("Mật khẩu mạnh cần những gì?", "Có nên log mật khẩu không?"), ' +
+        "has a subject: translate it.",
     ].join(" ");
   }
   return [

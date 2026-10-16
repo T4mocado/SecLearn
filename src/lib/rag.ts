@@ -31,6 +31,12 @@ export const CONTEXT_CHAR_LIMIT = 6000;
 const CARRY_KEEP = 2;
 const CARRY_MIN_RELEVANCE = 0.1;
 
+/**
+ * Keyword candidates per question: half the vector ones. They add to every reranking, which runs one
+ * pair at a time (docs/ERRORS.md #31).
+ */
+const KEYWORD_CANDIDATES = 10;
+
 /** A topic's best chunk is kept outside the top K only when it scores this much (docs/ERRORS.md #29). */
 const TOPIC_MIN_RELEVANCE = 0.1;
 
@@ -70,6 +76,22 @@ function currentMenuNames(): Promise<string[]> {
 }
 
 /**
+ * Which chunks count as relevant, by the queries that scored them. With an English one (the question
+ * was English or translated), chunks under RAG_MIN_RELEVANCE_EN or under RAG_RELATIVE_MIN of the best
+ * are dropped: below them, cited chunks drew 2-4x the weak citations (docs/ERRORS.md #31). With only a
+ * Vietnamese one (the translation failed), relevant English chunks score ~0.01-0.05 (#10, #17): the
+ * lenient floor and RAG_MIN_KEEP stay.
+ */
+export function relevanceFloor(
+  queries: string[],
+  env: { RAG_MIN_RELEVANCE: number; RAG_MIN_KEEP: number; RAG_MIN_RELEVANCE_EN: number; RAG_RELATIVE_MIN: number },
+): { minRelevance: number; minKeep: number; relativeMin: number } {
+  return queries.some((q) => !needsTranslation(q))
+    ? { minRelevance: env.RAG_MIN_RELEVANCE_EN, minKeep: 0, relativeMin: env.RAG_RELATIVE_MIN }
+    : { minRelevance: env.RAG_MIN_RELEVANCE, minKeep: env.RAG_MIN_KEEP, relativeMin: 0 };
+}
+
+/**
  * The words of the English queries ORed for to_tsquery: letters and digits only, so a question's own
  * punctuation can't break the query. Non-English queries are skipped: the index is English.
  */
@@ -85,7 +107,7 @@ export function keywordQuery(queries: string[]): string {
  * Fetches RAG_CANDIDATES chunks by cosine for the question and, when it is not English, for its
  * English translation too. Reorders the union by cross-encoder relevance (best score over both
  * queries, so neither English nor Vietnamese chunks are penalised for the language) and keeps the
- * best RAG_TOP_K above RAG_MIN_RELEVANCE, at least RAG_MIN_KEEP when any passes.
+ * best RAG_TOP_K that pass `relevanceFloor`.
  */
 export async function retrieveChunks(opts: {
   query: string;
@@ -114,7 +136,7 @@ export async function retrieveChunks(opts: {
   const names = currentMenuNames();
   const lists = await Promise.all([
     ...queries.map((query) => retrieveCandidates({ query, visibilities: opts.visibilities, limit: perQueryLimit })),
-    keywordCandidates(keywordQuery(queries), opts.visibilities, limit),
+    keywordCandidates(keywordQuery(queries), opts.visibilities, KEYWORD_CANDIDATES),
     fetchChunksById(opts.carryChunkIds ?? [], opts.visibilities, queries.at(-1)!),
   ]);
   const menu = await names;
@@ -122,8 +144,8 @@ export async function retrieveChunks(opts: {
 
   let scores: number[] | null;
   let topicBest: string[] = [];
+  const scoring = topics.length ? topics : queries;
   try {
-    const scoring = topics.length ? topics : queries;
     const perQuery = await Promise.all(scoring.map((q) => rerankScores(q, candidates.map((c) => c.content))));
     scores = perQuery.every((s) => s !== null) ? bestScores(perQuery as number[][]) : null;
     if (scores && topics.length) {
@@ -140,8 +162,7 @@ export async function retrieveChunks(opts: {
     candidates.map((c, i) => ({ ...c, rerankScore: scores[i]! })),
     {
       topK,
-      minRelevance: env.RAG_MIN_RELEVANCE,
-      minKeep: env.RAG_MIN_KEEP,
+      ...relevanceFloor(scoring, env),
       topics: { ids: topicBest, minRelevance: TOPIC_MIN_RELEVANCE },
       carried: { ids: opts.carryChunkIds ?? [], max: CARRY_KEEP, minRelevance: CARRY_MIN_RELEVANCE },
     },
@@ -326,26 +347,4 @@ export function buildContext(chunks: RetrievedChunk[]): { context: string; sourc
     });
   }
   return { context: blocks.join("\n\n"), sources };
-}
-
-export function chunkMarkdown(markdown: string, size: number, overlap: number): string[] {
-  const text = markdown.replace(/\r\n/g, "\n").trim();
-  if (!text) return [];
-  const chunks: string[] = [];
-  let i = 0;
-  while (i < text.length) {
-    const end = Math.min(text.length, i + size);
-    let slice = text.slice(i, end);
-    if (end < text.length) {
-      const lastBreak = Math.max(slice.lastIndexOf("\n\n"), slice.lastIndexOf("\n"), slice.lastIndexOf(" "));
-      if (lastBreak > size * 0.4) {
-        slice = slice.slice(0, lastBreak);
-      }
-    }
-    const cleaned = slice.trim();
-    if (cleaned) chunks.push(cleaned);
-    if (end >= text.length) break;
-    i += Math.max(1, cleaned.length - overlap);
-  }
-  return chunks;
 }

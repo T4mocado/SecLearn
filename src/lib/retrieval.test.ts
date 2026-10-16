@@ -54,8 +54,15 @@ test("needsTranslation: non-ASCII letters mean not English", async () => {
   assert.equal(needsTranslation("XSS là gì?"), true);
   // Punctuation and symbols alone are not letters.
   assert.equal(needsTranslation("“SQL injection” – how? €"), false);
-  // Known limit: unaccented Vietnamese is taken for English.
-  assert.equal(needsTranslation("phong chong xss"), false);
+  // Unaccented Vietnamese is translated too: alone, "phong chong clickjacking the nao" found nothing above 0.021 (ERRORS.md #31).
+  assert.equal(needsTranslation("phong chong xss"), true);
+  assert.equal(needsTranslation("phong chong clickjacking the nao"), true);
+  assert.equal(needsTranslation("SQL injection la gi"), true);
+  assert.equal(needsTranslation("co nen luu mat khau dang plain text khong"), true);
+  // English with words that look like Vietnamese syllables stays English.
+  assert.equal(needsTranslation("What is the best way to store tokens?"), false);
+  assert.equal(needsTranslation("How does cookie theft work in a CORS setup?"), false);
+  assert.equal(needsTranslation("Explain the CSRF token pattern"), false);
 });
 
 test("searchQueries does not call the LLM in mock mode or when the question is English", async () => {
@@ -218,8 +225,10 @@ test("searchQueries does not call the LLM in mock mode even with history", async
 test("rewritePrompt: NONE for any topicless message alone, only greetings within a conversation", async () => {
   const { rewritePrompt } = await import("./query");
   const alone = rewritePrompt(false);
-  assert.match(alone, /instruction like "shorter" or "explain more"\), reply exactly NONE/);
+  assert.match(alone, /only a greeting, thanks, or an instruction about the answer itself like "shorter" or "explain more".*reply exactly NONE/);
   assert.match(alone, /Never invent a topic/);
+  // "Mật khẩu mạnh cần những gì?" came back NONE 5/6 times and was searched in Vietnamese only (ERRORS.md #31).
+  assert.match(alone, /security subject, even in everyday words \("Mật khẩu mạnh cần những gì\?"/);
   assert.doesNotMatch(alone, /CONVERSATION/);
   const followUp = rewritePrompt(true);
   assert.match(followUp, /topic of the previous question/);
@@ -347,4 +356,31 @@ test("isSiteMenu: the cheat-sheet site's navigation list, not a table of content
   assert.equal(isSiteMenu(menu, names, 10), true);
   // A table of contents naming OWASP Top 10 categories answers "which category": kept (ERRORS.md #29).
   assert.equal(isSiteMenu("A09 Security Logging and Monitoring Failures A10 Server-Side Request Forgery (SSRF) Password Storage", names, 10), false);
+});
+
+test("selectByRelevance drops chunks far below the best one when relativeMin is set", async () => {
+  const { selectByRelevance } = await import("./rerank");
+  // An English query scored them: Docker DoS limits (0.057) next to IDOR prevention (0.67) are not about the question (ERRORS.md #31).
+  const english = { topK: 5, minRelevance: 0.05, minKeep: 0, relativeMin: 0.1 };
+  const items = [item("idor", 0.67), item("authz", 0.45), item("tests", 0.13), item("docker", 0.057), item("drone", 0.03)];
+  assert.deepEqual(ids(selectByRelevance(items, english)), ["idor", "authz", "tests"]);
+  // Nothing reaches the floor: off topic, nothing kept (the fixed reply, no LLM call).
+  assert.deepEqual(selectByRelevance([item("law", 0.012), item("nist", 0.009)], english), []);
+  // Reserved topic chunks keep their own floor.
+  assert.deepEqual(
+    ids(selectByRelevance([item("a", 0.99), item("b", 0.95), item("jwt", 0.09)], { ...english, topics: { ids: ["jwt"], minRelevance: 0.05 } })),
+    ["a", "b", "jwt"],
+  );
+});
+
+test("relevanceFloor: strict when an English query scored the chunks, lenient for Vietnamese alone", async () => {
+  const { relevanceFloor } = await import("./rag");
+  const env = { RAG_MIN_RELEVANCE: 0.01, RAG_MIN_KEEP: 2, RAG_MIN_RELEVANCE_EN: 0.05, RAG_RELATIVE_MIN: 0.1 };
+  assert.deepEqual(relevanceFloor(["Mật khẩu mạnh cần những gì?", "What makes a strong password?"], env), {
+    minRelevance: 0.05,
+    minKeep: 0,
+    relativeMin: 0.1,
+  });
+  // The translation failed: the cross-encoder scores Vietnamese against English chunks ~100x lower (ERRORS.md #10, #17).
+  assert.deepEqual(relevanceFloor(["Mật khẩu mạnh cần những gì?"], env), { minRelevance: 0.01, minKeep: 2, relativeMin: 0 });
 });

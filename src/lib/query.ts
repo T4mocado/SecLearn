@@ -1,5 +1,6 @@
 import { getEnv } from "@/lib/env";
 import { completeText, type ChatTurn } from "@/lib/llm";
+import { askedQuestions, UNANSWERED_MARK, type StoredTurn } from "@/lib/grounding";
 import { stripCitations } from "@/lib/sources";
 
 const REWRITE_TIMEOUT_MS = 8_000;
@@ -48,14 +49,16 @@ const shorten =(text: string, max: number) => {
  * Every earlier user question (numbered, so "the first topic" or "the second vulnerability" can be
  * resolved however far back it is) and the last answer, shortened. Cheap in tokens. Keeping only the
  * last 10 questions lost the first topic from the 11th question on (docs/ERRORS.md #25).
+ * Takes the history as stored, refusals included: refused questions keep their number, marked, so the
+ * numbering matches the answer model's and a follow-up to one keeps its topic (docs/ERRORS.md #27).
  */
-export function historyForRewrite(history: ChatTurn[]): string {
-  const questions = history.filter((m) => m.role === "user");
+export function historyForRewrite(history: Array<ChatTurn & StoredTurn>): string {
+  const questions = askedQuestions(history);
   if (!questions.length) return "";
   const lastAnswer = history.findLast((m) => m.role === "assistant");
   return [
     "Earlier questions (oldest first):",
-    ...questions.map((m, i) => `${i + 1}. ${shorten(m.content, QUESTION_CHARS)}`),
+    ...questions.map((q, i) => `${i + 1}. ${shorten(q.text, QUESTION_CHARS)}${q.answered ? "" : ` ${UNANSWERED_MARK}`}`),
     ...(lastAnswer ? [`Last answer: ${shorten(lastAnswer.content, ANSWER_CHARS)}`] : []),
   ].join("\n");
 }
@@ -83,6 +86,11 @@ export function rewritePrompt(hasConversation: boolean): string {
     "Include only the topic the latest message asks about; do not add terms from earlier questions it does not refer to.",
     "If it only asks to change the previous answer (shorter, more detail, an example, simpler), reply with a query for the topic of the previous question.",
     `If it asks about the conversation itself rather than a topic (summarise the whole discussion, what I asked earlier), reply exactly ${ABOUT_CHAT}. ` +
+      "Asking only what an earlier question was, how many questions were asked, or which ones were not answered " +
+      `("Câu hỏi thứ 6 của mình là gì?", "Mình đã hỏi bao nhiêu câu?") is about the conversation too: reply exactly ${ABOUT_CHAT}. ` +
+      "Asking for information about an earlier question's topic " +
+      '("Quay lại câu hỏi đầu tiên, có nên giới hạn độ dài không?", "Lỗ hổng ở câu thứ hai thuộc mục nào trong OWASP Top 10?") ' +
+      "is a search: reply with a query for that topic. " +
       'Asking for the previous answer again in another form ("Trả lời ngắn gọn lại ý vừa rồi", "explain it more simply") ' +
       "is the rule above, not this one: reply with a query for that topic, so the new answer can cite the documents again.",
     `Reply exactly ${NO_TOPIC} only for greetings or thanks.`,
@@ -94,7 +102,7 @@ export function rewritePrompt(hasConversation: boolean): string {
  * English or follows earlier turns ("Trả lời ngắn gọn" alone finds nothing), or answer from the
  * conversation. One short LLM call (~150 tokens); any failure just means searching with the original.
  */
-export async function planSearch(query: string, history: ChatTurn[] = []): Promise<SearchPlan> {
+export async function planSearch(query: string, history: Array<ChatTurn & StoredTurn> = []): Promise<SearchPlan> {
   const env = getEnv();
   const original: SearchPlan = { intent: "search", queries: [query] };
   const context = historyForRewrite(history);

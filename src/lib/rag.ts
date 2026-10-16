@@ -24,6 +24,14 @@ export type RetrievedChunk = {
 export const CONTEXT_CHAR_LIMIT = 6000;
 
 /**
+ * Carried chunks kept outside the top K: at most this many, only when they still score this much
+ * against the question. Without the floor, kept chunks unrelated to the question pushed out better
+ * ones and doubled weak citations (docs/ERRORS.md #26).
+ */
+const CARRY_KEEP = 2;
+const CARRY_MIN_RELEVANCE = 0.1;
+
+/**
  * Fetches RAG_CANDIDATES chunks by cosine for the question and, when it is not English, for its
  * English translation too. Reorders the union by cross-encoder relevance (best score over both
  * queries, so neither English nor Vietnamese chunks are penalised for the language) and keeps the
@@ -37,8 +45,10 @@ export async function retrieveChunks(opts: {
   /** Queries already planned by the caller (`planSearch`); skips the rewrite call. */
   queries?: string[];
   /**
-   * Chunks the previous answer cited, added to the candidates: "tell me more about X" must see the
-   * passage X came from, which a fresh search may miss (docs/ERRORS.md #22). Reranked like the rest.
+   * Chunks earlier answers cited, added to the candidates: "tell me more about X" must see the
+   * passage X came from, which a fresh search may miss (docs/ERRORS.md #22). Reranked like the rest;
+   * the best CARRY_KEEP above CARRY_MIN_RELEVANCE stay even outside the top K: when the search missed
+   * them, the model cited the new passages for facts from the earlier answers (docs/ERRORS.md #26).
    */
   carryChunkIds?: string[];
 }): Promise<RetrievedChunk[]> {
@@ -66,7 +76,12 @@ export async function retrieveChunks(opts: {
 
   return selectByRelevance(
     candidates.map((c, i) => ({ ...c, rerankScore: scores[i]! })),
-    { topK, minRelevance: env.RAG_MIN_RELEVANCE, minKeep: env.RAG_MIN_KEEP },
+    {
+      topK,
+      minRelevance: env.RAG_MIN_RELEVANCE,
+      minKeep: env.RAG_MIN_KEEP,
+      carried: { ids: opts.carryChunkIds ?? [], max: CARRY_KEEP, minRelevance: CARRY_MIN_RELEVANCE },
+    },
   );
 }
 

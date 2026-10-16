@@ -100,11 +100,90 @@ test("historyForRewrite keeps every question, so the first topic resolves in a l
   assert.equal(long, `1. ${"x".repeat(120)}…`);
 });
 
+test("historyForRewrite numbers refused questions too, so a follow-up to one keeps its topic", async () => {
+  // Without them "Vậy còn ở châu Âu thì sao?" after a refused question about Vietnamese law became
+  // "cookie attributes GDPR Europe" (ERRORS.md #27).
+  const { historyForRewrite } = await import("./query");
+  const { noSourcesAnswer } = await import("./grounding");
+  const lines = historyForRewrite([
+    { role: "user", content: "Cookie nên đặt thuộc tính nào?" },
+    { role: "assistant", content: "Secure, HttpOnly, SameSite [1]." },
+    { role: "user", content: "Luật An ninh mạng Việt Nam quy định gì về lưu trữ dữ liệu?" },
+    { role: "assistant", content: noSourcesAnswer("vi") },
+  ]).split("\n");
+  assert.deepEqual(lines.slice(1, 3), [
+    "1. Cookie nên đặt thuộc tính nào?",
+    "2. Luật An ninh mạng Việt Nam quy định gì về lưu trữ dữ liệu? (not answered: nothing in the documents)",
+  ]);
+  assert.match(lines[3]!, /^Last answer: Mình không tìm thấy nội dung liên quan/);
+});
+
+test("historyForAnswer leaves refused exchanges out of the turns but numbers every question", async () => {
+  const { historyForAnswer } = await import("./chat-answer");
+  const { noSourcesAnswer } = await import("./grounding");
+  const history = [
+    { role: "user" as const, content: "q1" },
+    { role: "assistant" as const, content: "a1 [1]".padEnd(100, ".") },
+    { role: "user" as const, content: "q2" },
+    { role: "assistant" as const, content: noSourcesAnswer("vi") },
+    { role: "user" as const, content: "q3" },
+    { role: "assistant" as const, content: "a3 [2]".padEnd(100, ".") },
+    { role: "user" as const, content: "q4" },
+    { role: "assistant" as const, content: "a4 [1]".padEnd(100, ".") },
+  ];
+  const all = historyForAnswer(history, 10_000);
+  assert.deepEqual(all.recent.map((m) => m.content.slice(0, 2)), ["q1", "a1", "q3", "a3", "q4", "a4"]);
+  assert.ok(!all.recent.some((m) => /\[\d\]/.test(m.content)), "citation markers are stripped");
+  assert.deepEqual(all.questions.map((q) => [q.text, q.answered]), [
+    ["q1", true], ["q2", false], ["q3", true], ["q4", true],
+  ]);
+  assert.equal(all.shownFrom, 1);
+  // Over the limit: q1 is cut, so the turns shown start at question 3 (q2 was refused).
+  const cut = historyForAnswer(history, 250);
+  assert.deepEqual(cut.recent.map((m) => m.content.slice(0, 2)), ["q3", "a3", "q4", "a4"]);
+  assert.equal(cut.shownFrom, 3);
+  // Only refusals: nothing to show.
+  assert.equal(historyForAnswer(history.slice(2, 4)).shownFrom, null);
+});
+
 const turns = (n: number, size: number) =>
   Array.from({ length: n }, (_, i) => [
     { role: "user" as const, content: `q${i + 1}` },
     { role: "assistant" as const, content: `a${i + 1}`.padEnd(size, ".") },
   ]).flat();
+
+test("selectByRelevance keeps carried chunks above their floor in place of the lowest others", async () => {
+  const { selectByRelevance } = await import("./rerank");
+  const items = [item("a", 0.9), item("b", 0.8), item("c", 0.7), item("d", 0.6), item("e", 0.5), item("x", 0.3), item("y", 0.2), item("z", 0.05)];
+  const carried = (ids: string[]) => ({ ...opts, carried: { ids, max: 2, minRelevance: 0.1 } });
+  assert.deepEqual(ids(selectByRelevance(items, carried(["x", "y"]))), ["a", "b", "c", "x", "y"]);
+  // At most `max` of them, the best ones.
+  assert.deepEqual(ids(selectByRelevance(items, { ...opts, carried: { ids: ["x", "y"], max: 1, minRelevance: 0.1 } })), [
+    "a", "b", "c", "d", "x",
+  ]);
+  // Below the floor a carried chunk is not kept: it pushed out better ones (ERRORS.md #26).
+  assert.deepEqual(ids(selectByRelevance(items, carried(["z"]))), ["a", "b", "c", "d", "e"]);
+  // Already in the top K: nothing changes.
+  assert.deepEqual(ids(selectByRelevance(items, carried(["a", "e"]))), ["a", "b", "c", "d", "e"]);
+  // Off topic stays off topic.
+  assert.deepEqual(selectByRelevance([item("x", 0.005)], carried(["x"])), []);
+});
+
+test("carriedChunkIds collects the chunks every answer in the window cited, newest first", async () => {
+  const { carriedChunkIds } = await import("./chat-answer");
+  assert.deepEqual(
+    carriedChunkIds([
+      { role: "user", content: "XSS?" },
+      { role: "assistant", content: "…", citedChunkIds: ["xss1", "shared"] },
+      { role: "user", content: "CSRF?" },
+      { role: "assistant", content: "…", citedChunkIds: ["csrf1", "shared"] },
+      { role: "user", content: "Còn gì?" },
+      { role: "assistant", content: "Không có trích dẫn." },
+    ]),
+    ["csrf1", "shared", "xss1"],
+  );
+  assert.deepEqual(carriedChunkIds([]), []);
+});
 
 test("splitHistory sends everything while the history fits", async () => {
   const { splitHistory } = await import("./chat-answer");
@@ -146,6 +225,10 @@ test("rewritePrompt: NONE for any topicless message alone, only greetings within
   assert.match(followUp, /topic of the previous question/);
   assert.match(followUp, /NONE only for greetings or thanks/);
   assert.match(followUp, /about the conversation itself.*reply exactly CONVERSATION/);
+  // Once question 6 kept its number, "Câu hỏi thứ 6 của mình là gì?" became a search for its topic (ERRORS.md #27).
+  assert.match(followUp, /only what an earlier question was.*how many questions.*which ones were not answered.*CONVERSATION/);
+  // ...but new information about that question's topic is still a search.
+  assert.match(followUp, /information about an earlier question's topic \("Quay lại câu hỏi đầu tiên.*OWASP Top 10\?"\) is a search/);
   assert.match(followUp, /"the second vulnerability" counts topics in the order/);
   assert.match(followUp, /do not add terms from earlier questions/);
 });
@@ -183,22 +266,22 @@ test("chatRequestMessages adds the citation reminder only to a follow-up questio
   assert.equal(chat[3]!.content, "Còn XSS?");
 });
 
-test("chatRequestMessages lists the questions of turns left out, in both modes", async () => {
+test("chatRequestMessages adds the numbered questions to the system prompt, in both modes", async () => {
+  // The answer model counted only the turns it saw: "câu thứ hai" became question 7 while the
+  // rewrite, which saw every question numbered, read question 2 (ERRORS.md #27).
   const { chatRequestMessages } = await import("./llm");
   const messages = [
     { role: "user" as const, content: "SQLi là gì?" },
     { role: "assistant" as const, content: "SQLi là ..." },
     { role: "user" as const, content: "Lỗ hổng đầu tiên là gì?" },
   ];
-  const olderQuestions = ["XSS là gì?", "Còn  CSRF\nthì sao?"];
-  const note = /the user asked \(oldest first; answers not shown\):\n1\. XSS là gì\?\n2\. Còn CSRF thì sao\?$/;
-  const grounded = chatRequestMessages({ messages, olderQuestions, context: "[1] x", locale: "vi" });
-  assert.match(grounded[0]!.content, /Passages:\n---\n\[1\] x\n---\n\nEarlier in this conversation/);
-  assert.match(grounded[0]!.content, note);
+  const questionsNote = "Questions the user asked earlier…\n1. XSS là gì?\n2. SQLi là gì?";
+  const grounded = chatRequestMessages({ messages, questionsNote, context: "[1] x", locale: "vi" });
+  assert.ok(grounded[0]!.content.endsWith(`Passages:\n---\n[1] x\n---\n\n${questionsNote}`));
   assert.equal(grounded.length, 4, "the questions go in the system prompt, not as turns");
-  const chat = chatRequestMessages({ messages, olderQuestions, context: "", locale: "vi", mode: "conversation" });
-  assert.match(chat[0]!.content, note);
-  // Within the limit nothing is left out and the prompt is unchanged.
-  const plain = chatRequestMessages({ messages, olderQuestions: [], context: "[1] x", locale: "vi" });
-  assert.doesNotMatch(plain[0]!.content, /Earlier in this conversation/);
+  const chat = chatRequestMessages({ messages, questionsNote, context: "", locale: "vi", mode: "conversation" });
+  assert.ok(chat[0]!.content.endsWith(`\n\n${questionsNote}`));
+  // First question: no note.
+  const plain = chatRequestMessages({ messages: messages.slice(2), context: "[1] x", locale: "vi" });
+  assert.ok(plain[0]!.content.endsWith("\n---"));
 });

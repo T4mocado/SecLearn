@@ -14,7 +14,6 @@ import {
   citationReminder,
   conversationSystemPrompt,
   groundedSystemPrompt,
-  olderQuestionsNote,
 } from "@/lib/grounding";
 
 export type ChatTurn = { role: "user" | "assistant" | "system"; content: string };
@@ -73,14 +72,14 @@ type ChatRequest = {
   locale: string;
   /** `documents` (default): grounded in `context`. `conversation`: about the chat itself, no passages. */
   mode?: "documents" | "conversation";
-  /** Questions of the earlier turns left out of `messages` (history over its limit), oldest first. */
-  olderQuestions?: string[];
+  /** Every earlier question numbered (`questionsNote`), added to the system prompt; empty for a first question. */
+  questionsNote?: string;
 };
 
 /** System prompt plus turns as sent to the model; the citation reminder rides on the latest question. */
 export function chatRequestMessages(opts: ChatRequest): ChatTurn[] {
   const turns = opts.messages.filter((m) => m.role !== "system");
-  const note = olderQuestionsNote(opts.olderQuestions ?? []);
+  const note = opts.questionsNote ?? "";
   const withNote = (system: string) => (note ? `${system}\n\n${note}` : system);
   if (opts.mode === "conversation") {
     return [{ role: "system", content: withNote(conversationSystemPrompt(opts.locale)) }, ...turns];

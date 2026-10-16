@@ -5,7 +5,16 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { groundedSystemPrompt, isRefusal, noSourcesAnswer, uncitedSentences, withoutRefusals } from "./grounding";
+import {
+  askedQuestions,
+  groundedSystemPrompt,
+  isConversationAnswer,
+  isRefusal,
+  noSourcesAnswer,
+  questionsNote,
+  uncitedSentences,
+  withoutRefusals,
+} from "./grounding";
 import { inlineDisposition, isInsideDir } from "./document-file";
 import { remarkCitations } from "./remark-citations";
 import { citationClaims, citedChunkIds, citedClauses, type MessageSource } from "./sources";
@@ -55,6 +64,88 @@ test("withoutRefusals drops refused exchanges, question included", () => {
     withoutRefusals(history).map((m) => m.content),
     ["DDoS là gì?", "DoS làm cạn tài nguyên [1].", "nói thêm về giới hạn tài nguyên"],
   );
+});
+
+// --- Every question stays numbered, refused ones included ---
+
+const REFUSED_LAW = "Tài liệu không đề cập đến Luật An ninh mạng Việt Nam hay các quy định về lưu trữ dữ liệu người dùng.";
+
+test("askedQuestions keeps every question in order and marks the refused ones", () => {
+  // Dropping refused questions made "câu hỏi thứ 6" the 8th question and counted 9 of 14 (ERRORS.md #27).
+  const history = [
+    { role: "user", content: "Lưu mật khẩu thế nào?" },
+    { role: "assistant", content: "Dùng Argon2id [1]." },
+    { role: "user", content: "Luật An ninh mạng quy định gì?" },
+    { role: "assistant", content: REFUSED_LAW },
+    { role: "user", content: "Vậy còn ở châu Âu?" },
+    { role: "assistant", content: noSourcesAnswer("vi") },
+    { role: "user", content: "Header chống clickjacking?" },
+  ];
+  assert.deepEqual(askedQuestions(history), [
+    { text: "Lưu mật khẩu thế nào?", answered: true },
+    { text: "Luật An ninh mạng quy định gì?", answered: false },
+    { text: "Vậy còn ở châu Âu?", answered: false },
+    { text: "Header chống clickjacking?", answered: true },
+  ]);
+  assert.deepEqual(askedQuestions([]), []);
+});
+
+test("an answer about the conversation is never a refusal, even when it says the documents lack something", () => {
+  // Such answers carry no [n] by design; "câu 6 và 7: tài liệu không đề cập" was taken for a refusal, so the
+  // question was marked unanswered and the exchange dropped (ERRORS.md #28).
+  const listing = "Các câu không tìm thấy tài liệu là câu 6 (Luật An ninh mạng) và câu 7: tài liệu không đề cập đến pháp luật.";
+  const history = [
+    { role: "user", content: "Lưu mật khẩu thế nào?" },
+    { role: "assistant", content: "Dùng Argon2id [1]." },
+    { role: "user", content: "Những câu nào không tìm thấy tài liệu?" },
+    { role: "assistant", content: listing, conversation: true },
+    { role: "user", content: "Luật An ninh mạng quy định gì?" },
+    { role: "assistant", content: REFUSED_LAW },
+  ];
+  assert.deepEqual(
+    askedQuestions(history).map((q) => q.answered),
+    [true, true, false],
+  );
+  assert.deepEqual(
+    withoutRefusals(history).map((m) => m.content),
+    ["Lưu mật khẩu thế nào?", "Dùng Argon2id [1].", "Những câu nào không tìm thấy tài liệu?", listing],
+  );
+});
+
+test("isConversationAnswer: no stored sources and not the fixed reply", () => {
+  assert.equal(isConversationAnswer("Câu hỏi thứ 6 của bạn là …", 0), true);
+  assert.equal(isConversationAnswer(noSourcesAnswer("vi"), 0), false);
+  assert.equal(isConversationAnswer(noSourcesAnswer("en"), 0), false);
+  // A model refusal in a document answer has its passages stored.
+  assert.equal(isConversationAnswer(REFUSED_LAW, 2), false);
+});
+
+test("questionsNote numbers every earlier question and says which ones the messages show", () => {
+  const questions = [
+    { text: "Lưu mật khẩu thế nào?", answered: true },
+    { text: "Luật  An ninh mạng\nquy định gì?", answered: false },
+    { text: "Header chống clickjacking?", answered: true },
+    { text: "x".repeat(300), answered: true },
+  ];
+  const lines = questionsNote(questions, { shownFrom: 3 }).split("\n");
+  assert.match(lines[0]!, /numbered in order.*the latest message is question 5/);
+  assert.deepEqual(lines.slice(1, 4), [
+    "1. Lưu mật khẩu thế nào?",
+    "2. Luật An ninh mạng quy định gì? (not answered: nothing in the documents)",
+    "3. Header chống clickjacking?",
+  ]);
+  assert.equal(lines[4], `4. ${"x".repeat(200)}…`);
+  assert.match(lines[5]!, /The messages below show questions 3–4 with their answers.*not shown/);
+  assert.equal(lines.length, 6);
+
+  assert.match(questionsNote(questions, { shownFrom: 1 }), /The messages below show questions 1–4 with their answers/);
+  assert.match(questionsNote(questions, { shownFrom: null }), /No earlier answers are shown/);
+  // The rewrite's reading of the latest message, so the answer resolves "câu thứ hai" the same way.
+  assert.match(
+    questionsNote(questions, { shownFrom: 1, understoodAs: "OWASP Top 10 category for IDOR" }),
+    /\nThe latest message \(question 5\) was understood as: "OWASP Top 10 category for IDOR"$/,
+  );
+  assert.equal(questionsNote([], { shownFrom: null }), "");
 });
 
 test("citedChunkIds returns the chunks an answer cites", () => {

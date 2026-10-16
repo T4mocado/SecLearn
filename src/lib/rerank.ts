@@ -41,13 +41,30 @@ export function bestScores(perQuery: number[][]): number[] {
  * Highest-scoring items first, those below `minRelevance` dropped, at most `topK`. When at least one
  * item passes, at least `minKeep` are kept: cross-lingual scores sit far below the threshold even for
  * relevant chunks. When none pass, the question is off topic and nothing is kept.
+ * `carried`: up to `max` of these ids scoring at least `minRelevance` are kept even when outside the
+ * top K, in place of the lowest-scoring others.
  */
-export function selectByRelevance<T extends { rerankScore: number }>(
+export function selectByRelevance<T extends { id: string; rerankScore: number }>(
   items: T[],
-  opts: { topK: number; minRelevance: number; minKeep: number },
+  opts: {
+    topK: number;
+    minRelevance: number;
+    minKeep: number;
+    carried?: { ids: string[]; max: number; minRelevance: number };
+  },
 ): T[] {
   const sorted = [...items].sort((a, b) => b.rerankScore - a.rerankScore);
   const passing = sorted.filter((c) => c.rerankScore >= opts.minRelevance).length;
   if (!passing) return [];
-  return sorted.slice(0, Math.min(opts.topK, Math.max(passing, opts.minKeep)));
+  const selected = sorted.slice(0, Math.min(opts.topK, Math.max(passing, opts.minKeep)));
+  const { carried } = opts;
+  if (!carried?.max) return selected;
+  const reserved = sorted
+    .filter((c) => carried.ids.includes(c.id) && c.rerankScore >= carried.minRelevance)
+    .slice(0, carried.max);
+  const missing = reserved.filter((c) => !selected.includes(c));
+  if (!missing.length) return selected;
+  const others = selected.filter((c) => !reserved.includes(c));
+  const kept = new Set([...reserved, ...others.slice(0, Math.max(0, opts.topK - reserved.length))]);
+  return sorted.filter((c) => kept.has(c));
 }

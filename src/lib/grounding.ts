@@ -58,22 +58,55 @@ export function conversationSystemPrompt(locale: string): string {
   ].join(" ");
 }
 
-const OLDER_QUESTION_CHARS = 200;
+const NOTE_QUESTION_CHARS = 200;
+
+/** An earlier question; `answered` is false when the reply was a refusal (left out of the turns sent). */
+export type AskedQuestion = { text: string; answered: boolean };
+
+/** Appended to a refused question wherever questions are listed, for the rewrite and the answer model alike. */
+export const UNANSWERED_MARK = "(not answered: nothing in the documents)";
 
 /**
- * Added to the system prompt when the oldest turns are not sent (history over its limit): their
- * questions only, numbered in order, so "the first vulnerability" still resolves (docs/ERRORS.md #25).
- * Questions carry no facts; the answers, which do, stay out.
+ * Every user question in order, refused ones included and marked. Needs the stored answers with
+ * their [n] markers (`isRefusal`). Dropping refused questions shifted the numbering: "câu hỏi thứ 6"
+ * became the 8th question and 14 questions were counted as 9 (docs/ERRORS.md #27).
  */
-export function olderQuestionsNote(questions: string[]): string {
-  if (!questions.length) return "";
-  const lines = questions.map((q, i) => {
-    const flat = q.replace(/\s+/g, " ").trim();
-    return `${i + 1}. ${flat.length > OLDER_QUESTION_CHARS ? `${flat.slice(0, OLDER_QUESTION_CHARS)}…` : flat}`;
+export function askedQuestions(history: StoredTurn[]): AskedQuestion[] {
+  return history.flatMap((m, i) => {
+    if (m.role !== "user") return [];
+    const reply = history[i + 1];
+    return [{ text: m.content, answered: !(reply && isRefusedTurn(reply)) }];
   });
+}
+
+/**
+ * Added to the system prompt for follow-ups: every earlier question numbered as the rewrite numbers
+ * them, which of them the turns below show, and the rewrite's reading of the latest message. The
+ * model counted only the turns it saw, so "câu thứ hai" became question 7 while the search used
+ * question 2 (docs/ERRORS.md #27). Questions carry no facts; answers cut from the turns stay out (#25).
+ */
+export function questionsNote(
+  questions: AskedQuestion[],
+  opts: { shownFrom: number | null; understoodAs?: string },
+): string {
+  if (!questions.length) return "";
+  const latest = questions.length + 1;
+  const lines = questions.map((q, i) => {
+    const flat = q.text.replace(/\s+/g, " ").trim();
+    const text = flat.length > NOTE_QUESTION_CHARS ? `${flat.slice(0, NOTE_QUESTION_CHARS)}…` : flat;
+    return `${i + 1}. ${text}${q.answered ? "" : ` ${UNANSWERED_MARK}`}`;
+  });
+  const shown =
+    opts.shownFrom === null
+      ? "No earlier answers are shown."
+      : `The messages below show questions ${opts.shownFrom}–${questions.length} with their answers, except unanswered ones; ` +
+        "answers to earlier questions are not shown.";
   return [
-    "Earlier in this conversation, before the messages below, the user asked (oldest first; answers not shown):",
+    `Questions the user asked earlier in this conversation, numbered in order (oldest first; the latest message is question ${latest}). ` +
+      'Use this numbering for "the first question", "question 6" or how many questions were asked:',
     ...lines,
+    shown,
+    ...(opts.understoodAs ? [`The latest message (question ${latest}) was understood as: "${opts.understoodAs}"`] : []),
   ].join("\n");
 }
 
@@ -101,15 +134,35 @@ export function isRefusal(content: string): boolean {
 }
 
 /**
+ * A stored turn. `conversation`: an answer about the conversation itself (no passages, so never [n]),
+ * known only where sources are stored (signed-in chats).
+ */
+export type StoredTurn = { role: string; content: string; conversation?: boolean };
+
+/** A stored answer about the conversation itself: no passages stored, and not the fixed no-sources reply. */
+export function isConversationAnswer(content: string, storedSources: number): boolean {
+  // Document answers store their passages; the fixed reply stores none but is a refusal.
+  return storedSources === 0 && content !== noSourcesAnswer("vi") && content !== noSourcesAnswer("en");
+}
+
+/**
+ * A refused answer. One about the conversation is not: listing "câu 6 và 7: tài liệu không đề cập…"
+ * matched the refusal wording, so the question was marked unanswered and dropped (docs/ERRORS.md #28).
+ */
+export function isRefusedTurn(m: StoredTurn): boolean {
+  return m.role === "assistant" && !m.conversation && isRefusal(m.content);
+}
+
+/**
  * Earlier turns as sent to the model, without refused exchanges: a refused follow-up was copied
  * word for word by the next one, 3/3 times, though its passages were relevant (docs/ERRORS.md #22).
  * The question goes too: left unanswered, the model answered it again from older answers and cited
  * the new passages for those facts (3/3).
  */
-export function withoutRefusals<T extends { role: string; content: string }>(history: T[]): T[] {
+export function withoutRefusals<T extends StoredTurn>(history: T[]): T[] {
   const out: T[] = [];
   for (const m of history) {
-    if (m.role === "assistant" && isRefusal(m.content)) {
+    if (isRefusedTurn(m)) {
       if (out.at(-1)?.role === "user") out.pop();
       continue;
     }

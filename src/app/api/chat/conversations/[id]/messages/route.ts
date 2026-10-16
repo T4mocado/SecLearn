@@ -4,6 +4,7 @@ import { chatMessageSchema } from "@/lib/validations";
 import { citedChunkIds, parseSources } from "@/lib/sources";
 import { assertLlmConfigured } from "@/lib/llm";
 import { answerQuestion } from "@/lib/chat-answer";
+import { isConversationAnswer } from "@/lib/grounding";
 import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
 import { finalizeSources } from "@/lib/verify";
@@ -70,18 +71,24 @@ export async function POST(req: Request, { params }: Params) {
     }
 
     // As stored: answerQuestion drops refusals and strips the [n] markers itself.
-    const history = conversation.messages.map((m) => ({
-      role: m.role as "user" | "assistant" | "system",
-      content: m.content,
-    }));
-    const lastAnswer = conversation.messages.findLast((m) => m.role === "assistant");
+    const history = conversation.messages.map((m) => {
+      const role = m.role as "user" | "assistant" | "system";
+      if (role !== "assistant") return { role, content: m.content };
+      const stored = parseSources(m.sources) ?? [];
+      return {
+        role,
+        content: m.content,
+        citedChunkIds: citedChunkIds(m.content, stored),
+        // Never [n] by design, so a short one naming missing documents is not a refusal (docs/ERRORS.md #28).
+        conversation: isConversationAnswer(m.content, stored.length),
+      };
+    });
 
     const { tokens, sources } = await answerQuestion({
       question: parsed.data.content,
       history,
       visibilities: ["public", "authenticated"],
       locale,
-      carryChunkIds: lastAnswer ? citedChunkIds(lastAnswer.content, parseSources(lastAnswer.sources) ?? []) : [],
       signal: req.signal,
     });
 

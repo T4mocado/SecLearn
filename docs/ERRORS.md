@@ -221,3 +221,77 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
   XSS Prevention và CSP Cheat Sheet, rerank cao nhất 0,78 (trước 0,13). Lịch sử gửi đi ≤ 12 000 ký tự từ câu 9. Câu 10
   ("câu hỏi đầu tiên") và câu 13 ("chủ đề thứ hai") vẫn đúng khi câu 1 chỉ còn trong danh sách câu hỏi cũ. Câu 22 vẫn đúng (#24).
 - **Đánh đổi:** tóm tắt hội thoại dài chỉ biết câu hỏi của các lượt đã cắt, không biết câu trả lời (câu 11: mục XSS chỉ ghi tên chủ đề).
+
+## 26. Câu hỏi nối tiếp dùng lại ý cũ nhưng gắn [n] của đoạn mới
+- **Triệu chứng** (22 câu, #24): câu 3 "Trả lời ngắn gọn lại ý vừa rồi" gắn các ý về Twig vào `[1]` Java_Security (hậu kiểm 0,000–0,011);
+  câu 6 "Hai lỗ hổng này khác nhau ở điểm nào?" gắn 4–6 câu về CSRF/SameSite vào một đoạn về XSS (≤ 0,007).
+- **Nguyên nhân:** khi truy xuất bỏ sót đoạn gốc, model vẫn dùng ý từ câu trả lời cũ và gắn số của đoạn mới.
+  `carryChunkIds` (#22) chỉ mang đoạn của **câu trả lời ngay trước** và xếp hạng chung, nên đoạn Symfony #8 (Twig) bị loại khỏi top 5;
+  câu 6 lấy ý từ câu trả lời 1 và 4, không phải câu 5.
+- **Thử nghiệm** (chạy lại trên hội thoại đã lưu, hậu kiểm của app, bỏ báo động nhầm: câu dẫn kết thúc bằng ":", mảnh < 25 ký tự,
+  "đoạn bị cắt"):
+  - 8 câu nối tiếp × 3 lần: hiện tại 2,6% trích dẫn yếu; giữ chỗ cho đoạn của mọi câu trả lời trong cửa sổ, không ngưỡng 4,8%
+    (ép vào đoạn 0,04–0,08, đẩy ra đoạn tốt); có ngưỡng 0,1: 1,9%. Giữ chỗ chỉ cho đoạn của câu trả lời trước: câu 6 xấu hơn (3 lỗi).
+  - Mô phỏng truy xuất bỏ sót (xoá đoạn gốc khỏi kết quả tìm), × 3 lần: câu 3 từ 6 lỗi (3/3 lần) xuống 1 (1/3); câu 6 từ 3 xuống 2.
+- **Cách xử lý:** route gắn `citedChunkIds` vào từng câu trả lời trong lịch sử; `carriedChunkIds` (`src/lib/chat-answer.ts`) lấy đoạn
+  của mọi câu trả lời trong cửa sổ gửi model (#25); `selectByRelevance` giữ tối đa 2 đoạn mang sang có rerank ≥ 0,1 dù ngoài top K.
+- **Kết quả** (chạy lại 22 câu): câu 6 có Symfony #7 (định nghĩa XSS) và Symfony #9 (CSRF token), các ý đó trích đúng.
+- **Chưa xử lý:** định nghĩa CSRF (CSRF Cheat Sheet #9) và ý SameSite chỉ đạt ~0,08 với câu hỏi so sánh, dưới ngưỡng, nên câu 6 vẫn gắn
+  sai 2–3 câu. Mỗi câu chạy một lần dao động lớn: câu 17 cùng 5 nguồn mà 1 lỗi rồi 3 lỗi.
+
+## 27. Câu bị từ chối mất khỏi đánh số; bước viết lại và model trả lời đếm "câu thứ N" khác nhau
+- **Triệu chứng** (2 bộ 20 câu, `scratch-ctx/results2.json`, `results3.json`):
+  - Bộ 3 có câu 6 (Luật An ninh mạng) và câu 7 bị từ chối. Câu 15 "đã hỏi tất cả bao nhiêu câu?" trả lời 9 (đúng là 15, tính cả câu đang hỏi).
+    Câu 16 "câu hỏi thứ 6 là gì?" trả câu clickjacking (thực tế là câu 8). Câu 20 "những câu nào không tìm thấy tài liệu?" bỏ sót đúng các câu bị từ chối.
+  - Bộ 3, câu 7 "Vậy còn ở châu Âu thì sao?" được viết lại thành "cookie attributes … GDPR Europe session management": mất chủ đề luật lưu trữ dữ liệu.
+  - Bộ 2, câu 13 "lỗ hổng mình hỏi ở câu thứ hai thuộc mục nào trong OWASP Top 10?": bước viết lại hiểu đúng là IDOR, nhưng model trả lời
+    hiểu là câu 7 (SSRF), nên câu trả lời nói về SSRF trong khi nguồn nói về BAC. Câu 19 (tóm tắt thành bảng) thiếu câu "phở", từ dòng 12 lệch số,
+    và điền vào dòng 1 và 6 nội dung lấy từ câu trả lời 18.
+- **Nguyên nhân:**
+  - `withoutRefusals` (#22) bỏ cả cặp hỏi–đáp bị từ chối. Danh sách câu hỏi cho bước viết lại (`historyForRewrite`) và cho model trả lời
+    (`olderQuestionsNote`, #25) đều được lập từ lịch sử đã bỏ, nên số thứ tự lệch và câu bị từ chối biến mất.
+  - Model trả lời chỉ thấy câu hỏi cũ (đánh số) khi lịch sử vượt giới hạn, cộng các lượt gần đây không đánh số. Nó tự đếm trên các lượt
+    nhìn thấy và không biết câu trả lời của các lượt đã cắt không được gửi.
+- **Cách xử lý:**
+  - `askedQuestions` (`src/lib/grounding.ts`): mọi câu hỏi theo thứ tự, câu có lời đáp là lời từ chối được đánh dấu
+    `(not answered: nothing in the documents)`. Bước viết lại nhận lịch sử như đã lưu (còn lời từ chối) và dùng danh sách này.
+  - `historyForAnswer` (`src/lib/chat-answer.ts`): các lượt nguyên văn vẫn bỏ lời từ chối và [n] như trước. Model trả lời nhận thêm `questionsNote`
+    trong system prompt với mọi follow-up, ở cả hai chế độ: mọi câu hỏi, cùng cách đánh số với bước viết lại; "câu đang hỏi là câu N+1";
+    các lượt bên dưới là câu k–N (trước đó không hiện câu trả lời); và cách bước viết lại hiểu câu đang hỏi ("was understood as: …").
+  - `rewritePrompt`: chỉ hỏi câu thứ N là gì, đã hỏi bao nhiêu câu, câu nào chưa được trả lời thì là `CONVERSATION`. Hỏi thông tin mới về chủ đề
+    của một câu cũ ("Quay lại câu hỏi đầu tiên…", "lỗ hổng ở câu thứ hai thuộc mục nào…") vẫn là tìm kiếm. Khi câu 6 giữ đúng số, "câu hỏi thứ 6
+    là gì?" bị viết lại thành câu tìm kiếm về luật (4/4 lần) và nhận lời từ chối cố định. Luật bản đầu làm câu 13 bộ 2 thành `CONVERSATION` (2/2),
+    nên phải tách hai trường hợp.
+- **Kết quả** (chạy lại cả hai bộ; chạy lại bước viết lại trên hội thoại gốc mỗi câu 3 lần):
+  - Bộ 3: câu 15 "15 câu", câu 16 trả đúng câu về Luật An ninh mạng. Trên hội thoại gốc (câu 6, 7 bị từ chối), câu 7 viết lại thành
+    "GDPR data storage requirements for user data" (3/3), câu 16 là `CONVERSATION` (2/2).
+  - Bộ 2: câu 13 trả lời "câu thứ hai là IDOR", phân loại con của BAC, rủi ro số một OWASP Top Ten 2021 (rerank 0,69). Câu 19: bảng đủ 19 dòng,
+    câu "phở" ở dòng 12 ghi "không được trả lời", các câu 1–10 ghi "nội dung không hiển thị" thay vì bịa. Câu 9 đếm "3 câu về SSRF, câu 6–8".
+- **Chưa xử lý:**
+  - Câu trả lời ngoài cửa sổ 12 000 ký tự vẫn không được gửi (#25). Câu trả lời có nói "tài liệu không đề cập" nhưng có [n] không bị coi là từ chối,
+    nên câu 20 bộ 3 ("những câu nào không tìm thấy tài liệu?") liệt kê theo các câu trả lời còn thấy, không đủ.
+  - Nguồn của câu trả lời cũ không được gửi cho model: "câu trả lời thứ 7 dựa trên nguồn nào?" 1/3 lần là `CONVERSATION`, 2/3 lần là tìm kiếm.
+  - Bộ 2 câu 14: truy xuất vẫn không thấy "A10: Server-Side Request Forgery" có trong kho.
+
+## 28. Câu trả lời về chính cuộc trò chuyện bị coi là lời từ chối
+- **Phát hiện khi rà soát #27:** câu trả lời ở chế độ hội thoại (`conversation`) không bao giờ có [n]. Nếu nó ngắn (≤ 400 ký tự) và có cụm
+  "không đề cập" hoặc "không có thông tin", `isRefusal` coi nó là lời từ chối. Thử trên app (hội thoại 4 câu, `scratch-ctx/results4.json`):
+  câu 3 "Câu nào mình hỏi mà tài liệu không đề cập?" nhận "Câu 1: … — tài liệu không đề cập." (92 ký tự, `isRefusal` = true). Câu trả lời
+  cho câu 4 "Mình đã hỏi bao nhiêu câu…" cũng khớp mẫu từ chối.
+- **Hậu quả trước khi sửa:** câu hỏi đó bị đánh dấu `(not answered: nothing in the documents)` và cả lượt bị bỏ khỏi các lượt gửi model
+  (#22). Đúng loại câu "những câu nào không tìm thấy tài liệu?" (#27) sẽ tự liệt kê chính nó, và câu sau không thấy câu trả lời vừa rồi.
+- **Cách xử lý:** route `conversations/[id]/messages` gắn `conversation` cho câu trả lời đã lưu khi `isConversationAnswer`: không lưu nguồn nào
+  và không phải câu trả lời cố định `noSourcesAnswer` (`src/lib/grounding.ts`). Câu trả lời tài liệu luôn lưu nguồn, kể cả khi model từ chối.
+  `isRefusedTurn` bỏ qua câu trả lời có `conversation`; `withoutRefusals` và `askedQuestions` dùng nó.
+  Trong 231 câu trả lời đã có trong database, không câu nào bị đổi phân loại.
+- **Kết quả:** câu 4 trả lời "Bạn đã hỏi 3 câu… câu số 3 đã được trả lời". Chạy lại hai bộ 20 câu (`results2b.json`, `results3b.json`):
+  - Bộ 2: câu 13 "câu thứ hai" là IDOR, câu 19 bảng đủ dòng, câu 20 nói rõ câu trả lời 7 không còn trong ngữ cảnh.
+  - Bộ 3: câu 15 "14 câu", câu 16 trả đúng câu về luật và ghi "chưa được trả lời", câu 20–21 liệt kê đúng câu 6.
+  - 64/64 test qua, lint sạch.
+- **Chưa xử lý (rà soát logic #27):**
+  - Chat khách không lưu nguồn, nên không biết câu nào là câu trả lời hội thoại: lỗi này vẫn còn cho khách (tối đa 10 câu).
+  - `questionsNote` liệt kê **mọi** câu hỏi, kể cả câu đã có trong các lượt gửi nguyên văn: 100 câu dài ≈ 21 000 ký tự trong system prompt,
+    ngoài giới hạn lịch sử 12 000 ký tự (#25).
+  - Route chỉ nạp 200 tin nhắn mới nhất: hội thoại hơn 100 lượt thì "câu hỏi đầu tiên" và "đã hỏi bao nhiêu câu" tính từ tin nhắn cũ nhất đã nạp.
+  - Câu hỏi không có câu trả lời đã lưu (lỗi stream) được tính là "đã trả lời" trong danh sách đánh số.
+  - Bộ 3 câu 7 ("Vậy còn ở châu Âu?") lần này không bị từ chối nhưng dùng nguồn rerank 0,01–0,02 (lỗi G, `RAG_MIN_RELEVANCE` = 0,01).

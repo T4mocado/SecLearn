@@ -13,7 +13,7 @@ import { enqueueDocument } from "@/lib/ingest-queue";
 /** Abort ingest when the embed backend looks down (server off, 402/429) instead of trying every chunk. */
 const MAX_CONSECUTIVE_CHUNK_FAILURES = 5;
 
-/** One multi-row INSERT (content + vector) per batch instead of create + UPDATE per chunk. */
+/** One multi-row INSERT (content, vector, keyword index) per batch instead of create + UPDATE per chunk. */
 async function insertChunks(
   documentId: string,
   rows: Array<{ content: string; embedding: number[] }>,
@@ -30,10 +30,10 @@ async function insertChunks(
       Math.ceil(r.content.length / 4),
       vectorLiteral(r.embedding),
     );
-    return `($${p + 1}, $${p + 2}, $${p + 3}, $${p + 4}, $${p + 5}, $${p + 6}::vector)`;
+    return `($${p + 1}, $${p + 2}, $${p + 3}, $${p + 4}, $${p + 5}, $${p + 6}::vector, to_tsvector('english', $${p + 3}))`;
   });
   await prisma.$executeRawUnsafe(
-    `INSERT INTO "DocumentChunk" ("id", "documentId", "content", "chunkIndex", "tokenCount", "embedding") VALUES ${values.join(", ")}`,
+    `INSERT INTO "DocumentChunk" ("id", "documentId", "content", "chunkIndex", "tokenCount", "embedding", "searchText") VALUES ${values.join(", ")}`,
     ...params,
   );
 }

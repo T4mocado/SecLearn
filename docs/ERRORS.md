@@ -295,3 +295,41 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
   - Route chỉ nạp 200 tin nhắn mới nhất: hội thoại hơn 100 lượt thì "câu hỏi đầu tiên" và "đã hỏi bao nhiêu câu" tính từ tin nhắn cũ nhất đã nạp.
   - Câu hỏi không có câu trả lời đã lưu (lỗi stream) được tính là "đã trả lời" trong danh sách đánh số.
   - Bộ 3 câu 7 ("Vậy còn ở châu Âu?") lần này không bị từ chối nhưng dùng nguồn rerank 0,01–0,02 (lỗi G, `RAG_MIN_RELEVANCE` = 0,01).
+
+## 29. Truy xuất bỏ sót đoạn đúng; câu so sánh nhiều chủ đề chỉ lấy được một chủ đề (lỗi D, E)
+- **Triệu chứng** (2 bộ 20 câu, #27):
+  - "SSRF thuộc mục nào trong OWASP Top 10?" trả lời "tài liệu không nêu", dù kho có `DotNet_Security#45` "A10 Server-Side Request Forgery (SSRF)".
+  - "Nên lưu mật khẩu… như thế nào?" lấy Database Security (mật khẩu kết nối database) và nói tài liệu không khuyến nghị thuật toán.
+  - "So sánh ba chủ đề: lưu mật khẩu, session và JWT" chỉ có nguồn rerank ≤ 0,11, bảng ghi sai "Session: cần khóa tài khoản";
+    câu sau "Ngắn hơn nữa" lặp lại ý sai đó (lỗi E).
+- **Nguyên nhân** (đo trên đoạn mục tiêu, `scratch-ctx/de/diag.ts`):
+  - Đoạn đúng nằm ngoài 20 ứng viên vector mà reranker được xem: hạng cosine 85–1550 (A10 SSRF hạng 1376). Model embedding tiếng Việt
+    xếp kém đoạn tiếng Anh dạng mục lục, bảng đối chiếu.
+  - Một câu truy vấn gộp nhiều chủ đề làm điểm của mọi đoạn thấp; tách mỗi chủ đề một truy vấn cho 0,86–1,0. Viết tắt không kèm tên đầy đủ
+    ("SSRF OWASP Top 10 category") cho rerank 0,23 với đoạn A10; có tên đầy đủ cho 0,89.
+  - Năm đoạn được chọn theo điểm chung, nên một chủ đề chiếm hết chỗ.
+- **Cách xử lý:**
+  - `rewritePrompt` (`src/lib/query.ts`): câu hỏi nhiều chủ đề viết thành **mỗi chủ đề một dòng** (tối đa 3, `parseRewrite`); viết tắt kèm tên đầy đủ;
+    câu "ngắn hơn / chi tiết hơn" sau một câu nhiều chủ đề giữ nguyên các chủ đề đó.
+  - Tìm theo từ khóa: cột `DocumentChunk.searchText` (`to_tsvector('english', content)`, chỉ mục GIN, migration `20261016000000_chunk_search_text`),
+    ghi lúc ingest. `keywordCandidates` (`src/lib/rag.ts`) lấy thêm 20 ứng viên theo từ của các câu truy vấn tiếng Anh. Kho cũ sau `db push` được
+    điền một lần mỗi tiến trình (`ensureSearchText`, ~2 giây với 5684 đoạn).
+  - Câu nhiều chủ đề: mỗi chủ đề 10 ứng viên vector, chỉ các truy vấn chủ đề rerank (bỏ câu gốc); `selectByRelevance` giữ đoạn tốt nhất của mỗi chủ đề
+    (≥ 0,1) trước các đoạn mang sang (#26). Bốn truy vấn trên ~100 ứng viên mất 2,7–4,2 giây vì reranker xử lý tuần tự; sau khi giảm còn 0,85–1,8 giây.
+  - Bỏ menu điều hướng của trang OWASP bị lẫn vào PDF (`isSiteMenu`): đoạn nhắc từ 10 tên cheat sheet trở lên (menu nhắc 19–34, mục lục 1–3).
+    743/5684 đoạn là menu; tìm theo từ khóa xếp chúng cao vì chứa mọi tên, và model viết "tài liệu có một mục riêng về…" từ chúng.
+- **Kết quả:**
+  - 7 ca truy xuất (`scratch-ctx/de/cases.ts`, bước viết lại thật, đoạn của mỗi chủ đề có rerank ≥ 0,3): từ 0/13 lên 11/13 chủ đề.
+  - Cùng câu viết lại, 17 câu của bộ 2: rerank trung bình 5 đoạn được chọn 0,518 → 0,666; 14/17 câu có đoạn mới, đều đúng chủ đề sau khi bỏ menu.
+  - Chạy lại 2 bộ 20 câu: "SSRF thuộc mục nào" trả lời "A10 Server-Side Request Forgery (SSRF)" [DotNet_Security#45]. Bảng so sánh 3 chủ đề có
+    nguồn 0,69–0,99 cho cả ba, câu "Ngắn hơn nữa" không còn lặp ý sai.
+  - 69/69 test qua, lint sạch.
+- **Chưa xử lý / đánh đổi:**
+  - Tỷ lệ trích dẫn yếu (< 0,1) cả hai bộ gần như không đổi: 13,1% → 13,5%, trong biên dao động giữa các lần chạy (bộ 2: 15,3% → 13,7%,
+    bộ 3: 11,9% → 13,4%).
+  - Thời gian trả lời trung bình tăng ~1,2–1,7 giây (đo khi chạy song song hai bộ); riêng truy xuất +0,1–0,3 giây cho câu một chủ đề.
+  - "IDOR thuộc mục nào trong OWASP Top 10": đoạn định nghĩa IDOR (0,98) lấn đoạn "A01 Broken Access Control" (0,5–0,6), vẫn trả lời "không đề cập".
+  - "Lưu mật khẩu trong database": tùy câu viết lại; reranker chấm đoạn khuyến nghị Argon2id 0,05 với "store user passwords in a database".
+  - Câu tiếng Anh đầu tiên không có lịch sử không qua bước viết lại, nên không được tách chủ đề.
+  - Menu nên được bỏ lúc ingest (`pdf-cleanup`) rồi reindex; đoạn "A10 …" không mang tiêu đề mục "OWASP Top 10" nên model khó nối hai ý.
+  - Bộ 3 lần cuối, câu 18–19 chép nguyên câu tiếng Anh của tài liệu vào câu trả lời tiếng Việt; lần chạy trước cùng code thì không. Chưa rõ nguyên nhân.

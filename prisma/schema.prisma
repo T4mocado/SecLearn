@@ -123,11 +123,14 @@ model DocumentChunk {
   content    String
   chunkIndex Int
   embedding  Unsupported("vector(768)")?
+  /// to_tsvector('english', content), written with the chunk: keyword candidates for terms the vector search misses.
+  searchText Unsupported("tsvector")?
   tokenCount Int?
   metadata   Json?
   createdAt  DateTime                     @default(now())
 
   @@index([documentId, chunkIndex])
+  @@index([searchText], type: Gin)
 }
 
 model Lesson {

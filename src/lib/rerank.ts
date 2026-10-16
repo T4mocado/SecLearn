@@ -41,8 +41,10 @@ export function bestScores(perQuery: number[][]): number[] {
  * Highest-scoring items first, those below `minRelevance` dropped, at most `topK`. When at least one
  * item passes, at least `minKeep` are kept: cross-lingual scores sit far below the threshold even for
  * relevant chunks. When none pass, the question is off topic and nothing is kept.
+ * `topics`: the best chunk of each topic of a several-topic question, kept when it scores at least
+ * `minRelevance`: one topic's chunks filled the top K and the others went uncited (docs/ERRORS.md #29).
  * `carried`: up to `max` of these ids scoring at least `minRelevance` are kept even when outside the
- * top K, in place of the lowest-scoring others.
+ * top K. Both take the place of the lowest-scoring others, topics first.
  */
 export function selectByRelevance<T extends { id: string; rerankScore: number }>(
   items: T[],
@@ -50,6 +52,7 @@ export function selectByRelevance<T extends { id: string; rerankScore: number }>
     topK: number;
     minRelevance: number;
     minKeep: number;
+    topics?: { ids: string[]; minRelevance: number };
     carried?: { ids: string[]; max: number; minRelevance: number };
   },
 ): T[] {
@@ -57,13 +60,16 @@ export function selectByRelevance<T extends { id: string; rerankScore: number }>
   const passing = sorted.filter((c) => c.rerankScore >= opts.minRelevance).length;
   if (!passing) return [];
   const selected = sorted.slice(0, Math.min(opts.topK, Math.max(passing, opts.minKeep)));
-  const { carried } = opts;
-  if (!carried?.max) return selected;
-  const reserved = sorted
-    .filter((c) => carried.ids.includes(c.id) && c.rerankScore >= carried.minRelevance)
-    .slice(0, carried.max);
-  const missing = reserved.filter((c) => !selected.includes(c));
-  if (!missing.length) return selected;
+  const { topics, carried } = opts;
+  const reserved = [
+    ...new Set([
+      ...(topics ? sorted.filter((c) => topics.ids.includes(c.id) && c.rerankScore >= topics.minRelevance) : []),
+      ...(carried?.max
+        ? sorted.filter((c) => carried.ids.includes(c.id) && c.rerankScore >= carried.minRelevance).slice(0, carried.max)
+        : []),
+    ]),
+  ].slice(0, opts.topK);
+  if (reserved.every((c) => selected.includes(c))) return selected;
   const others = selected.filter((c) => !reserved.includes(c));
   const kept = new Set([...reserved, ...others.slice(0, Math.max(0, opts.topK - reserved.length))]);
   return sorted.filter((c) => kept.has(c));

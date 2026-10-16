@@ -98,7 +98,8 @@ export async function answerQuestion(opts: {
   // The rewrite gets the history as stored: it numbers refused questions too and strips the markers.
   const plan = await planSearch(opts.question, opts.history);
   const { recent, questions, shownFrom } = historyForAnswer(opts.history);
-  const note = questionsNote(questions, { shownFrom, understoodAs: plan.queries[1] });
+  // One rewrite per topic when it asks about several.
+  const note = questionsNote(questions, { shownFrom, understoodAs: plan.queries.slice(1).join("; ") || undefined });
   const messages: ChatTurn[] = [...recent.map(({ role, content }) => ({ role, content })), { role: "user", content: opts.question }];
 
   if (plan.intent === "conversation") {

@@ -285,3 +285,66 @@ test("chatRequestMessages adds the numbered questions to the system prompt, in b
   const plain = chatRequestMessages({ messages: messages.slice(2), context: "[1] x", locale: "vi" });
   assert.ok(plain[0]!.content.endsWith("\n---"));
 });
+
+// --- Several topics, keyword candidates (docs/ERRORS.md #29) ---
+
+test("parseRewrite keeps one query per line, at most three, without list markers or quotes", async () => {
+  const { parseRewrite } = await import("./query");
+  assert.deepEqual(parseRewrite('"Server-Side Request Forgery SSRF OWASP Top 10"'), ["Server-Side Request Forgery SSRF OWASP Top 10"]);
+  assert.deepEqual(
+    parseRewrite("1. password storage hashing\n- session management\n\n* JSON Web Token JWT\nsession management\nfourth topic"),
+    ["password storage hashing", "session management", "JSON Web Token JWT"],
+  );
+  assert.deepEqual(parseRewrite("  \n"), []);
+});
+
+test("rewritePrompt asks for one query per topic and for acronyms with their full names", async () => {
+  const { rewritePrompt } = await import("./query");
+  for (const prompt of [rewritePrompt(true), rewritePrompt(false)]) {
+    assert.match(prompt, /one query per topic/i);
+    assert.match(prompt, /Server-Side Request Forgery SSRF/);
+  }
+});
+
+test("keywordQuery ORs the words of the English queries and skips the others", async () => {
+  const { keywordQuery } = await import("./rag");
+  assert.equal(
+    keywordQuery(["Lỗ hổng SSRF thuộc mục nào?", "Server-Side Request Forgery SSRF OWASP Top 10", "SSRF A10"]),
+    "server | side | request | forgery | ssrf | owasp | top | 10 | a10",
+  );
+  // Only letters and digits reach to_tsquery: its operators in a question cannot break the query.
+  assert.equal(keywordQuery(["what's (a) & b | !c:* top-10"]), "what | top | 10");
+  assert.equal(keywordQuery(["Mật khẩu là gì?"]), "");
+});
+
+test("selectByRelevance keeps the best chunk of each topic above its floor", async () => {
+  const { selectByRelevance } = await import("./rerank");
+  // One topic fills the top K; the second and third topics' best chunks score lower.
+  const items = [item("a", 0.9), item("b", 0.85), item("c", 0.8), item("d", 0.75), item("e", 0.7), item("x", 0.4), item("y", 0.3), item("z", 0.05)];
+  const topics = (best: string[]) => ({ ...opts, topics: { ids: best, minRelevance: 0.1 } });
+  assert.deepEqual(ids(selectByRelevance(items, topics(["a", "x", "y"]))), ["a", "b", "c", "x", "y"]);
+  // A topic whose best chunk is below the floor has nothing relevant: nothing is forced in.
+  assert.deepEqual(ids(selectByRelevance(items, topics(["a", "z"]))), ["a", "b", "c", "d", "e"]);
+  // Topics come before carried chunks when both do not fit.
+  assert.deepEqual(
+    ids(selectByRelevance(items, { ...topics(["a", "x", "y"]), topK: 4, carried: { ids: ["z", "e"], max: 2, minRelevance: 0.1 } })),
+    ["a", "e", "x", "y"],
+  );
+});
+
+test("isSiteMenu: the cheat-sheet site's navigation list, not a table of contents", async () => {
+  const { isSiteMenu, menuNames } = await import("./rag");
+  const names = menuNames([
+    "Bot_Management_and_Anti-Automation_Cheat_Sheet", "Clickjacking_Defense_Cheat_Sheet", "Content_Security_Policy_Cheat_Sheet",
+    "Cookie_Theft_Mitigation_Cheat_Sheet", "Forgot_Password_Cheat_Sheet", "GraphQL_Cheat_Sheet", "HTML5_Security_Cheat_Sheet",
+    "HTTP_Headers_Cheat_Sheet", "Injection_Prevention_Cheat_Sheet", "JAAS_Cheat_Sheet", "Password_Storage_Cheat_Sheet", "wstg-v4.2",
+  ]);
+  assert.ok(names.includes("Bot Management and Anti-Automation") && !names.includes("wstg-v4.2"));
+  // As ingested from the PDFs: the site menu lists every cheat sheet (19-34 names per chunk).
+  const menu =
+    "Bot Management and Anti-Automation Clickjacking Defense Content Security Policy Cookie Theft Mitigation Forgot Password " +
+    "GraphQL HTML5 Security HTTP Headers Injection Prevention JAAS Password Storage Pinning";
+  assert.equal(isSiteMenu(menu, names, 10), true);
+  // A table of contents naming OWASP Top 10 categories answers "which category": kept (ERRORS.md #29).
+  assert.equal(isSiteMenu("A09 Security Logging and Monitoring Failures A10 Server-Side Request Forgery (SSRF) Password Storage", names, 10), false);
+});

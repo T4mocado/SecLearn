@@ -7,6 +7,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   askedQuestions,
+  citationReminder,
   groundedSystemPrompt,
   isConversationAnswer,
   isRefusal,
@@ -35,6 +36,19 @@ test("the prompt forbids outside knowledge and requires citations", () => {
   // Related content counts even under another name; refuse only when nothing is related (ERRORS.md #22).
   assert.match(prompt, /even in other words or without a heading of that name/);
   assert.match(prompt, /Only when no passage has anything on the subject/);
+});
+
+test("no [n] on what the documents lack or on the conversation; earlier answers' facts are not restated", () => {
+  // "Tài liệu không đề cập … [1][2][3][4][5]" and table cells "Không được tài liệu đề cập [1]": 31 in 36 answers (ERRORS.md #32).
+  for (const locale of ["vi", "en"]) {
+    const prompt = groundedSystemPrompt("[1] (source: A)\nText", locale);
+    assert.match(prompt, /Never put \[n\] on a sentence or table cell that only says the passages do not cover something/);
+    assert.match(prompt, /or on what the user asked earlier/);
+    // Facts only in earlier answers were restated and cited to the new passages (ERRORS.md #26, #32).
+    assert.match(prompt, /A fact that is only in an earlier answer, not in the passages below, must not be repeated/);
+  }
+  assert.match(citationReminder("vi"), /không gắn \[n\] cho câu chỉ nói tài liệu không đề cập/);
+  assert.match(citationReminder("en"), /no \[n\] on a sentence that only says the passages do not cover something/);
 });
 
 // --- Refusals are not fed back to the model ---

@@ -394,3 +394,34 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
   - Câu prompt injection về CVE vẫn giữ 2 đoạn Micro Frontend (0,15 và 0,07, vượt cả hai ngưỡng); model từ chối đúng nhưng kể nội dung lạc đề.
   - Câu viết lại lẫn tiếng Việt ("DDoS Distributed Denial of Service là gì") bị coi là không phải tiếng Anh, nên dùng ngưỡng cũ.
   - Ngưỡng 0,05 dựa trên 18 câu thăm dò và 2 bộ 20 câu; chủ đề có trong kho nhưng ít nội dung có thể bị từ chối. Đổi qua `RAG_MIN_RELEVANCE_EN`.
+
+## 32. Câu "tài liệu không đề cập" bị gắn [n]; câu trả lời kể lại ý cũ và gắn vào đoạn mới (lỗi F, #26)
+- **Triệu chứng** (12 câu nối tiếp có lỗi trong bộ 2 và 3 sau #31, mỗi câu 3 lần, `scratch-ctx/f26/exp.ts`): 13,3% câu trích dẫn yếu (< 0,1).
+  43/60 câu yếu là ý của câu trả lời trước, được đoạn mà câu trả lời đó trích hỗ trợ (≥ 0,1) nhưng gắn vào đoạn mới. Riêng "Trả lời lại bằng tiếng Việt
+  giúp mình" có 10 câu như vậy trong một lần: các khuyến nghị SSRF của DotNet gắn vào `[5]`. 31 câu "tài liệu không đề cập…" hoặc ô bảng "Không được
+  tài liệu đề cập" có [n] (đếm theo câu trích dẫn, nên gồm cả dòng bảng có ô khác được trích đúng).
+- **Nguyên nhân:**
+  - Luật 2 ("mọi câu nêu sự kiện phải có [n]") và lời nhắc ngay trước câu hỏi được hiểu cả cho câu nói tài liệu thiếu gì và câu về chính cuộc trò chuyện
+    ("Lỗ hổng bạn hỏi ở câu thứ hai là IDOR [1]").
+  - Luật 5 chỉ nói "không thêm sự kiện ngoài các đoạn"; model vẫn kể lại câu trả lời cũ (có trong lịch sử, không có [n]) và gắn số của đoạn mới.
+  - Yêu cầu sửa câu trả lời trước ("ngắn gọn lại", "trả lời lại bằng tiếng Việt") được tìm theo chủ đề; các đoạn câu trả lời đó trích chỉ được mang sang
+    tối đa 2 đoạn ≥ 0,1 (#26), nên nội dung cần kể lại không có nguồn.
+- **Cách xử lý:**
+  - `groundedSystemPrompt` (`src/lib/grounding.ts`): luật 2 thêm "không gắn [n] cho câu hay ô bảng chỉ nói các đoạn không đề cập, hay cho điều người dùng
+    đã hỏi"; luật 5 thêm "sự kiện chỉ có trong câu trả lời trước, không có trong các đoạn, không nhắc lại". `citationReminder` nhắc lại luật không gắn [n].
+  - Bước viết lại đánh dấu yêu cầu sửa câu trả lời trước bằng dòng đầu `REFORMAT` (`rewritePrompt`, `planFromRewrite` trong `src/lib/query.ts`;
+    `SearchPlan.reformat`). Khi đó `carryFor` (`src/lib/chat-answer.ts`) mang **mọi** đoạn câu trả lời trước đã trích, không ngưỡng, tối đa `RAG_TOP_K`;
+    `selectByRelevance` giữ chúng cả khi không đoạn nào khác vượt ngưỡng. Thử trên hội thoại đã lưu, 2 lần mỗi câu: "3 gạch đầu dòng", "trả lời lại bằng
+    tiếng Việt", "ngắn hơn nữa" được đánh dấu 2/2; "ví dụ tấn công", "phòng chống", "thuộc mục nào", "header nào" không bị đánh dấu.
+- **Kết quả:**
+  - Cùng 12 câu × 3 lần: câu yếu 13,3% → 8,2% (chỉ sửa prompt) → 3,1% (thêm `REFORMAT`); câu dùng lại ý cũ 43 → 22 → 10. Câu hay ô bảng nói "không đề cập"
+    có [n] (đếm theo từng câu, từng ô): 2, đều là câu vừa nêu thông tin có nguồn vừa nói phần thiếu.
+  - Chạy lại 2 bộ 20 câu (so với #31): câu yếu 6,1% → 3,5% và 3,0% → 1,3%; câu "không đề cập" có [n] 3 → 0 ở mỗi bộ. Câu trả lời ngắn hơn (68% và 74% số
+    ký tự), thời gian trung bình 7,9 → 5,7 giây và 8,1 → 6,1 giây. Đọc các câu ngắn đi nhiều nhất: bớt phần kể lại, nội dung trả lời vẫn đúng.
+  - 83/83 test qua, lint sạch.
+- **Chưa xử lý / lưu ý:**
+  - Còn 10/36 câu dùng lại ý cũ, nhiều nhất ở câu hỏi về chủ đề cũ ("lỗ hổng ở câu thứ hai thuộc mục nào") và câu "ngắn hơn nữa" sau bảng 3 chủ đề
+    (đoạn giữ chỗ cho chủ đề chiếm trước đoạn mang sang khi vượt `RAG_TOP_K`).
+  - Bộ 2 câu 7 ("tại sao metadata endpoint nguy hiểm") lần này trả lời "không đề cập": cả 5 đoạn đều không nhắc metadata, lần chạy trước lấy được
+    `SSRF#39`, `Webhook#17` (0,88–0,89). Do câu viết lại khác nhau giữa các lần, không phải do luật mới.
+  - Chat khách không lưu nguồn: `REFORMAT` không có đoạn để mang sang, chỉ có luật trong prompt.

@@ -23,13 +23,6 @@ export type RetrievedChunk = {
 /** Upper bound on the context block in the system prompt. */
 export const CONTEXT_CHAR_LIMIT = 6000;
 
-/**
- * Carried chunks kept outside the top K: at most this many, only when they still score this much
- * against the question. Without the floor, kept chunks unrelated to the question pushed out better
- * ones and doubled weak citations (docs/ERRORS.md #26).
- */
-const CARRY_KEEP = 2;
-const CARRY_MIN_RELEVANCE = 0.1;
 
 /**
  * Keyword candidates per question: half the vector ones. They add to every reranking, which runs one
@@ -117,12 +110,11 @@ export async function retrieveChunks(opts: {
   /** Queries already planned by the caller (`planSearch`); skips the rewrite call. */
   queries?: string[];
   /**
-   * Chunks earlier answers cited, added to the candidates: "tell me more about X" must see the
-   * passage X came from, which a fresh search may miss (docs/ERRORS.md #22). Reranked like the rest;
-   * the best CARRY_KEEP above CARRY_MIN_RELEVANCE stay even outside the top K: when the search missed
-   * them, the model cited the new passages for facts from the earlier answers (docs/ERRORS.md #26).
+   * Chunks earlier answers cited, added to the candidates: "tell me more about X" must see the passage X
+   * came from, which a fresh search may miss (docs/ERRORS.md #22). Reranked like the rest; up to `max`
+   * scoring at least `minRelevance` stay even outside the top K (`carryFor`, docs/ERRORS.md #26, #32).
    */
-  carryChunkIds?: string[];
+  carry?: { ids: string[]; max: number; minRelevance: number };
 }): Promise<RetrievedChunk[]> {
   const env = getEnv();
   const topK = env.RAG_TOP_K;
@@ -137,7 +129,7 @@ export async function retrieveChunks(opts: {
   const lists = await Promise.all([
     ...queries.map((query) => retrieveCandidates({ query, visibilities: opts.visibilities, limit: perQueryLimit })),
     keywordCandidates(keywordQuery(queries), opts.visibilities, KEYWORD_CANDIDATES),
-    fetchChunksById(opts.carryChunkIds ?? [], opts.visibilities, queries.at(-1)!),
+    fetchChunksById(opts.carry?.ids ?? [], opts.visibilities, queries.at(-1)!),
   ]);
   const menu = await names;
   const candidates = mergeCandidates(lists).filter((c) => !isSiteMenu(c.content, menu));
@@ -164,7 +156,7 @@ export async function retrieveChunks(opts: {
       topK,
       ...relevanceFloor(scoring, env),
       topics: { ids: topicBest, minRelevance: TOPIC_MIN_RELEVANCE },
-      carried: { ids: opts.carryChunkIds ?? [], max: CARRY_KEEP, minRelevance: CARRY_MIN_RELEVANCE },
+      carried: opts.carry,
     },
   );
 }

@@ -1,4 +1,5 @@
 import type { DocVisibility } from "@prisma/client";
+import { getEnv } from "@/lib/env";
 import { buildContext, retrieveChunks } from "@/lib/rag";
 import { streamChatCompletion, type ChatTurn } from "@/lib/llm";
 import { planSearch } from "@/lib/query";
@@ -54,6 +55,31 @@ export type HistoryTurn = ChatTurn & { citedChunkIds?: string[]; conversation?: 
  */
 export function carriedChunkIds(recent: HistoryTurn[]): string[] {
   return [...new Set(recent.toReversed().flatMap((m) => (m.role === "assistant" ? (m.citedChunkIds ?? []) : [])))];
+}
+
+/**
+ * Carried chunks kept outside the top K: at most this many, only when they still score this much
+ * against the question. Without the floor, kept chunks unrelated to the question pushed out better
+ * ones and doubled weak citations (docs/ERRORS.md #26).
+ */
+const CARRY_KEEP = 2;
+const CARRY_MIN_RELEVANCE = 0.1;
+
+/**
+ * Which earlier chunks to carry into retrieval. A REFORMAT request ("Trả lời lại bằng tiếng Việt") redoes
+ * the previous answer: every chunk it cited stays, whatever it scores against the rewrite. Without them
+ * the model restated that answer and cited the new passages for it, 10 weak citations in one answer
+ * (docs/ERRORS.md #32).
+ */
+export function carryFor(
+  recent: HistoryTurn[],
+  reformat: boolean,
+  topK: number,
+): { ids: string[]; max: number; minRelevance: number } {
+  if (reformat) {
+    return { ids: recent.findLast((m) => m.role === "assistant")?.citedChunkIds ?? [], max: topK, minRelevance: 0 };
+  }
+  return { ids: carriedChunkIds(recent), max: CARRY_KEEP, minRelevance: CARRY_MIN_RELEVANCE };
 }
 
 /**
@@ -118,7 +144,7 @@ export async function answerQuestion(opts: {
     query: opts.question,
     visibilities: opts.visibilities,
     queries: plan.queries,
-    carryChunkIds: carriedChunkIds(recent),
+    carry: carryFor(recent, !!plan.reformat, getEnv().RAG_TOP_K),
   });
   const { context, sources } = buildContext(chunks);
   const tokens = sources.length

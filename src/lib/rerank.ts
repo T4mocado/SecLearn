@@ -62,8 +62,6 @@ export function selectByRelevance<T extends { id: string; rerankScore: number }>
   const sorted = [...items].sort((a, b) => b.rerankScore - a.rerankScore);
   const floor = Math.max(opts.minRelevance, (opts.relativeMin ?? 0) * (sorted[0]?.rerankScore ?? 0));
   const passing = sorted.filter((c) => c.rerankScore >= floor).length;
-  if (!passing) return [];
-  const selected = sorted.slice(0, Math.min(opts.topK, Math.max(passing, opts.minKeep)));
   const { topics, carried } = opts;
   const reserved = [
     ...new Set([
@@ -73,6 +71,9 @@ export function selectByRelevance<T extends { id: string; rerankScore: number }>
         : []),
     ]),
   ].slice(0, opts.topK);
+  // Nothing passes: off topic, unless reserved chunks have no floor (a REFORMAT request's previous passages).
+  if (!passing && !reserved.length) return [];
+  const selected = passing ? sorted.slice(0, Math.min(opts.topK, Math.max(passing, opts.minKeep))) : [];
   if (reserved.every((c) => selected.includes(c))) return selected;
   const others = selected.filter((c) => !reserved.includes(c));
   const kept = new Set([...reserved, ...others.slice(0, Math.max(0, opts.topK - reserved.length))]);

@@ -12,6 +12,8 @@ const ANSWER_CHARS = 300;
 const NO_TOPIC = "NONE";
 /** The rewrite model's answer when a message is about the conversation itself. */
 const ABOUT_CHAT = "CONVERSATION";
+/** First line of the rewrite when a message only asks to change the previous answer. */
+const REFORMAT = "REFORMAT";
 /** A letter outside ASCII (Vietnamese diacritics, other scripts): the question is not plain English. */
 const NON_ENGLISH_RE = /(?![\u0000-\u007f])\p{L}/u;
 
@@ -21,7 +23,15 @@ const NON_ENGLISH_RE = /(?![\u0000-\u007f])\p{L}/u;
  * - `conversation`: the message is about the conversation itself ("tóm tắt lại", "câu đầu tiên mình
  *   hỏi là gì"); answer from the earlier messages, without retrieval (docs/ERRORS.md #21).
  */
-export type SearchPlan = { intent: "search" | "conversation"; queries: string[] };
+export type SearchPlan = {
+  intent: "search" | "conversation";
+  queries: string[];
+  /**
+   * The message only asks to change the previous answer ("Trả lời lại bằng tiếng Việt", "ngắn gọn hơn"): its
+   * passages must be there again, or the model restates its facts and cites the new ones (docs/ERRORS.md #32).
+   */
+  reformat?: boolean;
+};
 
 /**
  * Most of the corpus is English, and the cross-encoder scores a Vietnamese question against an
@@ -123,8 +133,8 @@ export function rewritePrompt(hasConversation: boolean): string {
     'Resolve references with the earlier questions: "it" or "that" is the most recent topic; ' +
       '"the first topic" or "the second vulnerability" counts topics in the order they were first asked.',
     "Include only the topic the latest message asks about; do not add terms from earlier questions it does not refer to.",
-    "If it only asks to change the previous answer (shorter, more detail, an example, simpler), reply with a query for the topic of the previous question; " +
-      "when that question was about several topics, one query per topic as above.",
+    "If it only asks to change the previous answer (shorter, more detail, an example, simpler, another language), reply with a first line " +
+      `${REFORMAT}, then a query for the topic of the previous question; when that question was about several topics, one query per topic as above.`,
     `If it asks about the conversation itself rather than a topic (summarise the whole discussion, what I asked earlier), reply exactly ${ABOUT_CHAT}. ` +
       "Asking only what an earlier question was, how many questions were asked, or which ones were not answered " +
       `("Câu hỏi thứ 6 của mình là gì?", "Mình đã hỏi bao nhiêu câu?") is about the conversation too: reply exactly ${ABOUT_CHAT}. ` +
@@ -155,17 +165,26 @@ export async function planSearch(query: string, history: Array<ChatTurn & Stored
       maxTokens: REWRITE_MAX_TOKENS,
       signal: AbortSignal.timeout(REWRITE_TIMEOUT_MS),
     });
-    const rewrites = parseRewrite(raw);
-    const word = (rewrites[0] ?? "").toUpperCase().replace(/\W/g, "");
-    if (word === ABOUT_CHAT && context) return { intent: "conversation", queries: [] };
-    // No topic: search with the message alone, which finds nothing and gets the fixed reply.
-    if (!rewrites.length || word === NO_TOPIC || word === ABOUT_CHAT) return original;
-    const extra = rewrites.filter((q) => q.toLowerCase() !== query.trim().toLowerCase());
-    return extra.length ? { intent: "search", queries: [query, ...extra] } : original;
+    return planFromRewrite(raw, query, !!context);
   } catch (err) {
     console.warn("[query] rewrite failed, searching with the original:", err instanceof Error ? err.message : err);
     return original;
   }
+}
+
+/** The plan a rewrite reply stands for (see `rewritePrompt`); `hasConversation` as the prompt was chosen. */
+export function planFromRewrite(raw: string, query: string, hasConversation: boolean): SearchPlan {
+  const original: SearchPlan = { intent: "search", queries: [query] };
+  const marked = raw.trim().toUpperCase().startsWith(REFORMAT);
+  const lines = parseRewrite(marked ? raw.trim().slice(REFORMAT.length).replace(/^[:\s]+/, "") : raw);
+  const reformat = hasConversation && marked;
+  const word = (lines[0] ?? "").toUpperCase().replace(/\W/g, "");
+  if (word === ABOUT_CHAT && hasConversation) return { intent: "conversation", queries: [] };
+  // No topic: search with the message alone, which finds nothing and gets the fixed reply.
+  if (!lines.length || word === NO_TOPIC || word === ABOUT_CHAT) return original;
+  const extra = lines.filter((q) => q.toLowerCase() !== query.trim().toLowerCase());
+  if (!extra.length) return original;
+  return { intent: "search", queries: [query, ...extra], ...(reformat ? { reformat: true } : {}) };
 }
 
 /** Queries to retrieve with (see `planSearch`); a conversation question still gets the message itself. */

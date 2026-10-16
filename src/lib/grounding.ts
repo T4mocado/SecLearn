@@ -30,13 +30,15 @@ export function groundedSystemPrompt(context: string, locale: string): string {
     "You are SecLearn, a beginner cybersecurity tutor. You answer ONLY from the numbered SecLearn document passages below.",
     "Rules:",
     "1. Use only facts stated in the passages. Do not add facts, examples, numbers, tools or advice from your own knowledge, even when you are sure they are correct.",
-    "2. Cite every sentence that states a fact right after it, e.g. [1] or [2][3]. Only cite numbers that appear below, and do not add a separate reference list.",
+    "2. Cite every sentence that states a fact right after it, e.g. [1] or [2][3]. Only cite numbers that appear below, and do not add a separate reference list. " +
+      "Never put [n] on a sentence or table cell that only says the passages do not cover something, or on what the user asked earlier: no passage states it.",
     "3. A passage is relevant when it has information on the subject, even in other words or without a heading of that name " +
       '(e.g. "limit file upload size" is about limiting resources). Answer first with what the relevant passages say. ' +
       `Then, if part of the question is not covered, say which part (e.g. "${locale === "vi" ? "Tài liệu không đề cập đến" : "The documents do not cover"} ..."). ` +
       "Only when no passage has anything on the subject, say so in one or two sentences.",
     "4. You may rephrase, translate, summarise and structure the passages (headings, lists). Passages may be in English.",
-    "5. Earlier answers in this conversation were also based on the documents; you may refer to them, but do not add facts that are not in the passages below.",
+    "5. Earlier answers in this conversation were also based on the documents; you may refer to them, but do not add facts that are not in the passages below. " +
+      "A fact that is only in an earlier answer, not in the passages below, must not be repeated: citing a passage below for it would be wrong.",
     "6. Never invent CVE numbers or claim access to private data.",
     `Answer in ${locale === "vi" ? "Vietnamese" : "English"}.`,
     `Passages:\n---\n${context}\n---`,
@@ -115,12 +117,15 @@ export function questionsNote(
  * without their [n] markers (they point at older passages), and in long chats the model copied that
  * style and stopped citing (docs/ERRORS.md #21); restating the rule right before the question keeps it.
  * Only about citing: "answer only from the passages above" made it refuse follow-ups whose passages
- * were relevant, 6/6 times (docs/ERRORS.md #22).
+ * were relevant, 6/6 times (docs/ERRORS.md #22). It also says which sentences get none: "the documents
+ * do not cover …" was cited [1]…[5] (docs/ERRORS.md #32).
  */
 export function citationReminder(locale: string): string {
   return locale === "vi"
-    ? "\n\n(Hãy gắn [n] sau mỗi câu nêu thông tin lấy từ các đoạn tài liệu, kể cả khi các câu trả lời trước không có [n].)"
-    : "\n\n(Put [n] after every sentence that states information from the passages, even though earlier answers show no [n].)";
+    ? "\n\n(Hãy gắn [n] sau mỗi câu nêu thông tin lấy từ các đoạn tài liệu, kể cả khi các câu trả lời trước không có [n]; " +
+        "không gắn [n] cho câu chỉ nói tài liệu không đề cập.)"
+    : "\n\n(Put [n] after every sentence that states information from the passages, even though earlier answers show no [n]; " +
+        "no [n] on a sentence that only says the passages do not cover something.)";
 }
 
 /** Short replies saying the documents lack something: the fixed reply, or a model refusal. */

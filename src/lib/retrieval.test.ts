@@ -384,3 +384,49 @@ test("relevanceFloor: strict when an English query scored the chunks, lenient fo
   // The translation failed: the cross-encoder scores Vietnamese against English chunks ~100x lower (ERRORS.md #10, #17).
   assert.deepEqual(relevanceFloor(["Mật khẩu mạnh cần những gì?"], env), { minRelevance: 0.01, minKeep: 2, relativeMin: 0 });
 });
+
+test("planFromRewrite reads the rewrite: queries, REFORMAT, CONVERSATION and NONE", async () => {
+  const { planFromRewrite } = await import("./query");
+  const q = "Trả lời lại bằng tiếng Việt giúp mình";
+  // Asking to redo the previous answer: its passages must be there again (ERRORS.md #32).
+  assert.deepEqual(planFromRewrite("REFORMAT\nXML External Entity XXE Server-Side Request Forgery SSRF", q, true), {
+    intent: "search",
+    queries: [q, "XML External Entity XXE Server-Side Request Forgery SSRF"],
+    reformat: true,
+  });
+  assert.deepEqual(planFromRewrite("Password storage\nSession management", "So sánh", true), {
+    intent: "search",
+    queries: ["So sánh", "Password storage", "Session management"],
+  });
+  assert.deepEqual(planFromRewrite("CONVERSATION", "Tóm tắt lại", true), { intent: "conversation", queries: [] });
+  assert.deepEqual(planFromRewrite("NONE", "Cảm ơn", true), { intent: "search", queries: ["Cảm ơn"] });
+  // Without a conversation there is no previous answer to redo.
+  assert.deepEqual(planFromRewrite("REFORMAT\nXSS", "Ngắn gọn", false), { intent: "search", queries: ["Ngắn gọn", "XSS"] });
+});
+
+test("rewritePrompt marks a request to change the previous answer with REFORMAT", async () => {
+  const { rewritePrompt } = await import("./query");
+  assert.match(rewritePrompt(true), /only asks to change the previous answer.*first line REFORMAT/);
+  assert.doesNotMatch(rewritePrompt(false), /REFORMAT/);
+});
+
+test("carryFor: a REFORMAT request keeps every chunk the previous answer cited, whatever its score", async () => {
+  const { carryFor } = await import("./chat-answer");
+  const recent = [
+    { role: "user" as const, content: "XSS?" },
+    { role: "assistant" as const, content: "…", citedChunkIds: ["xss1"] },
+    { role: "user" as const, content: "XXE và SSRF?" },
+    { role: "assistant" as const, content: "…", citedChunkIds: ["xxe1", "ssrf1", "dotnet48"] },
+  ];
+  assert.deepEqual(carryFor(recent, true, 5), { ids: ["xxe1", "ssrf1", "dotnet48"], max: 5, minRelevance: 0 });
+  assert.deepEqual(carryFor(recent, false, 5), { ids: ["xxe1", "ssrf1", "dotnet48", "xss1"], max: 2, minRelevance: 0.1 });
+});
+
+test("selectByRelevance keeps carried chunks with no floor even when nothing else passes", async () => {
+  const { selectByRelevance } = await import("./rerank");
+  const english = { topK: 5, minRelevance: 0.05, minKeep: 0, relativeMin: 0.1 };
+  assert.deepEqual(
+    ids(selectByRelevance([item("ssrf1", 0.03), item("x", 0.02)], { ...english, carried: { ids: ["ssrf1"], max: 5, minRelevance: 0 } })),
+    ["ssrf1"],
+  );
+});

@@ -1,6 +1,6 @@
 import type { DocVisibility } from "@prisma/client";
 import { getEnv } from "@/lib/env";
-import { buildContext, entityInDocuments, retrieveChunks, type RetrievedChunk } from "@/lib/rag";
+import { buildContext, cellLabel, entityInDocuments, retrieveChunks, type CompareCell, type RetrievedChunk } from "@/lib/rag";
 import { streamChatCompletion, type ChatTurn } from "@/lib/llm";
 import { planSearch, type SearchPlan } from "@/lib/query";
 import {
@@ -129,9 +129,20 @@ export async function retrieveForQuestion(opts: {
       queries: plan.queries,
       carry: carryFor(recent, !!plan.reformat, getEnv().RAG_TOP_K),
       ...(plan.passage ? { passage: plan.passage } : {}),
+      ...(compareCells(plan) ? { cells: compareCells(plan) } : {}),
     }),
   ]);
   return { plan, chunks: keepAfterEntityCheck(entityFound, chunks) };
+}
+
+/**
+ * The cells a comparison's queries were built for, in their order (`compareQueries`): one per item, or per
+ * (item, aspect). None when the queries were cut to one per item (`truncated`) or there is no comparison.
+ */
+export function compareCells(plan: SearchPlan): CompareCell[] | undefined {
+  const c = plan.compare;
+  if (!c || c.truncated || plan.reformat) return undefined;
+  return c.aspects?.length ? c.items.flatMap((item) => c.aspects!.map((aspect) => ({ item, aspect }))) : c.items.map((item) => ({ item }));
 }
 
 /** Below this best question score, chunks found for an entity the documents never mention are not trusted. */
@@ -185,7 +196,7 @@ export async function answerQuestion(opts: {
     return { tokens, sources: [] };
   }
 
-  const { context, sources } = buildContext(chunks);
+  const { context, sources } = buildContext(chunks, { cells: compareCells(plan)?.map(cellLabel) });
   const tokens = sources.length
     ? await streamChatCompletion({ messages, questionsNote: note, context, locale: opts.locale, signal: opts.signal })
     : fixedAnswer(noSourcesAnswer(opts.locale));

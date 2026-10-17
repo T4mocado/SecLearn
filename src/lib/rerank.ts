@@ -8,7 +8,8 @@ async function postRerank(body: object, expected: number): Promise<number[] | nu
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15_000),
+    // One request may now hold every query of a comparison against every candidate (~700 pairs).
+    signal: AbortSignal.timeout(15_000 + expected * 20),
   });
   if (!res.ok) throw new Error(`rerank ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const scores = (await res.json()) as unknown;
@@ -30,6 +31,47 @@ export function rerankScores(query: string, documents: string[]): Promise<number
 /** Score (0..1) of each (query, document) pair; needs an embed server that accepts `pairs`. */
 export function rerankPairs(pairs: Array<[string, string]>): Promise<number[] | null> {
   return postRerank({ pairs }, pairs.length);
+}
+
+/** Chunks kept per comparison question at most, and per cell when it has at most CELLS_TWO_EACH cells. */
+const CELLS_TOP_K_MAX = 8;
+const CELLS_TWO_EACH = 3;
+
+/**
+ * Chunks to keep for a comparison of `cells` (item, aspect) cells: room for each cell's reserved chunks (two each up
+ * to three cells, one each beyond) and one more, never fewer than `topK`, at most CELLS_TOP_K_MAX. Five chunks for six
+ * cells left the CSRF and SQL injection defences out (docs/ERRORS.md #36).
+ */
+export function cellsTopK(cells: number, topK: number): number {
+  const reserved = cells <= CELLS_TWO_EACH ? 2 * cells : cells;
+  return Math.min(CELLS_TOP_K_MAX, Math.max(topK, reserved + 1));
+}
+
+/**
+ * Chunks reserved for the cells of a comparison, grouped by cell in cell order. Round by round, each cell takes the
+ * candidate it scores highest that no cell took yet, at least `minFirst` in the first round and `minNext` after; the
+ * second round only runs for at most CELLS_TWO_EACH cells. Taking each topic's best alone, "XSS attack mechanism" and
+ * "XSS prevention" both took the definition chunk (1.00 for both) and no cell got a defence (docs/ERRORS.md #36).
+ * `scores[cell][candidate]`, `ids[candidate]`.
+ */
+export function reserveCells(scores: number[][], ids: string[], opts: { minFirst: number; minNext: number }): string[] {
+  const rounds = scores.length <= CELLS_TWO_EACH ? 2 : 1;
+  const taken = new Set<number>();
+  const byCell: number[][] = scores.map(() => []);
+  for (let round = 0; round < rounds; round++) {
+    const min = round === 0 ? opts.minFirst : opts.minNext;
+    scores.forEach((cell, j) => {
+      let best = -1;
+      cell.forEach((s, i) => {
+        if (!taken.has(i) && s >= min && (best < 0 || s > cell[best]!)) best = i;
+      });
+      if (best >= 0) {
+        taken.add(best);
+        byCell[j]!.push(best);
+      }
+    });
+  }
+  return byCell.flat().map((i) => ids[i]!);
 }
 
 /** Element-wise best score of each document over several queries (original + translated question). */

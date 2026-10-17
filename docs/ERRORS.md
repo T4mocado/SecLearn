@@ -489,3 +489,75 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
   - "Kubernetes 1.31" (kho không có phiên bản này) trả lời bằng đoạn về Kubernetes nói chung (0,86) thay vì từ chối, theo quy tắc thiếu thực thể ở trên.
   - Bước viết lại + truy xuất 1,07 → 1,8-2,3 giây (câu viết lại dài hơn, thêm một lượt rerank, câu tiếng Anh đầu tiên cũng gọi LLM).
   - Hội thoại cũ (trước #33) mất mọi `chunkId` sau khi đánh chỉ mục lại, nên REFORMAT của chúng không còn đoạn để mang sang (đo trên 2f: 24,5% câu yếu).
+
+## 35. Câu so sánh không được tách chủ đề; câu nhiều khía cạnh chỉ có đoạn định nghĩa
+- **Triệu chứng** (bộ 10 câu so sánh, `scratch-ctx/run10.mjs`; bước viết lại chạy lại 3 lần mỗi câu, `scratch-ctx/ab/cmp-probe.ts`):
+  - "Lập bảng so sánh TOTP, SMS OTP và khóa bảo mật FIDO2" ra một truy vấn gộp 3/3 lần; bảng có 15 câu/ô "Các đoạn tài liệu tìm được không đề cập đến SMS OTP".
+  - Tham chiếu ngầm "ba lỗ hổng đó", "các phương thức đó" ra một truy vấn 6/6 lần; "nên chọn cái nào cho ngân hàng" bỏ sót `MFA#40` (SMS không dùng cho ngân hàng).
+  - "So sánh XSS, CSRF và SQL injection về cách tấn công và cách phòng chống": tách 3 chủ đề nhưng mỗi truy vấn gộp hai khía cạnh, chỉ lấy được
+    đoạn định nghĩa; phòng chống CSRF/SQLi trả lời "không đề cập" dù truy vấn theo khía cạnh tìm được `CSRF#3`, `gRPC#8` (0,97-0,99).
+- **Nguyên nhân:** `QUERY_SHAPE` chỉ có một câu "several distinct topics (a comparison, "X and Y")"; model hiểu hẹp ("So sánh A, B và C" tách 3/3,
+  "Lập bảng…", câu tham chiếu ngầm thì không). Không có khái niệm khía cạnh. Hướng nghiên cứu: `docs/COMPARISON_QUESTIONS_RESEARCH.md`.
+- **Cách xử lý:**
+  - Bước viết lại thêm dòng `COMPARE:` (các đối tượng, " | ", tối đa 4, mỗi mục là cụm tìm kiếm độc lập; gồm cả tham chiếu tập hợp tới câu trước)
+    và `ASPECTS:` (khía cạnh người dùng nêu, tối đa 3), kèm ví dụ tiếng Việt. `planFromRewrite` **sinh truy vấn bằng code** (`compareQueries`):
+    một truy vấn mỗi mục, hoặc mỗi ô (mục, khía cạnh) khi số ô ≤ `MAX_CELL_QUERIES = 6`; vượt trần thì một truy vấn mỗi mục kèm các khía cạnh
+    (`compare.truncated`). `SearchPlan.compare` ghi lại để đo.
+  - Hai lỗi lộ ra khi đo, đã sửa:
+    - Viết `COMPARE` thì model thường bỏ dòng truy vấn (cả sau `REFORMAT`): lần đầu 9/60 câu tường minh còn tách được và "Tóm tắt lại bảng so sánh
+      vừa rồi" bị từ chối 2/2. Nay mục COMPARE đủ để tìm, và REFORMAT không có dòng truy vấn dùng các mục COMPARE.
+    - 6 ô + câu gốc + HyDE + đoạn mang sang là 9 yêu cầu embedding song song; server cục bộ (`ThreadingHTTPServer`, hàng đợi mặc định 5) từ chối
+      3/9 (đo: 6 song song 0 lỗi, 9 → 3 lỗi, 12 → 5 lỗi), câu hỏi lỗi 502 (Q2, Q4, Q9). `retrieveChunks` nay embedding mọi truy vấn trong **một** lô
+      (`embedTexts`) và chấm mọi (truy vấn, ứng viên) trong **một** yêu cầu `rerankPairs`; thời gian chờ rerank tăng theo số cặp.
+  - Prompt nói rõ dòng truy vấn tiếng Anh luôn đứng đầu: câu không còn dòng truy vấn trên 2 hội thoại đã lưu (60 lần viết lại) 5/60 → 2/60.
+- **Kết quả:**
+  - Bộ thử bước viết lại (`scratch-ctx/cmp/probe.ts`, 34 ca × 3): câu so sánh tường minh tách đúng 36/60 → 60/60, tham chiếu ngầm 6/18 → 18/18,
+    nhận khía cạnh 0/9 → 9/9, câu đối chứng một chủ đề tách nhầm 0/30 → 0/30.
+  - Bộ 10 câu so sánh (1 lần trước, 3 lần sau): câu/ô "không đề cập" ở bảng TOTP/SMS/FIDO2 15 → 1-2; "nên chọn cho ngân hàng" trích `MFA#40`
+    ("không dùng SMS cho … ngân hàng"); "ba lỗ hổng đó" có đoạn cho CSRF (0,01 → 0,91) và SQLi (0 → 0,64); trích dẫn yếu 4,0% → 1,1% (lần cuối);
+    thời gian p50 8,1 → 8,2 giây.
+  - Bộ đo #34 (`scratch-ctx/patch/eval.ts`): tìm lại ca bỏ sót 16/16 → 15/16 (SMS 1/2), đủ phần cần 12/16 → 13/16, đối chứng 12/12, câu ngoài tài liệu bị
+    từ chối 10/14 → 9/14, đoạn không liên quan được chọn 4/141 → 0/148, truy xuất trung bình 2,3 → 1,8 giây (một lô embedding, một yêu cầu rerank).
+  - Bộ 20 câu thường (bộ 9): trích dẫn yếu 3,1% → 4,2% (3 câu yếu là "Tóm tắt câu trả lời về XXE", lỗi REFORMAT câu cũ đã có từ trước), p50 7,0 → 7,2 giây;
+    "Lỗ hổng ở câu số 9 thuộc mục nào trong OWASP Top 10?" trả lời đúng A04:2017. 102/102 test qua, lint sạch.
+- **Chưa xử lý / lưu ý:**
+  - `RAG_TOP_K = 5` nhỏ hơn 6 ô: câu 3 lỗ hổng × 2 khía cạnh có đoạn ≥ 0,98 cho mọi ô khi chấm lại, nhưng 5 đoạn được chọn vẫn là đoạn định nghĩa và câu trả
+    lời vẫn nói thiếu chi tiết phòng chống CSRF/SQLi. Cần K theo số ô và giữ chỗ theo ô (bước 3 trong `COMPARISON_QUESTIONS_RESEARCH.md`).
+  - FIDO2 yếu đi trong bảng TOTP/SMS/FIDO2 (đoạn tốt nhất 0,95 → 0,44, chỉ có đoạn FIDO UAF/U2F) và câu ngân hàng (0,98 → 0,06-0,12): mỗi mục chỉ được giữ
+    một chỗ và FIDO2 thua TOTP/SMS về điểm.
+  - Model vẫn tự thêm khía cạnh không được nêu ("Nên dùng bcrypt hay Argon2" → security | performance; allowlist/denylist; HSTS/redirect), làm số truy vấn
+    tăng gấp đôi.
+  - "CORS là gì?" đôi khi chép nguyên câu làm dòng truy vấn (2/60); HyDE vẫn được dùng.
+  - "WPA3 có an toàn hơn WPA2 không?" (câu ngoài tài liệu của #34) nay được tách thành so sánh và kéo 2 đoạn 1/2 lần.
+  - Mỗi bộ chạy 1-3 lần; trích dẫn yếu ở bộ 9 tăng 1,1 điểm, sát ngưỡng chấp nhận (≤ 1 điểm), cần chạy thêm để biết có phải dao động không.
+
+## 36. Câu so sánh nhiều ô: 5 chỗ cho 6 ô, các ô trùng đoạn định nghĩa, model không biết đoạn nào thuộc ô nào
+- **Triệu chứng** (sau #35): "So sánh XSS, CSRF và SQL injection về cách tấn công và cách phòng chống" có 6 truy vấn ô nhưng 5 đoạn được chọn đều là
+  đoạn định nghĩa; câu trả lời nói thiếu chi tiết phòng chống CSRF/SQLi. Bảng TOTP/SMS/FIDO2 chỉ giữ một đoạn mỗi mục.
+- **Nguyên nhân:**
+  - `topicBest` lấy đoạn cao nhất của từng truy vấn: "XSS attack mechanism" và "XSS prevention" cùng chọn đoạn định nghĩa (1,00 cho cả hai), bỏ trùng
+    thì ô phòng chống không còn đoạn riêng. Phần còn lại xếp theo điểm cao nhất trên mọi ô, đoạn định nghĩa luôn thắng.
+  - `selectByRelevance` cắt chỗ giữ ở `RAG_TOP_K = 5` < 6 ô. `buildContext` dừng ở 6000 ký tự mà không báo (8 đoạn p90 ≈ 6600).
+- **Cách xử lý:**
+  - `reserveCells` (`src/lib/rerank.ts`): chia vòng, mỗi ô lấy ứng viên nó chấm cao nhất mà chưa ô nào lấy (vòng 1 ≥ 0,1; vòng 2 ≥ 0,3, chỉ khi ≤ 3 ô),
+    xếp theo ô. `cellsTopK`: K = min(8, max(`RAG_TOP_K`, chỗ giữ + 1)), chỗ giữ = 2 × số ô khi ≤ 3 ô, ngược lại = số ô.
+  - `retrieveChunks(cells)` (`src/lib/rag.ts`): các ô từ `SearchPlan.compare` (`compareCells` trong `chat-answer.ts`; không dùng khi `truncated` hay REFORMAT).
+    Đoạn được chọn mang nhãn các ô nó đạt ≥ 0,3 (`labelByCell`), đoạn giữ chỗ đứng trước theo thứ tự ô. Câu không so sánh không đổi.
+  - `buildContext(chunks, { cells })`: tiêu đề đoạn thêm `; for: <ô>`, giới hạn `max(6000, số đoạn × 850)`, dòng cuối "No passage found for: …" cho ô không
+    đoạn nào phủ. Số [n] không đổi, kiểm tra trích dẫn và judge không đổi.
+- **Kết quả:**
+  - Bộ đo truy xuất cố định truy vấn (`scratch-ctx/cmp/cells.ts`, 12 ca, 41 ô): ô có đoạn riêng ≥ 0,3: 32/41 → 33/41; câu 3 lỗ hổng × 2 khía cạnh 5/6 → 6/6
+    (K 5 → 7, nhãn đúng ô); đoạn mốc 4/6 → 4/6. Ô còn thiếu không có ứng viên ≥ 0,3 (SCA, "session cookie revocation/scalability", FIDO2, "cost"),
+    tức lỗi ở truy vấn/ứng viên, không ở số chỗ.
+  - Bộ đo #34: tìm lại 16/16, đủ phần cần 14/16, đối chứng 12/12, ngoài tài liệu bị từ chối 10/14, đoạn không liên quan 2/153 (trong biên dao động; câu thường
+    không đi qua đường mới).
+  - Bộ 10 câu so sánh (2 lần, so với lần cuối của #35): câu 3 lỗ hổng có biện pháp CSRF token (`Laravel#30`, VerifyCSRFToken) cả 2 lần; bảng TOTP/SMS/FIDO2 có
+    7 nguồn, thêm `MFA#40` (rủi ro SMS); trích dẫn yếu 1,1% → 0,0% và 3,4%; trung vị thời gian câu so sánh 8,8 → 9,7 và 9,2 giây (câu 4 và 8: +1,4 đến +3,2 giây).
+  - Bộ 20 câu thường: trích dẫn yếu 4,2% → 2,4%, p50 7,2 → 7,1 giây. 106/106 test qua, lint `src` sạch.
+- **Chưa xử lý:**
+  - Prepared statement (`SQL_Injection_Prevention#4`) vẫn không vào: truy vấn ô "SQL Injection SQLi prevention" chấm nó 0,01, còn đoạn giới thiệu của cheat sheet
+    0,98 vì tiêu đề tài liệu có chữ "Prevention". Câu trả lời vẫn nói "không nêu chi tiết bốn lựa chọn phòng chống". Cần truy vấn ô nêu thuật ngữ cụ thể
+    (HyDE theo ô, hoặc ASPECTS viết kèm thuật ngữ chuẩn) hoặc vòng tìm bổ sung (bước 5 trong `COMPARISON_QUESTIONS_RESEARCH.md`).
+  - FIDO2 vẫn "không đề cập" trong bảng TOTP/SMS/FIDO2: không ứng viên nào ≥ 0,3 cho truy vấn "FIDO2 hardware security key", dù kho có `MFA#67`,
+    `Zero_Trust#20`, `Passkey_Security#3`.
+  - Câu so sánh nhiều nguồn hơn (7 thay vì 5) làm câu trả lời dài hơn (Q4 3015 → 3795-4036 ký tự) và bước kiểm tra trích dẫn/judge lâu hơn.

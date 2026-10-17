@@ -6,6 +6,7 @@ import { assertEmbedConfigured } from "@/lib/embed";
 import { createSseResponse, streamLlmToSse } from "@/lib/sse";
 import { finalizeSources } from "@/lib/verify";
 import { jsonAppError, jsonError } from "@/lib/session";
+import { docVisibilitiesFor } from "@/lib/permissions";
 import { isAppError } from "@/lib/errors";
 
 export const runtime = "nodejs";
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
     const { tokens, sources } = await answerQuestion({
       question: parsed.data.content,
       history,
-      visibilities: ["public"],
+      visibilities: docVisibilitiesFor("guest"),
       locale,
       signal: req.signal,
     });

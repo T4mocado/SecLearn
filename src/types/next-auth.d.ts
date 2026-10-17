@@ -23,5 +23,7 @@ declare module "next-auth/jwt" {
     id: string;
     role: "learner" | "admin";
     preferredLocale: "vi" | "en";
+    /** When role and disabled state were last read from the database (ms since epoch). */
+    checkedAt?: number;
   }
 }

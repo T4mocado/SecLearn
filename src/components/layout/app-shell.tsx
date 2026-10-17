@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { cn } from "@/lib/utils";
+import { actorOf, can } from "@/lib/permissions";
 
 export function AppShell({
   children,
@@ -30,7 +31,8 @@ export function AppShell({
     { href: `/${locale}/lessons`, label: t("nav.lessons"), icon: BookOpen },
     { href: `/${locale}/on-tap`, label: t("nav.review"), icon: Brain },
   ];
-  if (session?.user?.role === "admin") {
+  const isAdmin = can(actorOf(session?.user), "admin:access");
+  if (isAdmin) {
     links.push({ href: `/${locale}/admin`, label: t("nav.admin"), icon: Shield });
   }
 
@@ -59,7 +61,7 @@ export function AppShell({
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">{session.user.name || session.user.email}</div>
             <div className="truncate text-xs text-[var(--text-muted)]">
-              {session.user.role === "admin" ? t("nav.admin") : session.user.email}
+              {isAdmin ? t("nav.admin") : session.user.email}
             </div>
           </div>
         </div>

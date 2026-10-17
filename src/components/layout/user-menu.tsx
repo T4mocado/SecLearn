@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { can } from "@/lib/permissions";
 
 function initials(name?: string | null, email?: string | null) {
   const source = (name || email || "?").trim();
@@ -48,7 +49,7 @@ export function UserMenu({
   if (!session?.user) return null;
 
   const user = session.user;
-  const isAdmin = user.role === "admin";
+  const isAdmin = can(user.role, "admin:access");
 
   return (
     <DropdownMenu>

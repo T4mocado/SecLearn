@@ -4,8 +4,8 @@ import { askedQuestions, UNANSWERED_MARK, type StoredTurn } from "@/lib/groundin
 import { stripCitations } from "@/lib/sources";
 
 const REWRITE_TIMEOUT_MS = 8_000;
-/** Room for up to three queries plus the PASSAGE and ENTITY lines. */
-const REWRITE_MAX_TOKENS = 320;
+/** Room for up to three queries plus the COMPARE, ASPECTS, PASSAGE and ENTITY lines. */
+const REWRITE_MAX_TOKENS = 400;
 /** Characters kept from each earlier user question sent for rewriting (all of them), and from the last answer. */
 const QUESTION_CHARS = 120;
 const ANSWER_CHARS = 300;
@@ -18,6 +18,10 @@ const REFORMAT = "REFORMAT";
 /** Rewrite lines that are not queries: a hypothetical answer passage (HyDE) and the entity asked about. */
 const PASSAGE_PREFIX = "PASSAGE:";
 const ENTITY_PREFIX = "ENTITY:";
+/** Rewrite lines naming what a comparison compares and on which aspects; the queries are built from them (`compareQueries`). */
+const COMPARE_PREFIX = "COMPARE:";
+const ASPECTS_PREFIX = "ASPECTS:";
+const NOT_QUERY_PREFIXES = [PASSAGE_PREFIX, ENTITY_PREFIX, COMPARE_PREFIX, ASPECTS_PREFIX];
 const isPrefixed = (line: string, prefix: string) => line.trim().toUpperCase().startsWith(prefix);
 /** The text after `prefix` on the first line that starts with it. */
 const prefixedLine = (raw: string, prefix: string) =>
@@ -46,6 +50,11 @@ export type SearchPlan = {
   passage?: string;
   /** The named thing asked about (CVE ID, protocol, product, law…), spellings as the documents may write it. */
   entity?: string[];
+  /**
+   * A comparison: the items compared and the aspects named, which `queries` were built from. "Lập bảng so sánh
+   * TOTP, SMS OTP và FIDO2" came back as one query 3/3 times and "ba lỗ hổng đó" 6/6 (docs/ERRORS.md #35).
+   */
+  compare?: { items: string[]; aspects?: string[]; truncated?: boolean };
 };
 
 /**
@@ -77,7 +86,7 @@ const MAX_TOPIC_QUERIES = 3;
 export function parseRewrite(raw: string): string[] {
   const lines = raw
     .split("\n")
-    .filter((line) => !isPrefixed(line, PASSAGE_PREFIX) && !isPrefixed(line, ENTITY_PREFIX))
+    .filter((line) => !NOT_QUERY_PREFIXES.some((prefix) => isPrefixed(line, prefix)))
     .map((line) =>
       line
         .trim()
@@ -89,6 +98,31 @@ export function parseRewrite(raw: string): string[] {
   return [...new Set(lines)].slice(0, MAX_TOPIC_QUERIES);
 }
 
+/** Items and aspects kept from the COMPARE and ASPECTS lines, and the queries they may build at most. */
+const MAX_COMPARE_ITEMS = 4;
+const MAX_ASPECTS = 3;
+const MAX_CELL_QUERIES = 6;
+
+/** The " | "-separated values of a COMPARE or ASPECTS line, deduplicated. */
+const listLine = (raw: string, prefix: string, max: number) => {
+  const values = (prefixedLine(raw, prefix) ?? "").split("|").map((v) => v.trim()).filter(Boolean);
+  return values.filter((v, i) => values.findIndex((o) => o.toLowerCase() === v.toLowerCase()) === i).slice(0, max);
+};
+
+/**
+ * One query per item, or per (item, aspect) cell when there are aspects and at most MAX_CELL_QUERIES cells: "XSS attack
+ * mechanism and prevention" found definition chunks only, and the CSRF and SQL injection defences were answered as not
+ * covered although aspect queries found them at 0.97-0.99 (docs/ERRORS.md #35). Over the cap, one query per item with
+ * its aspects, as before.
+ */
+export function compareQueries(items: string[], aspects: string[] = []): { queries: string[]; truncated: boolean } {
+  if (!aspects.length) return { queries: items, truncated: false };
+  if (items.length * aspects.length <= MAX_CELL_QUERIES) {
+    return { queries: items.flatMap((item) => aspects.map((aspect) => `${item} ${aspect}`)), truncated: false };
+  }
+  return { queries: items.map((item) => `${item} ${aspects.join(" and ")}`), truncated: true };
+}
+
 /**
  * Shared by both rewrite prompts. A comparison searched as one query ("comparison table password storage
  * session management JWT") scored every passage under 0.11; one query per topic scored 0.86-1.0. Passages
@@ -96,6 +130,10 @@ export function parseRewrite(raw: string): string[] {
  * Request Forgery" (rerank 0.89) where "SSRF OWASP Top 10 category" did not (0.23) (docs/ERRORS.md #29).
  */
 const QUERY_SHAPE = [
+  // With the COMPARE and ASPECTS lines the model left out the query line 5/60 times ("Lỗ hổng ở câu số 9 thuộc mục
+  // nào trong OWASP Top 10?" came back as ENTITY and PASSAGE only) and the search fell back to the Vietnamese message (docs/ERRORS.md #35).
+  "Always start with the query line or lines: plain English search queries with no prefix, never the message copied as it is. " +
+    "Every line that starts with a prefix below comes after them.",
   'If the message asks about several distinct topics (a comparison, "X and Y"), write one query per topic, each on its own line, at most three; otherwise write one line.',
   'Write acronyms together with their full names (e.g. "Server-Side Request Forgery SSRF", "JSON Web Token JWT").',
   // HyDE: "STRIDE threat modeling acronym" scored the STRIDE table 0.05-0.09, its expansion 0.95 (docs/ERRORS.md #34).
@@ -103,6 +141,17 @@ const QUERY_SHAPE = [
     "answering the message would contain, with the standard terms and full names; it is only used for searching and never shown.",
   `If the message asks about a specific named thing (a CVE ID, protocol, standard, product, tool, law or acronym), add a line starting with ` +
     `"${ENTITY_PREFIX} " with its name as the documents would write it, other spellings separated by " | ".`,
+  // "Lập bảng so sánh TOTP, SMS OTP và FIDO2" came back as one query 3/3 times, "ba lỗ hổng đó" 6/6 (docs/ERRORS.md #35).
+  `If the message compares two or more things, in any wording (so sánh, lập bảng so sánh, khác gì, phân biệt, cái nào tốt hơn, nên chọn cái nào, A hay B, ` +
+    `ưu nhược điểm của A và B), add a line starting with "${COMPARE_PREFIX} " listing each thing separated by " | ", at most four, ` +
+    "each written as a standalone search phrase: full name with acronym, plus any qualifier the message applies to all of them. " +
+    'This includes plural references to things named in earlier questions ("ba lỗ hổng đó", "các phương thức đó", "hai cái đó"): list them by name. ' +
+    `If the message also names what to compare them on (cách tấn công và cách phòng chống, độ an toàn và chi phí, mức độ nguy hiểm), add a line starting with ` +
+    `"${ASPECTS_PREFIX} " listing those aspects in English separated by " | ", at most three; never add aspects the message does not name. ` +
+    "A question about one thing that mentions another (how CSP prevents XSS) is not a comparison. " +
+    'Examples: "Lập bảng so sánh TOTP, SMS OTP và khóa FIDO2" → "COMPARE: Time-based One-Time Password TOTP | SMS One-Time Password OTP | FIDO2 hardware security key". ' +
+    '"So sánh XSS và CSRF về cách tấn công và cách phòng chống" → "COMPARE: Cross-Site Scripting XSS | Cross-Site Request Forgery CSRF" and ' +
+    '"ASPECTS: attack mechanism | prevention".',
 ].join(" ");
 
 const shorten =(text: string, max: number) => {
@@ -139,7 +188,7 @@ export function rewritePrompt(hasConversation: boolean): string {
       "Translate the user's message into an English search query for cybersecurity documentation.",
       "Keep technical terms, acronyms and product names. Do not answer it. Reply only with the lines described here.",
       QUERY_SHAPE,
-      `Leave out both lines when you reply ${NO_TOPIC}.`,
+      `Leave out the ${COMPARE_PREFIX}, ${ASPECTS_PREFIX}, ${PASSAGE_PREFIX} and ${ENTITY_PREFIX} lines when you reply ${NO_TOPIC}.`,
       `If the message has no subject to search for (only a greeting, thanks, or an instruction about the answer itself like "shorter" or "explain more"), ` +
         `reply exactly ${NO_TOPIC}. Never invent a topic.`,
       // "Mật khẩu mạnh cần những gì?" came back NONE 5/6 times (docs/ERRORS.md #31).
@@ -152,7 +201,7 @@ export function rewritePrompt(hasConversation: boolean): string {
     "The query must be in English even when the conversation is not.",
     "Keep technical terms, acronyms and product names. Do not answer it. Reply only with the lines described here.",
     QUERY_SHAPE,
-    `Leave out both lines when you reply ${NO_TOPIC} or ${ABOUT_CHAT}, and after ${REFORMAT}.`,
+    `Leave out the ${COMPARE_PREFIX}, ${ASPECTS_PREFIX}, ${PASSAGE_PREFIX} and ${ENTITY_PREFIX} lines when you reply ${NO_TOPIC} or ${ABOUT_CHAT}, and after ${REFORMAT}.`,
     'Resolve references with the earlier questions: "it" or "that" is the most recent topic; ' +
       '"the first topic" or "the second vulnerability" counts topics in the order they were first asked.',
     "Include only the topic the latest message asks about; do not add terms from earlier questions it does not refer to.",
@@ -204,18 +253,26 @@ export function planFromRewrite(raw: string, query: string, hasConversation: boo
   const reformat = hasConversation && marked;
   const word = (lines[0] ?? "").toUpperCase().replace(/\W/g, "");
   if (word === ABOUT_CHAT && hasConversation) return { intent: "conversation", queries: [] };
+  // A comparison: its queries are built here rather than taken from the model's query lines, which it
+  // often leaves out once it writes COMPARE, after REFORMAT too (docs/ERRORS.md #35).
+  const items = listLine(raw, COMPARE_PREFIX, MAX_COMPARE_ITEMS);
+  const comparing = items.length >= 2;
   // No topic: search with the message alone, which finds nothing and gets the fixed reply.
-  if (!lines.length || word === NO_TOPIC || word === ABOUT_CHAT) return original;
+  if ((!lines.length && !comparing) || word === NO_TOPIC || word === ABOUT_CHAT) return original;
   const extra = lines.filter((q) => q.toLowerCase() !== query.trim().toLowerCase());
-  // Redoing the previous answer: no HyDE passage (no new topics) and no entity check (docs/ERRORS.md #34).
-  if (reformat) return { intent: "search", queries: [query, ...extra], reformat: true };
+  // Redoing the previous answer: no HyDE passage (no new topics) and no entity check (docs/ERRORS.md #34);
+  // its query lines, or the items when it only wrote COMPARE.
+  if (reformat) return { intent: "search", queries: [query, ...(lines.length ? extra : items)], reformat: true };
   const passage = prefixedLine(raw, PASSAGE_PREFIX);
   const entity = prefixedLine(raw, ENTITY_PREFIX)?.split("|").map((e) => e.trim()).filter(Boolean);
+  const aspects = comparing ? listLine(raw, ASPECTS_PREFIX, MAX_ASPECTS) : [];
+  const cells = comparing ? compareQueries(items, aspects) : null;
   return {
     intent: "search",
-    queries: [query, ...extra],
+    queries: [query, ...(cells ? cells.queries : extra)],
     ...(passage ? { passage } : {}),
     ...(entity?.length ? { entity } : {}),
+    ...(cells ? { compare: { items, ...(aspects.length ? { aspects } : {}), ...(cells.truncated ? { truncated: true } : {}) } } : {}),
   };
 }
 

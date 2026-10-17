@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser, jsonAppError, jsonError } from "@/lib/session";
+import { docVisibilitiesFor } from "@/lib/permissions";
 import { chatMessageSchema } from "@/lib/validations";
 import { citedChunkIds, parseSources } from "@/lib/sources";
 import { assertLlmConfigured } from "@/lib/llm";
@@ -87,7 +88,7 @@ export async function POST(req: Request, { params }: Params) {
     const { tokens, sources } = await answerQuestion({
       question: parsed.data.content,
       history,
-      visibilities: ["public", "authenticated"],
+      visibilities: docVisibilitiesFor(authz.user.role),
       locale,
       signal: req.signal,
     });

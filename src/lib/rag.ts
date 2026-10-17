@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { embedText, vectorLiteral } from "@/lib/embed";
+import { embedTexts, vectorLiteral } from "@/lib/embed";
 import { getEnv } from "@/lib/env";
-import { bestScores, rerankScores, selectByRelevance } from "@/lib/rerank";
+import { bestScores, cellsTopK, rerankPairs, reserveCells, selectByRelevance } from "@/lib/rerank";
 import { needsTranslation, searchQueries } from "@/lib/query";
 import type { ChatTurn } from "@/lib/llm";
 import type { DocVisibility } from "@prisma/client";
@@ -18,10 +18,23 @@ export type RetrievedChunk = {
   method: "vector" | "keyword";
   /** Cross-encoder relevance 0..1; absent when no reranker is configured or it failed. */
   rerankScore?: number;
+  /** Comparison cells (`cellLabel`) this chunk scores at least CELL_LABEL_MIN for; shown to the answer model. */
+  cells?: string[];
 };
+
+/** A cell of a comparison (`SearchPlan.compare`): one item, or one item on one aspect. */
+export type CompareCell = { item: string; aspect?: string };
+export const cellLabel = (cell: CompareCell) => (cell.aspect ? `${cell.item} — ${cell.aspect}` : cell.item);
 
 /** Upper bound on the context block in the system prompt. */
 export const CONTEXT_CHAR_LIMIT = 6000;
+/**
+ * Context room per chunk for a comparison, which keeps up to 8 chunks: chunks are ~650 characters (p90 777) plus
+ * their header, so 6000 could drop the last reserved one (docs/ERRORS.md #36).
+ */
+const COMPARE_CHARS_PER_CHUNK = 850;
+/** A chunk is labelled with, and counts as evidence for, a cell it scores this much for. */
+const CELL_LABEL_MIN = 0.3;
 
 
 /**
@@ -131,22 +144,34 @@ export async function retrieveChunks(opts: {
    * with it matched broad words (security, attack, data) and kept unrelated chunks.
    */
   passage?: string;
+  /**
+   * The cells of a comparison, one per query after the message (`compareQueries`). Each gets its own chunks
+   * (`reserveCells`), the top K grows with them (`cellsTopK`) and chunks are labelled and grouped by cell.
+   */
+  cells?: CompareCell[];
 }): Promise<RetrievedChunk[]> {
   const env = getEnv();
-  const topK = env.RAG_TOP_K;
-  const limit = env.RERANK_URL.trim() ? Math.max(env.RAG_CANDIDATES, topK) : topK;
   const queries = opts.queries?.length ? opts.queries : await searchQueries(opts.query, opts.history);
+  // Cells only line up with planned queries: the message plus one per cell, two cells at least.
+  const cells = opts.queries?.length && opts.cells && opts.cells.length >= 2 && opts.cells.length === queries.length - 1 ? opts.cells : null;
+  const topK = cells ? cellsTopK(cells.length, env.RAG_TOP_K) : env.RAG_TOP_K;
+  const limit = env.RERANK_URL.trim() ? Math.max(env.RAG_CANDIDATES, topK) : topK;
   // Several topics: the message plus one rewrite per topic. Each topic gets fewer candidates and the
   // topics alone rerank them: the reranker runs one pair at a time, and four queries over ~100
   // candidates took 2.7-4.2 s (docs/ERRORS.md #29).
   const topics = queries.length > 2 ? queries.slice(1) : [];
   const perQueryLimit = topics.length ? Math.ceil(limit / 2) : limit;
   const names = currentMenuNames();
+  // One embedding request for every query: nine parallel ones (six comparison cells, the message, HyDE, carried
+  // chunks) made the local embed server drop three, and the question failed (docs/ERRORS.md #35).
+  const vectorTexts = [...queries, ...(opts.passage ? [opts.passage] : [])];
+  const vectors = await embedTexts(vectorTexts);
   const lists = await Promise.all([
-    ...queries.map((query) => retrieveCandidates({ query, visibilities: opts.visibilities, limit: perQueryLimit })),
-    ...(opts.passage ? [retrieveCandidates({ query: opts.passage, visibilities: opts.visibilities, limit: perQueryLimit })] : []),
+    ...vectors.map((embedding, i) =>
+      retrieveCandidates({ query: vectorTexts[i]!, embedding, visibilities: opts.visibilities, limit: perQueryLimit }),
+    ),
     keywordCandidates(keywordQuery(queries), opts.visibilities, KEYWORD_CANDIDATES),
-    fetchChunksById(opts.carry?.ids ?? [], opts.visibilities, queries.at(-1)!),
+    fetchChunksById(opts.carry?.ids ?? [], opts.visibilities, vectors[queries.length - 1]!),
   ]);
   const menu = await names;
   const candidates = mergeCandidates(lists).filter((c) => !isSiteMenu(c.content, menu));
@@ -154,17 +179,23 @@ export async function retrieveChunks(opts: {
   let scores: number[] | null;
   let passageScores: number[] | null = null;
   let topicBest: string[] = [];
+  let cellScores: number[][] | null = null;
   const scoring = topics.length ? topics : queries;
   try {
     const contents = candidates.map((c) => c.content);
-    const [perQuery, byPassage] = await Promise.all([
-      Promise.all(scoring.map((q) => rerankScores(q, contents))),
-      opts.passage ? rerankScores(opts.passage, contents) : Promise.resolve(null),
-    ]);
-    passageScores = byPassage;
-    scores = perQuery.every((s) => s !== null) ? bestScores(perQuery as number[][]) : null;
-    if (scores && topics.length) {
-      topicBest = (perQuery as number[][]).map((s) => candidates[s.indexOf(Math.max(...s))]!.id);
+    // Every query (and the HyDE passage) against every candidate in one request: seven parallel ones for a
+    // six-cell comparison went over the embed server's connection backlog and failed (docs/ERRORS.md #35).
+    const texts = [...scoring, ...(opts.passage ? [opts.passage] : [])];
+    const flat = await rerankPairs(texts.flatMap((q) => contents.map((d): [string, string] => [q, d])));
+    const perText = flat ? texts.map((_, t) => flat.slice(t * contents.length, (t + 1) * contents.length)) : null;
+    const perQuery = perText?.slice(0, scoring.length) ?? null;
+    passageScores = perText && opts.passage ? perText[scoring.length]! : null;
+    scores = perQuery ? bestScores(perQuery) : null;
+    if (scores && perQuery && cells) {
+      cellScores = perQuery;
+      topicBest = reserveCells(perQuery, candidates.map((c) => c.id), { minFirst: TOPIC_MIN_RELEVANCE, minNext: CELL_LABEL_MIN });
+    } else if (scores && perQuery && topics.length) {
+      topicBest = perQuery.map((s) => candidates[s.indexOf(Math.max(...s))]!.id);
     }
   } catch (err) {
     // Chat still works on cosine order; the missing rerank score in the sources panel shows it.
@@ -173,7 +204,7 @@ export async function retrieveChunks(opts: {
   }
   if (!scores) return candidates.slice(0, topK);
 
-  return selectByRelevance(
+  const selected = selectByRelevance(
     candidates.map((c, i) => ({ ...c, rerankScore: scores[i]!, ...(passageScores ? { passageScore: passageScores[i]! } : {}) })),
     {
       topK,
@@ -183,13 +214,37 @@ export async function retrieveChunks(opts: {
       ...(passageScores ? { passage: { min: PASSAGE_MIN, questionMin: PASSAGE_QUESTION_MIN } } : {}),
     },
   );
+  if (!cells || !cellScores) return selected;
+  return labelByCell(selected, candidates, cellScores, cells, topicBest);
 }
 
-/** Specific chunks (still ready and visible), scored by cosine against `query` like search results. */
-async function fetchChunksById(ids: string[], visibilities: DocVisibility[], query: string): Promise<RetrievedChunk[]> {
+/**
+ * A comparison's chunks labelled with the cells they score at least CELL_LABEL_MIN for, the reserved ones first in
+ * cell order (`reserveCells`), so the answer model sees which passage covers which cell and a context cut at its
+ * limit drops a chunk that was not reserved.
+ */
+function labelByCell(
+  selected: RetrievedChunk[],
+  candidates: RetrievedChunk[],
+  cellScores: number[][],
+  cells: CompareCell[],
+  reserved: string[],
+): RetrievedChunk[] {
+  const index = new Map(candidates.map((c, i) => [c.id, i]));
+  const labelled = selected.map((c) => {
+    const i = index.get(c.id)!;
+    const labels = cells.filter((_, j) => cellScores[j]![i]! >= CELL_LABEL_MIN).map(cellLabel);
+    return labels.length ? { ...c, cells: labels } : c;
+  });
+  const rank = (c: RetrievedChunk) => (reserved.includes(c.id) ? reserved.indexOf(c.id) : reserved.length);
+  return labelled.map((c, k) => [c, k] as const).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([c]) => c);
+}
+
+/** Specific chunks (still ready and visible), scored by cosine against `embedding` (the last query's) like search results. */
+async function fetchChunksById(ids: string[], visibilities: DocVisibility[], embedding: number[]): Promise<RetrievedChunk[]> {
   if (!ids.length) return [];
   try {
-    const lit = vectorLiteral(await embedText(query));
+    const lit = vectorLiteral(embedding);
     const rows = await prisma.$queryRawUnsafe<
       Array<{ id: string; content: string; documentId: string; documentTitle: string; chunkIndex: number; score: number }>
     >(
@@ -301,11 +356,12 @@ function mergeCandidates(lists: RetrievedChunk[][]): RetrievedChunk[] {
 
 async function retrieveCandidates(opts: {
   query: string;
+  /** The query's vector, embedded with the others of the question (`retrieveChunks`). */
+  embedding: number[];
   visibilities: DocVisibility[];
   limit: number;
 }): Promise<RetrievedChunk[]> {
-  const embedding = await embedText(opts.query);
-  const lit = vectorLiteral(embedding);
+  const lit = vectorLiteral(opts.embedding);
 
   try {
     const rows = await prisma.$queryRawUnsafe<
@@ -368,16 +424,23 @@ async function retrieveCandidates(opts: {
 /**
  * Builds the numbered context block and returns exactly the chunks that made it in whole,
  * so the sources shown to the user match what the model saw.
+ * `cells` (a comparison's `cellLabel`s): room for COMPARE_CHARS_PER_CHUNK per chunk, each chunk's header names the
+ * cells it covers, and a last line names the cells no chunk shown covers, so the model knows which part is missing
+ * rather than guessing it (docs/ERRORS.md #36).
  */
-export function buildContext(chunks: RetrievedChunk[]): { context: string; sources: MessageSource[] } {
+export function buildContext(chunks: RetrievedChunk[], opts: { cells?: string[] } = {}): { context: string; sources: MessageSource[] } {
   const blocks: string[] = [];
   const sources: MessageSource[] = [];
+  const limit = opts.cells?.length ? Math.max(CONTEXT_CHAR_LIMIT, chunks.length * COMPARE_CHARS_PER_CHUNK) : CONTEXT_CHAR_LIMIT;
+  const covered = new Set<string>();
   let length = 0;
   for (const c of chunks) {
     const index = sources.length + 1;
-    const block = `[${index}] (source: ${c.documentTitle})\n${c.content}`;
+    const labels = opts.cells?.length && c.cells?.length ? `; for: ${c.cells.join("; ")}` : "";
+    const block = `[${index}] (source: ${c.documentTitle}${labels})\n${c.content}`;
     const added = (blocks.length ? 2 : 0) + block.length;
-    if (length + added > CONTEXT_CHAR_LIMIT) break;
+    if (length + added > limit) break;
+    c.cells?.forEach((label) => covered.add(label));
     blocks.push(block);
     length += added;
     sources.push({
@@ -392,5 +455,7 @@ export function buildContext(chunks: RetrievedChunk[]): { context: string; sourc
       ...(c.rerankScore !== undefined ? { rerankScore: c.rerankScore } : {}),
     });
   }
+  const missing = (opts.cells ?? []).filter((label) => !covered.has(label));
+  if (blocks.length && missing.length) blocks.push(`No passage found for: ${missing.join("; ")}`);
   return { context: blocks.join("\n\n"), sources };
 }

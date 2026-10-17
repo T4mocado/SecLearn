@@ -341,6 +341,60 @@ test("selectByRelevance keeps the best chunk of each topic above its floor", asy
   );
 });
 
+test("reserveCells gives each comparison cell chunks of its own, round by round (ERRORS.md #36)", async () => {
+  const { reserveCells } = await import("./rerank");
+  const idsOf = ["def", "prev", "csrf", "tok", "junk"];
+  // "XSS attack" and "XSS prevention" both score the definition chunk highest: the second cell takes its next best.
+  const scores = [
+    [1.0, 0.6, 0.0, 0.0, 0.05], // XSS attack mechanism
+    [1.0, 0.9, 0.0, 0.0, 0.05], // XSS prevention
+    [0.1, 0.0, 0.98, 0.7, 0.2], // CSRF prevention
+  ];
+  // Three cells: two rounds; the second round needs 0.3, so nothing is left for the XSS cells.
+  assert.deepEqual(reserveCells(scores, idsOf, { minFirst: 0.1, minNext: 0.3 }), ["def", "prev", "csrf", "tok"]);
+  // Four cells or more: one round only.
+  assert.deepEqual(reserveCells([...scores, [0, 0, 0, 0, 0.5]], idsOf, { minFirst: 0.1, minNext: 0.3 }), ["def", "prev", "csrf", "junk"]);
+  // A cell with nothing above its floor reserves nothing.
+  assert.deepEqual(reserveCells([[0.05, 0.02]], ["a", "b"], { minFirst: 0.1, minNext: 0.3 }), []);
+});
+
+test("cellsTopK: two chunks per cell up to three cells, one beyond, at most 8, never under topK", async () => {
+  const { cellsTopK } = await import("./rerank");
+  assert.deepEqual([2, 3, 4, 6, 8].map((n) => cellsTopK(n, 5)), [5, 7, 5, 7, 8]);
+});
+
+test("buildContext labels a comparison's chunks by cell and names the cells nothing covers", async () => {
+  const { buildContext } = await import("./rag");
+  const chunk = (id: string, cells?: string[], content = "text") => ({
+    id, content, documentId: "d", documentTitle: `Doc_${id}`, chunkIndex: 0, score: 1, method: "vector" as const, ...(cells ? { cells } : {}),
+  });
+  const { context, sources } = buildContext([chunk("a", ["XSS — prevention"]), chunk("b")], { cells: ["XSS — prevention", "CSRF — prevention"] });
+  assert.equal(sources.length, 2);
+  assert.match(context, /^\[1\] \(source: Doc_a; for: XSS — prevention\)\ntext/);
+  assert.match(context, /\[2\] \(source: Doc_b\)\ntext/);
+  assert.match(context, /No passage found for: CSRF — prevention$/);
+  // Without cells nothing changes: no labels, no last line.
+  assert.equal(buildContext([chunk("a", ["XSS — prevention"])]).context, "[1] (source: Doc_a)\ntext");
+  // A comparison's eight chunks of ~780 characters fit; a plain question still stops at 6000.
+  const long = Array.from({ length: 8 }, (_, i) => chunk(`c${i}`, ["X"], "x".repeat(780)));
+  assert.equal(buildContext(long, { cells: ["X"] }).sources.length, 8);
+  assert.equal(buildContext(long).sources.length, 7);
+});
+
+test("compareCells: one cell per item, or per (item, aspect); none when cut or redoing an answer", async () => {
+  const { compareCells } = await import("./chat-answer");
+  const plan = (compare: object, extra: object = {}) => ({ intent: "search" as const, queries: ["q"], compare, ...extra }) as never;
+  assert.deepEqual(compareCells(plan({ items: ["A", "B"] })), [{ item: "A" }, { item: "B" }]);
+  assert.deepEqual(compareCells(plan({ items: ["A", "B"], aspects: ["x", "y"] })), [
+    { item: "A", aspect: "x" },
+    { item: "A", aspect: "y" },
+    { item: "B", aspect: "x" },
+    { item: "B", aspect: "y" },
+  ]);
+  assert.equal(compareCells(plan({ items: ["A", "B"], aspects: ["x"], truncated: true })), undefined);
+  assert.equal(compareCells({ intent: "search", queries: ["q"] }), undefined);
+});
+
 test("isSiteMenu: the cheat-sheet site's navigation list, not a table of contents", async () => {
   const { isSiteMenu, menuNames } = await import("./rag");
   const names = menuNames([
@@ -402,6 +456,62 @@ test("planFromRewrite reads the rewrite: queries, REFORMAT, CONVERSATION and NON
   assert.deepEqual(planFromRewrite("NONE", "Cảm ơn", true), { intent: "search", queries: ["Cảm ơn"] });
   // Without a conversation there is no previous answer to redo.
   assert.deepEqual(planFromRewrite("REFORMAT\nXSS", "Ngắn gọn", false), { intent: "search", queries: ["Ngắn gọn", "XSS"] });
+});
+
+test("planFromRewrite builds one query per compared item, or per (item, aspect) cell (ERRORS.md #35)", async () => {
+  const { planFromRewrite } = await import("./query");
+  const q = "Lập bảng so sánh TOTP, SMS OTP và khóa FIDO2";
+  // The model's merged query line is replaced by the items; COMPARE is not a query itself.
+  assert.deepEqual(
+    planFromRewrite("TOTP SMS OTP FIDO2 comparison\nCOMPARE: TOTP | SMS OTP | FIDO2 security key | sms otp\nPASSAGE: TOTP codes rotate.", q, true),
+    { intent: "search", queries: [q, "TOTP", "SMS OTP", "FIDO2 security key"], passage: "TOTP codes rotate.", compare: { items: ["TOTP", "SMS OTP", "FIDO2 security key"] } },
+  );
+  // Once it writes COMPARE the model often leaves out the query lines: the items are enough.
+  assert.deepEqual(planFromRewrite("COMPARE: XSS | CSRF\nPASSAGE: XSS injects scripts.", "So sánh XSS và CSRF", false).queries, [
+    "So sánh XSS và CSRF",
+    "XSS",
+    "CSRF",
+  ]);
+  // 3 items x 2 aspects = 6 cells, at the cap.
+  assert.deepEqual(planFromRewrite("x\nCOMPARE: XSS | CSRF | SQL injection\nASPECTS: attack mechanism | prevention", "So sánh", true).queries, [
+    "So sánh",
+    "XSS attack mechanism",
+    "XSS prevention",
+    "CSRF attack mechanism",
+    "CSRF prevention",
+    "SQL injection attack mechanism",
+    "SQL injection prevention",
+  ]);
+  // Over the cap: one query per item with its aspects, as before.
+  assert.deepEqual(planFromRewrite("x\nCOMPARE: A | B | C | D\nASPECTS: cost | security", "So sánh", true), {
+    intent: "search",
+    queries: ["So sánh", "A cost and security", "B cost and security", "C cost and security", "D cost and security"],
+    compare: { items: ["A", "B", "C", "D"], aspects: ["cost", "security"], truncated: true },
+  });
+  // One item is no comparison, and aspects alone do nothing.
+  assert.deepEqual(planFromRewrite("Content Security Policy CSP XSS\nCOMPARE: CSP\nASPECTS: cost", "CSP chống XSS?", true), {
+    intent: "search",
+    queries: ["CSP chống XSS?", "Content Security Policy CSP XSS"],
+  });
+  // Redoing the previous answer keeps its own path: its query lines, or the items when it wrote only COMPARE
+  // ("Tóm tắt lại bảng so sánh vừa rồi" was refused 2/2 without them).
+  assert.deepEqual(planFromRewrite("REFORMAT\nTOTP SMS\nCOMPARE: TOTP | SMS", "Ngắn gọn lại", true), {
+    intent: "search",
+    queries: ["Ngắn gọn lại", "TOTP SMS"],
+    reformat: true,
+  });
+  assert.deepEqual(planFromRewrite("REFORMAT\nCOMPARE: TOTP | SMS OTP\nPASSAGE: x", "Tóm tắt lại bảng", true), {
+    intent: "search",
+    queries: ["Tóm tắt lại bảng", "TOTP", "SMS OTP"],
+    reformat: true,
+  });
+  // Without a conversation REFORMAT means nothing: a plain comparison.
+  assert.deepEqual(planFromRewrite("REFORMAT\nCOMPARE: TOTP | SMS OTP", "So sánh", false).queries, ["So sánh", "TOTP", "SMS OTP"]);
+});
+
+test("parseRewrite leaves out the COMPARE and ASPECTS lines", async () => {
+  const { parseRewrite } = await import("./query");
+  assert.deepEqual(parseRewrite("XSS\ncompare: XSS | CSRF\nASPECTS: prevention\nCSRF"), ["XSS", "CSRF"]);
 });
 
 test("rewritePrompt marks a request to change the previous answer with REFORMAT", async () => {

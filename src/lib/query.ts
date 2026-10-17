@@ -4,7 +4,8 @@ import { askedQuestions, UNANSWERED_MARK, type StoredTurn } from "@/lib/groundin
 import { stripCitations } from "@/lib/sources";
 
 const REWRITE_TIMEOUT_MS = 8_000;
-const REWRITE_MAX_TOKENS = 120;
+/** Room for up to three queries plus the PASSAGE and ENTITY lines. */
+const REWRITE_MAX_TOKENS = 320;
 /** Characters kept from each earlier user question sent for rewriting (all of them), and from the last answer. */
 const QUESTION_CHARS = 120;
 const ANSWER_CHARS = 300;
@@ -14,6 +15,13 @@ const NO_TOPIC = "NONE";
 const ABOUT_CHAT = "CONVERSATION";
 /** First line of the rewrite when a message only asks to change the previous answer. */
 const REFORMAT = "REFORMAT";
+/** Rewrite lines that are not queries: a hypothetical answer passage (HyDE) and the entity asked about. */
+const PASSAGE_PREFIX = "PASSAGE:";
+const ENTITY_PREFIX = "ENTITY:";
+const isPrefixed = (line: string, prefix: string) => line.trim().toUpperCase().startsWith(prefix);
+/** The text after `prefix` on the first line that starts with it. */
+const prefixedLine = (raw: string, prefix: string) =>
+  raw.split("\n").find((l) => isPrefixed(l, prefix))?.trim().slice(prefix.length).trim();
 /** A letter outside ASCII (Vietnamese diacritics, other scripts): the question is not plain English. */
 const NON_ENGLISH_RE = /(?![\u0000-\u007f])\p{L}/u;
 
@@ -31,6 +39,13 @@ export type SearchPlan = {
    * passages must be there again, or the model restates its facts and cites the new ones (docs/ERRORS.md #32).
    */
   reformat?: boolean;
+  /**
+   * HyDE: what a passage answering the message would say, in English. Only searched with and scored
+   * against; relevance is still judged against the message (docs/ERRORS.md #34).
+   */
+  passage?: string;
+  /** The named thing asked about (CVE ID, protocol, product, law…), spellings as the documents may write it. */
+  entity?: string[];
 };
 
 /**
@@ -62,6 +77,7 @@ const MAX_TOPIC_QUERIES = 3;
 export function parseRewrite(raw: string): string[] {
   const lines = raw
     .split("\n")
+    .filter((line) => !isPrefixed(line, PASSAGE_PREFIX) && !isPrefixed(line, ENTITY_PREFIX))
     .map((line) =>
       line
         .trim()
@@ -82,6 +98,11 @@ export function parseRewrite(raw: string): string[] {
 const QUERY_SHAPE = [
   'If the message asks about several distinct topics (a comparison, "X and Y"), write one query per topic, each on its own line, at most three; otherwise write one line.',
   'Write acronyms together with their full names (e.g. "Server-Side Request Forgery SSRF", "JSON Web Token JWT").',
+  // HyDE: "STRIDE threat modeling acronym" scored the STRIDE table 0.05-0.09, its expansion 0.95 (docs/ERRORS.md #34).
+  `After the query lines, add a line starting with "${PASSAGE_PREFIX} " and 2-3 short English sentences that a documentation passage ` +
+    "answering the message would contain, with the standard terms and full names; it is only used for searching and never shown.",
+  `If the message asks about a specific named thing (a CVE ID, protocol, standard, product, tool, law or acronym), add a line starting with ` +
+    `"${ENTITY_PREFIX} " with its name as the documents would write it, other spellings separated by " | ".`,
 ].join(" ");
 
 const shorten =(text: string, max: number) => {
@@ -116,8 +137,9 @@ export function rewritePrompt(hasConversation: boolean): string {
   if (!hasConversation) {
     return [
       "Translate the user's message into an English search query for cybersecurity documentation.",
-      "Keep technical terms, acronyms and product names. Do not answer it. Reply with the query only.",
+      "Keep technical terms, acronyms and product names. Do not answer it. Reply only with the lines described here.",
       QUERY_SHAPE,
+      `Leave out both lines when you reply ${NO_TOPIC}.`,
       `If the message has no subject to search for (only a greeting, thanks, or an instruction about the answer itself like "shorter" or "explain more"), ` +
         `reply exactly ${NO_TOPIC}. Never invent a topic.`,
       // "Mật khẩu mạnh cần những gì?" came back NONE 5/6 times (docs/ERRORS.md #31).
@@ -128,8 +150,9 @@ export function rewritePrompt(hasConversation: boolean): string {
   return [
     "Rewrite the user's latest message as a standalone English search query for cybersecurity documentation.",
     "The query must be in English even when the conversation is not.",
-    "Keep technical terms, acronyms and product names. Do not answer it. Reply with the query only.",
+    "Keep technical terms, acronyms and product names. Do not answer it. Reply only with the lines described here.",
     QUERY_SHAPE,
+    `Leave out both lines when you reply ${NO_TOPIC} or ${ABOUT_CHAT}, and after ${REFORMAT}.`,
     'Resolve references with the earlier questions: "it" or "that" is the most recent topic; ' +
       '"the first topic" or "the second vulnerability" counts topics in the order they were first asked.',
     "Include only the topic the latest message asks about; do not add terms from earlier questions it does not refer to.",
@@ -148,16 +171,17 @@ export function rewritePrompt(hasConversation: boolean): string {
 }
 
 /**
- * What to do with a message: search with it plus one standalone English query when it is not
- * English or follows earlier turns ("Trả lời ngắn gọn" alone finds nothing), or answer from the
- * conversation. One short LLM call (~150 tokens); any failure just means searching with the original.
+ * What to do with a message: search with it plus standalone English queries (one per topic) and a
+ * HyDE passage, or answer from the conversation. English first questions are rewritten too: alone,
+ * "Compare OAuth2 and SAML" was searched as one query, found only SAML passages and the answer said
+ * the documents do not cover OAuth2 (docs/ERRORS.md #34). One short LLM call; any failure just means
+ * searching with the original.
  */
 export async function planSearch(query: string, history: Array<ChatTurn & StoredTurn> = []): Promise<SearchPlan> {
   const env = getEnv();
   const original: SearchPlan = { intent: "search", queries: [query] };
   const context = historyForRewrite(history);
   if (env.RAG_TRANSLATE_QUERY === "off" || env.LLM_PROVIDER === "mock") return original;
-  if (!context && !needsTranslation(query)) return original;
   try {
     const raw = await completeText({
       system: rewritePrompt(!!context),
@@ -183,8 +207,16 @@ export function planFromRewrite(raw: string, query: string, hasConversation: boo
   // No topic: search with the message alone, which finds nothing and gets the fixed reply.
   if (!lines.length || word === NO_TOPIC || word === ABOUT_CHAT) return original;
   const extra = lines.filter((q) => q.toLowerCase() !== query.trim().toLowerCase());
-  if (!extra.length) return original;
-  return { intent: "search", queries: [query, ...extra], ...(reformat ? { reformat: true } : {}) };
+  // Redoing the previous answer: no HyDE passage (no new topics) and no entity check (docs/ERRORS.md #34).
+  if (reformat) return { intent: "search", queries: [query, ...extra], reformat: true };
+  const passage = prefixedLine(raw, PASSAGE_PREFIX);
+  const entity = prefixedLine(raw, ENTITY_PREFIX)?.split("|").map((e) => e.trim()).filter(Boolean);
+  return {
+    intent: "search",
+    queries: [query, ...extra],
+    ...(passage ? { passage } : {}),
+    ...(entity?.length ? { entity } : {}),
+  };
 }
 
 /** Queries to retrieve with (see `planSearch`); a conversation question still gets the message itself. */

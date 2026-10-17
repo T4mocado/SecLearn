@@ -46,8 +46,12 @@ export function bestScores(perQuery: number[][]): number[] {
  * `minRelevance`: one topic's chunks filled the top K and the others went uncited (docs/ERRORS.md #29).
  * `carried`: up to `max` of these ids scoring at least `minRelevance` are kept even when outside the
  * top K. Both take the place of the lowest-scoring others, topics first.
+ * `passage` (HyDE): items are ranked by the better of `rerankScore` (against the question) and
+ * `passageScore` (against the HyDE passage), but relevance is still decided by `rerankScore`: an item
+ * passes the floor, or scores at least `questionMin` with a `passageScore` of at least `min`. Scored by the
+ * passage alone, questions outside the documents kept 3-5 unrelated chunks (docs/ERRORS.md #34).
  */
-export function selectByRelevance<T extends { id: string; rerankScore: number }>(
+export function selectByRelevance<T extends { id: string; rerankScore: number; passageScore?: number }>(
   items: T[],
   opts: {
     topK: number;
@@ -56,24 +60,36 @@ export function selectByRelevance<T extends { id: string; rerankScore: number }>
     /** Also drop items under this share of the best score. */
     relativeMin?: number;
     topics?: { ids: string[]; minRelevance: number };
-    carried?: { ids: string[]; max: number; minRelevance: number };
+    /** `inOrder`: keep them by their order in `ids` (priority) instead of by score. */
+    carried?: { ids: string[]; max: number; minRelevance: number; inOrder?: boolean };
+    passage?: { min: number; questionMin: number };
   },
 ): T[] {
-  const sorted = [...items].sort((a, b) => b.rerankScore - a.rerankScore);
-  const floor = Math.max(opts.minRelevance, (opts.relativeMin ?? 0) * (sorted[0]?.rerankScore ?? 0));
-  const passing = sorted.filter((c) => c.rerankScore >= floor).length;
+  const { passage } = opts;
+  const rank = (c: T) => (passage ? Math.max(c.rerankScore, c.passageScore ?? 0) : c.rerankScore);
+  const sorted = [...items].sort((a, b) => rank(b) - rank(a));
+  const bestQuestion = Math.max(0, ...items.map((c) => c.rerankScore));
+  const floor = Math.max(opts.minRelevance, (opts.relativeMin ?? 0) * bestQuestion);
+  const passes = (c: T) =>
+    c.rerankScore >= floor || (!!passage && c.rerankScore >= passage.questionMin && (c.passageScore ?? 0) >= passage.min);
+  // Passing items first (they are the best ranked when ranking by the question), then the rest for `minKeep`.
+  const ordered = [...sorted.filter(passes), ...sorted.filter((c) => !passes(c))];
+  const passing = sorted.filter(passes).length;
   const { topics, carried } = opts;
   const reserved = [
     ...new Set([
       ...(topics ? sorted.filter((c) => topics.ids.includes(c.id) && c.rerankScore >= topics.minRelevance) : []),
       ...(carried?.max
-        ? sorted.filter((c) => carried.ids.includes(c.id) && c.rerankScore >= carried.minRelevance).slice(0, carried.max)
+        ? sorted
+            .filter((c) => carried.ids.includes(c.id) && c.rerankScore >= carried.minRelevance)
+            .sort((a, b) => (carried.inOrder ? carried.ids.indexOf(a.id) - carried.ids.indexOf(b.id) : 0))
+            .slice(0, carried.max)
         : []),
     ]),
   ].slice(0, opts.topK);
   // Nothing passes: off topic, unless reserved chunks have no floor (a REFORMAT request's previous passages).
   if (!passing && !reserved.length) return [];
-  const selected = passing ? sorted.slice(0, Math.min(opts.topK, Math.max(passing, opts.minKeep))) : [];
+  const selected = passing ? ordered.slice(0, Math.min(opts.topK, Math.max(passing, opts.minKeep))) : [];
   if (reserved.every((c) => selected.includes(c))) return selected;
   const others = selected.filter((c) => !reserved.includes(c));
   const kept = new Set([...reserved, ...others.slice(0, Math.max(0, opts.topK - reserved.length))]);

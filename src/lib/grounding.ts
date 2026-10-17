@@ -34,7 +34,9 @@ export function groundedSystemPrompt(context: string, locale: string): string {
       "Never put [n] on a sentence or table cell that only says the passages do not cover something, or on what the user asked earlier: no passage states it.",
     "3. A passage is relevant when it has information on the subject, even in other words or without a heading of that name " +
       '(e.g. "limit file upload size" is about limiting resources). Answer first with what the relevant passages say. ' +
-      `Then, if part of the question is not covered, say which part (e.g. "${locale === "vi" ? "Tài liệu không đề cập đến" : "The documents do not cover"} ..."). ` +
+      // The search sees 5 passages, not the whole library: "Tài liệu không đề cập OAuth2" was false when it
+      // had missed them (docs/ERRORS.md #34).
+      `Then, if part of the question is not covered, say which part (e.g. "${locale === "vi" ? "Các đoạn tài liệu tìm được không đề cập đến" : "The passages found do not cover"} ..."). ` +
       "Only when no passage has anything on the subject, say so in one or two sentences.",
     "4. You may rephrase, translate, summarise and structure the passages (headings, lists). Passages may be in English.",
     "5. Earlier answers in this conversation were also based on the documents; you may refer to them, but do not add facts that are not in the passages below. " +
@@ -89,7 +91,7 @@ export function askedQuestions(history: StoredTurn[]): AskedQuestion[] {
  */
 export function questionsNote(
   questions: AskedQuestion[],
-  opts: { shownFrom: number | null; understoodAs?: string },
+  opts: { shownFrom: number | null; understoodAs?: string; reformat?: boolean },
 ): string {
   if (!questions.length) return "";
   const latest = questions.length + 1;
@@ -109,6 +111,10 @@ export function questionsNote(
     ...lines,
     shown,
     ...(opts.understoodAs ? [`The latest message (question ${latest}) was understood as: "${opts.understoodAs}"`] : []),
+    // "Giải thích đơn giản hơn" came back longer, with new topics cited to the old passages (docs/ERRORS.md #33).
+    ...(opts.reformat
+      ? ["The latest message asks to redo the earlier answer in another form (simpler, shorter, another language): keep to its facts and add no new topics."]
+      : []),
   ].join("\n");
 }
 
@@ -123,7 +129,7 @@ export function questionsNote(
 export function citationReminder(locale: string): string {
   return locale === "vi"
     ? "\n\n(Hãy gắn [n] sau mỗi câu nêu thông tin lấy từ các đoạn tài liệu, kể cả khi các câu trả lời trước không có [n]; " +
-        "không gắn [n] cho câu chỉ nói tài liệu không đề cập.)"
+        "không gắn [n] cho câu chỉ nói các đoạn tài liệu không đề cập.)"
     : "\n\n(Put [n] after every sentence that states information from the passages, even though earlier answers show no [n]; " +
         "no [n] on a sentence that only says the passages do not cover something.)";
 }
@@ -185,7 +191,7 @@ const SENTENCE_RE = /(?:[^.!?]|[.!?](?!\s|$))+(?:[.!?]+(?=\s|$)(?:\s*\[\d{1,2}\]
 const UNCITED_MIN = 25;
 /** Sentences that state nothing to cite: saying the documents lack something, or asking back. */
 const NO_CLAIM_RE =
-  /tài liệu (?:\S+ ){0,3}(?:không|chưa)|không (?:đề cập|có thông tin|nêu)|documents? (?:\S+ ){0,3}(?:do(?:es)? not|don't|doesn't)|not (?:mentioned|covered)|\?\s*$/i;
+  /tài liệu (?:\S+ ){0,3}(?:không|chưa)|không (?:đề cập|có thông tin|nêu)|(?:documents?|passages?) (?:\S+ ){0,3}(?:do(?:es)? not|don't|doesn't)|not (?:mentioned|covered)|\?\s*$/i;
 
 /**
  * Answer sentences that make a statement without a valid `[n]` citation, as ranges in `content`.

@@ -113,3 +113,33 @@ test("chunkMarkdown keeps a short document whole and drops nothing for empty inp
   assert.deepEqual(chunkMarkdown("# T\n\nOne sentence.", 800, 80), ["# T\n\nOne sentence."]);
   assert.deepEqual(chunkMarkdown("   \n", 800, 80), []);
 });
+
+test("chunkMarkdown names a generic heading after its parent section", () => {
+  // "## Cons" alone: the SMS drawbacks scored 0.20 for "SMS OTP disadvantages" and another "Cons" (hardware tokens)
+  // was taken for them (ERRORS.md #33).
+  const md = [
+    "# Multifactor Authentication",
+    "",
+    "## Multifactor Authentication Cheat Sheet",
+    "## Introduction",
+    sentence(1),
+    "## SMS Messages and Phone Calls",
+    sentence(2),
+    "## Pros",
+    sentence(3),
+    "## Cons",
+    Array.from({ length: 8 }, (_, i) => sentence(10 + i)).join(" "),
+    "## Hardware Tokens",
+    sentence(4),
+  ].join("\n");
+  const chunks = chunkMarkdown(md, 300, 0);
+  const joined = chunks.join("\n\n");
+  assert.match(joined, /## Multifactor Authentication Cheat Sheet — Introduction\n/);
+  assert.match(joined, /## SMS Messages and Phone Calls — Pros\n/);
+  // A chunk starting inside the Cons section repeats the full heading too.
+  const cons = chunks.filter((c) => c.startsWith("## SMS Messages and Phone Calls — Cons\n"));
+  assert.ok(cons.length >= 2, chunks.map((c) => c.slice(0, 50)).join(" | "));
+  // Specific headings stay as they are.
+  assert.match(joined, /## Hardware Tokens\n/);
+  assert.doesNotMatch(joined, /— Hardware Tokens/);
+});

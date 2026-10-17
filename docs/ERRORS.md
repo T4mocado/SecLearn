@@ -425,3 +425,67 @@ Ghi lại các lỗi đã gặp, nguyên nhân và cách xử lý. Thêm lỗi m
   - Bộ 2 câu 7 ("tại sao metadata endpoint nguy hiểm") lần này trả lời "không đề cập": cả 5 đoạn đều không nhắc metadata, lần chạy trước lấy được
     `SSRF#39`, `Webhook#17` (0,88–0,89). Do câu viết lại khác nhau giữa các lần, không phải do luật mới.
   - Chat khách không lưu nguồn: `REFORMAT` không có đoạn để mang sang, chỉ có luật trong prompt.
+
+## 33. Tiêu đề chung chung ("Cons") mất mục cha; REFORMAT chỉ mang đoạn của câu trả lời ngay trước
+- **Triệu chứng** (bộ 20 câu mới về MFA, CORS, deserialization, secrets, Docker: `scratch-ctx/run4n.mjs`, `results4n.json`):
+  - "SMS OTP có nhược điểm gì?" trả lời "tài liệu không đề cập": đoạn nhận được là `## Cons` của token phần cứng (MFA#33); đoạn nhược điểm của SMS cũng chỉ
+    mở đầu bằng `## Cons`. 322/5945 đoạn mở đầu bằng tiêu đề chung chung (References, Introduction, Do, Don't, Pros, Cons, Example…).
+  - "Insecure deserialization là gì" không có định nghĩa: lấy đoạn Abuse Case viết ở ngôi kẻ tấn công.
+  - "Giải thích đơn giản hơn cho người mới bắt đầu" (sau câu 2) dài hơn câu trước, giải thích lại cả câu 1 và gắn vào đoạn của câu 2: 5/19 câu trích dẫn yếu.
+- **Nguyên nhân:**
+  - PDF in tiêu đề không có cấp (#30), nên đoạn chỉ mang tiêu đề gần nhất; "Cons" không cho biết của cái gì, cả với reranker lẫn model.
+  - `carryFor` (#32) chỉ mang đoạn của câu trả lời ngay trước; câu "đơn giản hơn" cần cả câu trả lời trước đó. Model không được báo đây là yêu cầu làm lại.
+  - Mang đoạn của mọi câu trả lời trong cửa sổ nhưng chọn theo điểm (thử nghiệm): đoạn của câu trả lời cũ hơn chiếm chỗ của câu ngay trước,
+    "Trả lời lại bằng tiếng Việt" từ 0 lên 13 câu yếu (5 câu REFORMAT × 3 lần: 16,0% → 22,0%).
+- **Cách xử lý:**
+  - `chunkMarkdown` (`src/lib/chunking.ts`): tiêu đề khớp `GENERIC_HEADING_RE` được ghép với tiêu đề cụ thể gần nhất trước nó:
+    "## SMS Messages and Phone Calls — Cons", "## Hardware OTP Tokens — Pros". Đánh chỉ mục lại (40 giây, 5972 đoạn); bản trước sao lưu ở
+    `seclearn_backup."DocumentChunk_20261017"`.
+  - `carryFor`: với REFORMAT, mang đoạn của mọi câu trả lời trong cửa sổ, câu mới nhất trước, `inOrder` (giữ theo thứ tự ưu tiên, không theo điểm;
+    `selectByRelevance` nhận `carried.inOrder`).
+  - `questionsNote` thêm dòng "câu đang hỏi yêu cầu làm lại câu trả lời trước ở dạng khác: giữ đúng các ý của nó, không thêm chủ đề mới" khi REFORMAT.
+- **Kết quả:**
+  - 5 câu REFORMAT × 3 lần: câu yếu 16,0% → 8,3%, câu dùng lại ý cũ 13 → 2; "Trả lời lại bằng tiếng Việt" 0 câu yếu; "Giải thích đơn giản hơn" 16/40 → 6/34.
+  - "Ưu điểm của hardware token" lấy "Hardware OTP Tokens — Pros" 0,95. "Insecure deserialization là gì" lấy đoạn định nghĩa (Serialization 0,97,
+    "A8:2017-Insecure Deserialization" 0,92) và trả lời có định nghĩa. 7 ca truy xuất (#29) vẫn 12/13.
+  - Chạy lại bộ 20 câu mới: câu yếu 4,6% → 2,4%; "Giải thích đơn giản hơn" 5/19 → 1/14. 85/85 test qua, lint sạch.
+- **Chưa xử lý:**
+  - "SMS OTP có nhược điểm gì?" vẫn trả lời "không đề cập": reranker chấm "SMS Messages and Phone Calls — Cons" 0,12 và đoạn cảnh báo SS7 0,10, dưới
+    "Hardware OTP Tokens — Cons" (0,70) và "Universal Second Factor — Cons" (0,68). Nay tiêu đề nói rõ chúng là của token khác nên model không gán nhầm.
+  - Danh sách tiêu đề chung chung lập tay; tiêu đề ngay sau tiêu đề tài liệu ("Introduction") ghép với tên cheat sheet.
+
+## 34. Truy xuất bỏ sót đoạn đúng rồi khẳng định "tài liệu không đề cập" (STRIDE, SMS OTP, OAuth2)
+- **Triệu chứng** (bộ 20 câu thứ năm, `scratch-ctx/run5.mjs`): "STRIDE là viết tắt của gì?" trả lời "tài liệu không nêu" dù `Threat_Modeling#16-17`
+  có bảng sáu nhóm; "Compare OAuth2 and SAML" trả lời "tài liệu không đề cập OAuth2" dù kho có OAuth2 Cheat Sheet; "SMS OTP có nhược điểm gì?" (#33) cũng vậy.
+- **Nguyên nhân** (`scratch-ctx/miss/`):
+  - Reranker chấm thấp đoạn dạng bảng/danh sách với câu hỏi tự nhiên: bảng STRIDE 0,05-0,09 với "What does STRIDE stand for?", 0,95 với câu có sẵn
+    các từ của câu trả lời; đoạn ở hạng cosine ~700.
+  - Câu tiếng Anh đầu tiên không qua bước viết lại nên không được tách chủ đề ("Compare OAuth2 and SAML" chỉ lấy được đoạn SAML).
+  - Câu trả lời nói về cả kho ("Tài liệu không đề cập") trong khi model chỉ thấy 5 đoạn tìm được.
+- **Thử nghiệm** (8 ca bỏ sót, 5 câu ngoài tài liệu, 3 câu đối chứng, 2 lần): HyDE (đoạn giả định) tìm 16/16 nhưng làm câu ngoài tài liệu kéo 3-5 đoạn
+  không liên quan (CVE-2021-44228 kéo đoạn 0,63); hybrid HyDE + BM25 chuẩn (`scratch-ctx/miss/hybrid.ts`) kéo đủ 5 đoạn cho mọi câu ngoài tài liệu,
+  43-51% đoạn được chọn không liên quan (BM25 và RRF chỉ xếp hạng, không có ngưỡng tuyệt đối); có chặn bằng reranker thì chỉ còn 12/16. Chọn V6:
+  HyDE để tìm và xếp hạng, liên quan hay không vẫn chấm theo câu hỏi.
+- **Cách xử lý:**
+  - Bước viết lại (`rewritePrompt`, `planFromRewrite`) trả thêm dòng `PASSAGE:` (HyDE, tiếng Anh) và `ENTITY:` (thực thể được hỏi, các cách viết cách nhau
+    bằng " | "); câu tiếng Anh đầu tiên cũng được viết lại. REFORMAT, CONVERSATION, NONE không có hai dòng này.
+  - `retrieveChunks(passage)`: thêm ứng viên tìm bằng vector với đoạn HyDE (không dùng cho tìm theo từ khóa), reranker chấm thêm điểm theo đoạn HyDE.
+    `selectByRelevance(passage)`: xếp theo điểm cao hơn của câu hỏi và HyDE; qua cổng khi đạt ngưỡng theo câu hỏi, hoặc ≥ 0,05 theo câu hỏi và ≥ 0,5 theo
+    HyDE (HyDE chỉ nới ngưỡng tương đối; ở 0,02 hai đoạn 0,04 lọt vào câu DDoS).
+  - `retrieveForQuestion` (`src/lib/chat-answer.ts`): kiểm tra thực thể có trong kho (`entityInDocuments`, mọi từ của một cách viết trong cùng một đoạn;
+    25/26 thực thể thử phân biệt đúng). Thiếu thực thể chỉ từ chối khi không đoạn nào ≥ 0,3 (`keepAfterEntityCheck`): từ chối thẳng làm câu DDoS bị từ chối
+    một lần vì bước viết lại ghi thực thể là "ISP".
+  - Prompt: "Các đoạn tài liệu tìm được không đề cập…" / "The passages found do not cover…"; `NO_CLAIM_RE` nhận cả "passages … do not".
+  - REFORMAT giữ cách của #33; không HyDE, không kiểm tra thực thể, đoạn mang sang không qua cổng.
+- **Kết quả** (`scratch-ctx/patch/eval.ts`, 21 câu × 2 lần, trước → sau): ca bỏ sót tìm thấy 12/16 → 16/16, đủ phần cần 8/16 → 12/16; câu đối chứng 12/12 → 12/12;
+  câu ngoài tài liệu bị từ chối 10/14 → 10/14; đoạn có điểm theo câu hỏi < 0,05: 4/135 → 4/141. Hai bộ 20 câu: trích dẫn yếu bộ 4 2,4% → 4,4%,
+  bộ 5 1,9% → 2,5%; câu "không đề cập" có [n] 1 → 0 mỗi bộ; thời gian trung bình 7,0 → 6,6 và 6,3 → 6,3 giây. "SMS OTP có nhược điểm gì?" trả lời đúng
+  (NIST, SS7, SIM swap); câu DDoS cấp ISP có biện pháp ở cấp ISP; WPA3 không còn dùng đoạn drone (0,07). REFORMAT trên hội thoại còn đoạn: 5,8% câu yếu,
+  0 câu dùng lại ý cũ. 91/91 test qua, lint sạch.
+- **Chưa xử lý / lưu ý:**
+  - OAuth2/SAML vẫn thiếu phần OAuth: đoạn OAuth ở hạng 163-380 khi tìm bằng vector với đoạn HyDE (embedding tiếng Việt xếp kém đoạn tiếng Anh dài).
+    Dùng HyDE cho tìm theo từ khóa thì sửa được (đủ phần cần 14/16) nhưng từ chối 10/14 → giữ, thêm 1 đoạn kéo nhầm, thời gian 1,8 → 3,3 giây: không áp dụng.
+  - STRIDE thiếu `#17` (R, I, D, E): bảng bị cắt thành nhiều đoạn; lấy kèm đoạn liền sau cùng mục (thử nghiệm V3) sẽ sửa được.
+  - "Kubernetes 1.31" (kho không có phiên bản này) trả lời bằng đoạn về Kubernetes nói chung (0,86) thay vì từ chối, theo quy tắc thiếu thực thể ở trên.
+  - Bước viết lại + truy xuất 1,07 → 1,8-2,3 giây (câu viết lại dài hơn, thêm một lượt rerank, câu tiếng Anh đầu tiên cũng gọi LLM).
+  - Hội thoại cũ (trước #33) mất mọi `chunkId` sau khi đánh chỉ mục lại, nên REFORMAT của chúng không còn đoạn để mang sang (đo trên 2f: 24,5% câu yếu).

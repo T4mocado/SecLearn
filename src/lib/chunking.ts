@@ -12,6 +12,13 @@ const SENTENCE_END_RE = /[.!?]["'”’)\]]*(?=\s)/g;
 const MIN_SENTENCE = 25;
 /** A heading starts a new chunk once the current one has this share of `size`; smaller sections join the next. */
 const MIN_FILL = 0.25;
+/**
+ * Section names that say nothing alone. The PDFs print headings without levels, so such a heading is
+ * named after the last specific one: "## Cons" became "## SMS Messages and Phone Calls — Cons", whose
+ * chunk "SMS OTP disadvantages" had scored 0.20 while another "Cons" was taken for it (docs/ERRORS.md #33).
+ */
+const GENERIC_HEADING_RE =
+  /^(?:pros|cons|examples?|introduction|references|description|overview|context|approach|summary|background|usage|notes?|do|don'?t|do'?s and don'?ts|recommendations?|mitigations?|remediation|tools|how to test|test objectives|gr[ae]y-box testing|black-box testing|related test cases)$/i;
 
 type Piece = { text: string; sep: string; heading: boolean };
 
@@ -115,16 +122,29 @@ export function chunkMarkdown(markdown: string, size: number, overlap: number): 
     carry.forEach(append);
   };
 
-  for (const piece of pieces(text, size)) {
-    if (piece.heading) {
+  /** The last specific section heading's text, which a generic one is named after. */
+  let parent: string | null = null;
+
+  for (const raw of pieces(text, size)) {
+    if (raw.heading) {
       if (hasText() && length(current) >= size * MIN_FILL) {
         emit();
         current = [];
       }
-      section = /^#\s/.test(piece.text) ? null : piece;
+      const [, hashes = "", name = ""] = /^(#{1,6})\s+(.*)$/.exec(raw.text) ?? [];
+      let piece = raw;
+      if (hashes === "#") {
+        parent = null;
+      } else if (GENERIC_HEADING_RE.test(name.trim())) {
+        if (parent) piece = { ...raw, text: `${hashes} ${parent} — ${name.trim()}` };
+      } else {
+        parent = name.trim();
+      }
+      section = hashes === "#" ? null : piece;
       append(piece);
       continue;
     }
+    const piece = raw;
     if (hasText() && length([...current, piece]) > size) {
       emit();
       const body = current.filter((p) => !p.heading);

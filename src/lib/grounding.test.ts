@@ -29,7 +29,10 @@ test("the prompt forbids outside knowledge and requires citations", () => {
   assert.match(prompt, /ONLY from the numbered SecLearn document passages/);
   assert.match(prompt, /Do not add facts.*from your own knowledge/);
   assert.match(prompt, /Cite every sentence that states a fact/);
-  assert.match(prompt, /Tài liệu không đề cập đến/);
+  // Says what the search found, not what the whole library holds: "Tài liệu không đề cập OAuth2" was false
+  // when the search had missed it (ERRORS.md #34).
+  assert.match(prompt, /Các đoạn tài liệu tìm được không đề cập đến/);
+  assert.match(groundedSystemPrompt("[1] x", "en"), /The passages found do not cover/);
   assert.match(prompt, /Answer in Vietnamese/);
   assert.ok(prompt.includes("[1] (source: A)\nText"));
   assert.doesNotMatch(prompt, /general guidance/);
@@ -47,8 +50,15 @@ test("no [n] on what the documents lack or on the conversation; earlier answers'
     // Facts only in earlier answers were restated and cited to the new passages (ERRORS.md #26, #32).
     assert.match(prompt, /A fact that is only in an earlier answer, not in the passages below, must not be repeated/);
   }
-  assert.match(citationReminder("vi"), /không gắn \[n\] cho câu chỉ nói tài liệu không đề cập/);
+  assert.match(citationReminder("vi"), /không gắn \[n\] cho câu chỉ nói các đoạn tài liệu không đề cập/);
   assert.match(citationReminder("en"), /no \[n\] on a sentence that only says the passages do not cover something/);
+});
+
+test("uncitedSentences skips sentences saying the passages found do not cover something", () => {
+  const vi = "Các đoạn tài liệu tìm được không đề cập đến việc PKCE có bắt buộc với confidential client hay không.";
+  const en = "The passages found do not cover whether PKCE is required for confidential clients.";
+  assert.deepEqual(texts(vi), []);
+  assert.deepEqual(texts(en), []);
 });
 
 // --- Refusals are not fed back to the model ---
@@ -160,6 +170,12 @@ test("questionsNote numbers every earlier question and says which ones the messa
     /\nThe latest message \(question 5\) was understood as: "OWASP Top 10 category for IDOR"$/,
   );
   assert.equal(questionsNote([], { shownFrom: null }), "");
+  // A REFORMAT request: the model expanded "explain it more simply" with new topics (ERRORS.md #33).
+  assert.match(
+    questionsNote(questions, { shownFrom: 1, reformat: true }),
+    /\nThe latest message asks to redo the earlier answer in another form.*add no new topics/,
+  );
+  assert.doesNotMatch(questionsNote(questions, { shownFrom: 1 }), /redo the earlier answer/);
 });
 
 test("citedChunkIds returns the chunks an answer cites", () => {

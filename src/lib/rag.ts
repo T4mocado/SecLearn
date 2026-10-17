@@ -30,6 +30,16 @@ export const CONTEXT_CHAR_LIMIT = 6000;
  */
 const KEYWORD_CANDIDATES = 10;
 
+/**
+ * HyDE: a chunk the question scores at least PASSAGE_QUESTION_MIN is kept when the passage scores it at
+ * least PASSAGE_MIN, though under the relative floor. The SMS drawbacks scored 0.06-0.09 against the question
+ * (floor 0.081) and the STRIDE table 0.09-0.95 against its expansion. At 0.02, chunks scoring 0.04 got in
+ * (Secure Cloud, WebSocket for a DDoS question): the passage relaxes the relative floor only, never the
+ * absolute one (docs/ERRORS.md #34).
+ */
+const PASSAGE_MIN = 0.5;
+const PASSAGE_QUESTION_MIN = 0.05;
+
 /** A topic's best chunk is kept outside the top K only when it scores this much (docs/ERRORS.md #29). */
 const TOPIC_MIN_RELEVANCE = 0.1;
 
@@ -114,7 +124,13 @@ export async function retrieveChunks(opts: {
    * came from, which a fresh search may miss (docs/ERRORS.md #22). Reranked like the rest; up to `max`
    * scoring at least `minRelevance` stay even outside the top K (`carryFor`, docs/ERRORS.md #26, #32).
    */
-  carry?: { ids: string[]; max: number; minRelevance: number };
+  carry?: { ids: string[]; max: number; minRelevance: number; inOrder?: boolean };
+  /**
+   * HyDE passage (`SearchPlan.passage`): searched by vector only, and scored to rank chunks; whether a chunk is
+   * relevant is still decided against the question (`selectByRelevance`, docs/ERRORS.md #34). Keyword search
+   * with it matched broad words (security, attack, data) and kept unrelated chunks.
+   */
+  passage?: string;
 }): Promise<RetrievedChunk[]> {
   const env = getEnv();
   const topK = env.RAG_TOP_K;
@@ -128,6 +144,7 @@ export async function retrieveChunks(opts: {
   const names = currentMenuNames();
   const lists = await Promise.all([
     ...queries.map((query) => retrieveCandidates({ query, visibilities: opts.visibilities, limit: perQueryLimit })),
+    ...(opts.passage ? [retrieveCandidates({ query: opts.passage, visibilities: opts.visibilities, limit: perQueryLimit })] : []),
     keywordCandidates(keywordQuery(queries), opts.visibilities, KEYWORD_CANDIDATES),
     fetchChunksById(opts.carry?.ids ?? [], opts.visibilities, queries.at(-1)!),
   ]);
@@ -135,10 +152,16 @@ export async function retrieveChunks(opts: {
   const candidates = mergeCandidates(lists).filter((c) => !isSiteMenu(c.content, menu));
 
   let scores: number[] | null;
+  let passageScores: number[] | null = null;
   let topicBest: string[] = [];
   const scoring = topics.length ? topics : queries;
   try {
-    const perQuery = await Promise.all(scoring.map((q) => rerankScores(q, candidates.map((c) => c.content))));
+    const contents = candidates.map((c) => c.content);
+    const [perQuery, byPassage] = await Promise.all([
+      Promise.all(scoring.map((q) => rerankScores(q, contents))),
+      opts.passage ? rerankScores(opts.passage, contents) : Promise.resolve(null),
+    ]);
+    passageScores = byPassage;
     scores = perQuery.every((s) => s !== null) ? bestScores(perQuery as number[][]) : null;
     if (scores && topics.length) {
       topicBest = (perQuery as number[][]).map((s) => candidates[s.indexOf(Math.max(...s))]!.id);
@@ -151,12 +174,13 @@ export async function retrieveChunks(opts: {
   if (!scores) return candidates.slice(0, topK);
 
   return selectByRelevance(
-    candidates.map((c, i) => ({ ...c, rerankScore: scores[i]! })),
+    candidates.map((c, i) => ({ ...c, rerankScore: scores[i]!, ...(passageScores ? { passageScore: passageScores[i]! } : {}) })),
     {
       topK,
       ...relevanceFloor(scoring, env),
       topics: { ids: topicBest, minRelevance: TOPIC_MIN_RELEVANCE },
       carried: opts.carry,
+      ...(passageScores ? { passage: { min: PASSAGE_MIN, questionMin: PASSAGE_QUESTION_MIN } } : {}),
     },
   );
 }
@@ -187,6 +211,36 @@ async function fetchChunksById(ids: string[], visibilities: DocVisibility[], que
   } catch (err) {
     console.warn("[rag] could not load the previous answer's chunks:", err instanceof Error ? err.message : err);
     return [];
+  }
+}
+
+/**
+ * Whether any visible chunk has every word of one of the entity's spellings (full-text, `searchText`).
+ * 25 of 26 probe entities were told apart: STRIDE, OAuth 2.0, PKCE, WPA3 found; CVE-2021-44228,
+ * "Vietnam Cybersecurity Law", "Kubernetes 1.31", Bitcoin not (docs/ERRORS.md #34). Fails open.
+ */
+export async function entityInDocuments(spellings: string[], visibilities: DocVisibility[]): Promise<boolean> {
+  try {
+    await ensureSearchText();
+    const rows = await prisma.$queryRawUnsafe<Array<{ found: boolean }>>(
+      `
+      SELECT EXISTS (
+        SELECT 1 FROM "DocumentChunk" c
+        INNER JOIN "Document" d ON d.id = c."documentId",
+             unnest($1::text[]) AS s(spelling)
+        WHERE numnode(plainto_tsquery('english', s.spelling)) > 0
+          AND c."searchText" @@ plainto_tsquery('english', s.spelling)
+          AND d.status = 'ready'
+          AND d.visibility::text = ANY($2::text[])
+      ) AS found
+      `,
+      spellings,
+      visibilities,
+    );
+    return rows[0]?.found ?? true;
+  } catch (err) {
+    console.warn("[rag] entity check failed, searching anyway:", err instanceof Error ? err.message : err);
+    return true;
   }
 }
 

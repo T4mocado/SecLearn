@@ -65,7 +65,7 @@ test("needsTranslation: non-ASCII letters mean not English", async () => {
   assert.equal(needsTranslation("Explain the CSRF token pattern"), false);
 });
 
-test("searchQueries does not call the LLM in mock mode or when the question is English", async () => {
+test("searchQueries does not call the LLM in mock mode", async () => {
   const { searchQueries } = await import("./query");
   assert.deepEqual(await searchQueries("Mật khẩu mạnh?"), ["Mật khẩu mạnh?"]);
   assert.deepEqual(await searchQueries("strong password"), ["strong password"]);
@@ -410,7 +410,7 @@ test("rewritePrompt marks a request to change the previous answer with REFORMAT"
   assert.doesNotMatch(rewritePrompt(false), /REFORMAT/);
 });
 
-test("carryFor: a REFORMAT request keeps every chunk the previous answer cited, whatever its score", async () => {
+test("carryFor: a REFORMAT request keeps every chunk the answers in the window cited, whatever its score", async () => {
   const { carryFor } = await import("./chat-answer");
   const recent = [
     { role: "user" as const, content: "XSS?" },
@@ -418,7 +418,9 @@ test("carryFor: a REFORMAT request keeps every chunk the previous answer cited, 
     { role: "user" as const, content: "XXE và SSRF?" },
     { role: "assistant" as const, content: "…", citedChunkIds: ["xxe1", "ssrf1", "dotnet48"] },
   ];
-  assert.deepEqual(carryFor(recent, true, 5), { ids: ["xxe1", "ssrf1", "dotnet48"], max: 5, minRelevance: 0 });
+  // "Giải thích đơn giản hơn" re-explained the first answer too, citing the second one's passage for it (ERRORS.md #33):
+  // every answer in the window, newest first.
+  assert.deepEqual(carryFor(recent, true, 5), { ids: ["xxe1", "ssrf1", "dotnet48", "xss1"], max: 5, minRelevance: 0, inOrder: true });
   assert.deepEqual(carryFor(recent, false, 5), { ids: ["xxe1", "ssrf1", "dotnet48", "xss1"], max: 2, minRelevance: 0.1 });
 });
 
@@ -429,4 +431,82 @@ test("selectByRelevance keeps carried chunks with no floor even when nothing els
     ids(selectByRelevance([item("ssrf1", 0.03), item("x", 0.02)], { ...english, carried: { ids: ["ssrf1"], max: 5, minRelevance: 0 } })),
     ["ssrf1"],
   );
+});
+
+test("selectByRelevance keeps inOrder carried chunks by priority, not by score", async () => {
+  const { selectByRelevance } = await import("./rerank");
+  const items = [item("old1", 0.9), item("old2", 0.8), item("prev1", 0.2), item("prev2", 0.1), item("x", 0.95)];
+  // The previous answer's chunks first: picked by score, the older answer's took both slots (ERRORS.md #33).
+  const carried = { ids: ["prev1", "prev2", "old1", "old2"], max: 2, minRelevance: 0 };
+  assert.deepEqual(ids(selectByRelevance(items, { ...opts, topK: 3, carried: { ...carried, inOrder: true } })), ["x", "prev1", "prev2"]);
+  assert.deepEqual(ids(selectByRelevance(items, { ...opts, topK: 3, carried })), ["x", "old1", "old2"]);
+});
+
+// --- HyDE passage and entity from the rewrite (ERRORS.md #34) ---
+
+test("planFromRewrite reads PASSAGE and ENTITY lines apart from the queries", async () => {
+  const { planFromRewrite, parseRewrite } = await import("./query");
+  const raw = [
+    "STRIDE threat modeling acronym",
+    "PASSAGE: STRIDE stands for Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service and Elevation of Privilege.",
+    "ENTITY: STRIDE",
+  ].join("\n");
+  assert.deepEqual(planFromRewrite(raw, "STRIDE là viết tắt của gì?", false), {
+    intent: "search",
+    queries: ["STRIDE là viết tắt của gì?", "STRIDE threat modeling acronym"],
+    passage: "STRIDE stands for Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service and Elevation of Privilege.",
+    entity: ["STRIDE"],
+  });
+  // Alternative spellings of the entity, any of which may be in the documents.
+  assert.deepEqual(planFromRewrite("OAuth 2.0 vs SAML\nENTITY: OAuth 2.0 | OAuth2", "Compare OAuth2 and SAML", false).entity, ["OAuth 2.0", "OAuth2"]);
+  // Never searched as queries, and never counted among the at most three topic queries.
+  assert.deepEqual(parseRewrite("a\nPASSAGE: p\nb\nENTITY: e\nc"), ["a", "b", "c"]);
+});
+
+test("planFromRewrite drops PASSAGE and ENTITY for REFORMAT, CONVERSATION and NONE", async () => {
+  const { planFromRewrite } = await import("./query");
+  // Redoing the previous answer must not pull new topics, nor be refused over an entity (ERRORS.md #34).
+  assert.deepEqual(planFromRewrite("REFORMAT\nMFA methods\nPASSAGE: MFA uses factors.\nENTITY: MFA", "Giải thích đơn giản hơn", true), {
+    intent: "search",
+    queries: ["Giải thích đơn giản hơn", "MFA methods"],
+    reformat: true,
+  });
+  assert.deepEqual(planFromRewrite("CONVERSATION\nPASSAGE: x", "Tóm tắt lại", true), { intent: "conversation", queries: [] });
+  assert.deepEqual(planFromRewrite("NONE\nPASSAGE: x", "Cảm ơn", true), { intent: "search", queries: ["Cảm ơn"] });
+});
+
+test("rewritePrompt asks for a PASSAGE and an ENTITY line, for searching only", async () => {
+  const { rewritePrompt } = await import("./query");
+  for (const prompt of [rewritePrompt(true), rewritePrompt(false)]) {
+    assert.match(prompt, /PASSAGE: /);
+    assert.match(prompt, /only used for searching/);
+    assert.match(prompt, /ENTITY: /);
+  }
+});
+
+test("selectByRelevance: a HyDE passage ranks chunks but the question still decides relevance", async () => {
+  const { selectByRelevance } = await import("./rerank");
+  const english = { topK: 5, minRelevance: 0.05, minKeep: 0, relativeMin: 0.1 };
+  const passage = { min: 0.5, questionMin: 0.05 };
+  const item2 = (id: string, q: number, p: number) => ({ id, rerankScore: q, passageScore: p });
+  // STRIDE: the question scored its table 0.05-0.09 and other threat-modeling chunks higher; the expansion scored it 0.95.
+  const items = [item2("tm-intro", 0.62, 0.4), item2("stride-st", 0.07, 0.95), item2("noise", 0.04, 0.9), item2("other", 0.3, 0.2)];
+  // The passage relaxes only the relative floor (0.062 here), never the absolute one: "noise" (0.04) stays out (ERRORS.md #34).
+  assert.deepEqual(ids(selectByRelevance(items, { ...english, passage })), ["stride-st", "tm-intro", "other"]);
+  // Without the passage option nothing changes: question order, question floor (0.062).
+  assert.deepEqual(ids(selectByRelevance(items, english)), ["tm-intro", "other", "stride-st"]);
+  // Out of the documents: chunks the passage matches strongly but the question does not (< 0.02) stay out (ERRORS.md #34).
+  assert.deepEqual(selectByRelevance([item2("nist", 0.012, 0.63), item2("k8s", 0.004, 0.7)], { ...english, passage }), []);
+});
+
+test("keepAfterEntityCheck: a missing entity refuses only when the search found nothing clearly relevant", async () => {
+  const { keepAfterEntityCheck } = await import("./chat-answer");
+  const chunk = (rerankScore: number) => ({ id: `c${rerankScore}`, rerankScore });
+  // Entity in the documents: whatever the search kept.
+  assert.equal(keepAfterEntityCheck(true, [chunk(0.07)]).length, 1);
+  // Not in the documents and only weak chunks (a named thing the library lacks): refuse.
+  assert.deepEqual(keepAfterEntityCheck(false, [chunk(0.07), chunk(0.2)]), []);
+  // Not found, but the search is sure of its chunks: the rewrite named a side detail ("ISP" for a DDoS question,
+  // which was refused outright) (ERRORS.md #34).
+  assert.equal(keepAfterEntityCheck(false, [chunk(0.4), chunk(0.06)]).length, 2);
 });

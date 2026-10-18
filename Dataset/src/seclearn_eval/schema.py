@@ -61,6 +61,8 @@ class Manifest(Record):
     source_git_commit: str
     source_git_dirty: bool
     chunker: Chunker
+    #: Offsets and `chars` count Unicode code points (Python string indices), not the app's UTF-16 units.
+    offset_unit: Literal["codepoint"]
     chunks_path: str
     documents: list[ManifestDocument]
     canary: str

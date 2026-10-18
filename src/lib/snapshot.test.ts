@@ -103,3 +103,17 @@ test("buildSnapshot refuses a corpus that is not fully ingested", () => {
   assert.match(refused([{ ...DOCS[0]!, markdown: `${MD_A} Edited.` }, DOCS[1]!], CHUNKS), /other markdown/);
   assert.match(refused(DOCS, CHUNKS.filter((c) => c.id !== "a-c1")), /expected chunk index 1/);
 });
+
+test("buildSnapshot counts offsets in code points, so Python string indices find the chunk", () => {
+  // One emoji before the text: JS indices run one ahead of Python's after it (NodeJS_Docker_Cheat_Sheet).
+  const md = `# Docker\n\n## Tips\nRun as non-root \u{1F642}. ${Array.from({ length: 6 }, (_, i) => sentence(i)).join(" ")}`;
+  const d = doc("e", "/srv/data/uploads/1791627900007-NodeJS_Docker_Cheat_Sheet.pdf", md);
+  const files = buildSnapshot([d], chunksOf(d), OPTS);
+  const manifest = JSON.parse(files["manifest.json"]!);
+  const points = [...md];
+  assert.equal(manifest.offset_unit, "codepoint");
+  assert.equal(manifest.documents[0].chars, points.length);
+  const last = JSON.parse(files[manifest.chunks_path]!.trim().split("\n").at(-1)!);
+  assert.equal(last.char_end, points.length);
+  assert.ok(points.slice(last.char_start, last.char_end).join("").endsWith(sentence(5)));
+});

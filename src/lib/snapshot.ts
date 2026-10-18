@@ -76,6 +76,26 @@ function sourceFile(storagePath: string): string {
   return at >= 0 ? norm.slice(at) : norm;
 }
 
+/**
+ * Chunk metadata holds JS string indices (UTF-16 code units); the snapshot is read in Python, which indexes
+ * code points. They differ after any character outside the BMP: one 🙂 in NodeJS_Docker_Cheat_Sheet put
+ * every later offset of that document one past its text. Maps a UTF-16 index to a code point index.
+ */
+function codePointIndex(text: string): (utf16: number) => number {
+  if (!/[\uD800-\uDBFF][\uDC00-\uDFFF]/.test(text)) return (i) => i;
+  const map = new Int32Array(text.length + 1);
+  let cp = 0;
+  for (let i = 0; i < text.length; i++) {
+    map[i] = cp;
+    const high = text.charCodeAt(i) >= 0xd800 && text.charCodeAt(i) <= 0xdbff;
+    const low = text.charCodeAt(i + 1) >= 0xdc00 && text.charCodeAt(i + 1) <= 0xdfff;
+    if (high && low) map[++i] = cp;
+    cp++;
+  }
+  map[text.length] = cp;
+  return (i) => map[i]!;
+}
+
 type Offsets = { char_start: number; char_end: number; md_sha256: string; chunker_version: string };
 
 function offsets(metadata: unknown): Offsets | null {
@@ -115,6 +135,7 @@ export function buildSnapshot(documents: SnapshotDocument[], chunks: SnapshotChu
     const markdown = doc.markdown ?? "";
     if (!markdown) problems.push(`${label}: no markdown`);
     const mdSha = sha256(markdown);
+    const cp = codePointIndex(markdown);
 
     const docChunks = [...(byDoc.get(doc.id) ?? [])].sort((a, b) => a.chunkIndex - b.chunkIndex);
     if (!docChunks.length) problems.push(`${label}: no chunks`);
@@ -133,8 +154,8 @@ export function buildSnapshot(documents: SnapshotDocument[], chunks: SnapshotChu
           chunk_key: `${key}#${c.chunkIndex}`,
           doc_key: key,
           chunk_index: c.chunkIndex,
-          char_start: o.char_start,
-          char_end: o.char_end,
+          char_start: cp(o.char_start),
+          char_end: cp(o.char_end),
           text: c.content,
           content_sha1: sha1(c.content),
           db_id: c.id,
@@ -151,7 +172,7 @@ export function buildSnapshot(documents: SnapshotDocument[], chunks: SnapshotChu
       source_sha256: doc.sourceSha256,
       md_path: mdPath,
       md_sha256: mdSha,
-      chars: markdown.length,
+      chars: cp(markdown.length),
       chunks: docChunks.length,
       status: doc.status,
       license: LICENSE,
@@ -175,6 +196,8 @@ export function buildSnapshot(documents: SnapshotDocument[], chunks: SnapshotChu
     source_git_commit: opts.gitCommit,
     source_git_dirty: opts.gitDirty,
     chunker: { version: opts.chunker.version, CHUNK_SIZE: opts.chunker.size, CHUNK_OVERLAP: opts.chunker.overlap },
+    /** Offsets and `chars` count Unicode code points (Python string indices), not UTF-16 units. */
+    offset_unit: "codepoint",
     chunks_path: `chunks.${opts.chunker.version}.jsonl`,
     documents: manifestDocs,
     canary: opts.canary,

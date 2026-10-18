@@ -12,3 +12,7 @@
 - [ ] Thử thật một lần: bôi một span trong Label Studio, export, xác nhận offset ký tự đúng trên markdown của snapshot (ghi kết quả vào ticket)
 - [ ] Thứ tự hiển thị đảm bảo người gán không thấy đáp án LLM trước khi tự bôi span
 - [ ] Hướng dẫn v0 có đủ các mục và ví dụ trích từ corpus thật, có số phiên bản
+
+## Comments
+
+**2026-10-18, agent:** Snapshot ghi offset theo **code point Unicode** (`manifest.offset_unit = "codepoint"`), không theo đơn vị UTF-16 của JS. Lý do: một emoji 🙂 trong NodeJS_Docker_Cheat_Sheet làm mọi offset JS phía sau nó lệch 1 so với chỉ số chuỗi của Python. Label Studio chạy trên trình duyệt nên nhiều khả năng cũng trả offset theo UTF-16. Khi thử export span (tiêu chí 2), cần kiểm thêm trên một đoạn nằm sau emoji, và đổi sang code point khi nhập nhãn về.

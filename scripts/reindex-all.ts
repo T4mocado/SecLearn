@@ -2,6 +2,8 @@
  * Re-ingest every document (re-parse PDF, re-chunk, re-embed).
  * Usage: npm run db:reindex            (all documents)
  *        npm run db:reindex -- --pending   (only documents stuck in `pending`)
+ *        npm run db:reindex -- --title File_Upload_Cheat_Sheet --title Deserialization_Cheat_Sheet
+ *                                          (only these documents, by exact title)
  * Stop `npm run dev` first so its boot recovery does not process the same documents in parallel.
  * The embed server (python scripts/embed_server.py) must be running.
  */
@@ -11,8 +13,12 @@ import { processDocument } from "../src/lib/ingest";
 
 async function main() {
   const onlyPending = process.argv.includes("--pending");
+  const titles = process.argv.flatMap((a, i) => (a === "--title" && process.argv[i + 1] ? [process.argv[i + 1]!] : []));
   const docs = await prisma.document.findMany({
-    where: onlyPending ? { status: "pending" } : undefined,
+    where: {
+      ...(onlyPending ? { status: "pending" as const } : {}),
+      ...(titles.length ? { title: { in: titles } } : {}),
+    },
     select: { id: true, title: true },
     orderBy: { createdAt: "asc" },
   });

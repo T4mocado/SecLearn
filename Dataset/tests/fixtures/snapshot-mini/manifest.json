@@ -13,6 +13,7 @@
     "CHUNK_SIZE": 300,
     "CHUNK_OVERLAP": 60
   },
+  "offset_unit": "codepoint",
   "chunks_path": "chunks.sentence-v2.jsonl",
   "documents": [
     {
@@ -36,8 +37,8 @@
       "source_file": "data/uploads/1791629933697-74ec4d39-Session_Management_Cheat_Sheet.pdf",
       "source_sha256": "d57975875e23438537bc17347e48b93415c34a044325515b5fc0a9ee7dd95736",
       "md_path": "md/Session_Management_Cheat_Sheet.md",
-      "md_sha256": "2b7b9367fc72c0f64ed9583061d43421066ac34a1d94df07702b46a3f37692a8",
-      "chars": 891,
+      "md_sha256": "91c7332d90b431a9bf6ad81cc6470713842ff3663c64e68b6059ee0c59f1f2d7",
+      "chars": 893,
       "chunks": 4,
       "status": "ready",
       "license": "CC-BY-SA-4.0",

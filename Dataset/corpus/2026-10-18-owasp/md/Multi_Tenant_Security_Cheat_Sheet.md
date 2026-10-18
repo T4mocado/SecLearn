@@ -1,0 +1,273 @@
+# Multi_Tenant_Security_Cheat_Sheet
+
+## Multi-Tenant Application Security Cheat Sheet
+## Introduction
+Multi-tenant applications serve multiple customers (tenants) from a shared infrastructure, codebase, and often
+shared databases. This architecture is the foundation of modern SaaS platforms, offering cost efficiency and
+simplified operations.
+However, multi-tenancy introduces critical security challenges: a single vulnerability can expose all tenants' data,
+misconfigurations can leak data across tenant boundaries, and resource contention can impact availability.
+This cheat sheet provides best practices to secure multi-tenant applications, ensure tenant isolation, and prevent
+cross-tenant attacks.
+## Key Risks
+Use the Authorization Cheat Sheet for baseline access controls.
+Cross-Tenant Data Leakage: Bugs or misconfigurations exposing one tenant's data to another.
+Tenant Impersonation: Attackers gaining access to another tenant's context or resources.
+Broken Tenant Isolation: Insufficient separation at database, cache, storage, or compute layers.
+Insecure Direct Object References (IDOR): Accessing resources by manipulating tenant/resource IDs.
+Noisy Neighbor Attacks: One tenant exhausting shared resources, impacting others (DoS).
+Privilege Escalation Across Tenants: Exploiting admin functions to access other tenants.
+Tenant Context Injection: Manipulating tenant identifiers in requests, tokens, or headers.
+Shared Resource Poisoning: Cache poisoning, queue injection, or storage pollution affecting other
+tenants.
+Insecure Tenant Onboarding/Offboarding: Incomplete provisioning, unauthorized residual access, or
+retention beyond policy.
+Audit & Compliance Gaps: Insufficient tenant-specific logging for regulatory requirements.
+
+## Best Practices
+## 1. Tenant Identification & Context Management
+For tenant-scoped operations, establish tenant context early in the request lifecycle
+(middleware/interceptor).
+Choose identifiers appropriate to their exposure risk. Opaque, random identifiers can reduce enumeration,
+but they are not authorization controls.
+Treat client-supplied tenant identifiers as selectors only. Verify that the authenticated principal is
+authorized to act in the selected tenant.
+Bind tenant context to a server-verified identity and current tenant membership or service authorization.
+Propagate server-verified tenant context to components that need it for tenant-sensitive decisions or
+observability; do not let downstream components replace it with unverified input.
+Bad example: Trusting client-supplied tenant ID
+Good example: Verifying tenant context against authenticated identity
+## 2. Database Isolation Strategies
+Choose an isolation strategy based on security requirements, compliance needs, and operational complexity:
+Strategy 	Potential Boundary 	Conditions and Trade-Offs
+Separate
+Databases
+Database and credential
+boundary
+Strong when credentials, network access, administrative paths, and
+backups are isolated; higher operational cost
+Separate
+Schemas
+Namespace and
+database-role boundary
+Requires disciplined grants, role separation, search_path handling,
+and migrations
+Shared Tables
+(Row-Level)
+Policy and row
+boundary
+Requires enforceable tenant ownership, policy coverage for
+classified tenant-owned tables, constrained request roles, and
+negative-path tests
+Hybrid Varies by workload or
+tier Document and test the boundary used for each data class
+Row-Level Security Implementation (PostgreSQL)
+## Do Not Use an RLS-Bypassing Role for Tenant-Scoped Request Paths
+FORCE ROW LEVEL SECURITY applies policies to a table owner. It does not constrain a superuser or a role with the
+BYPASSRLS attribute; PostgreSQL documents that both always bypass row security.
+Connect the normal application request path with a least-privileged role that is neither a superuser nor a
+BYPASSRLS role.
+Reserve privileged connections for migrations and explicitly authorized administrative jobs.
+Do not serve ordinary tenant-scoped requests through a privileged connection. A privileged job must
+explicitly authorize and constrain its tenant set or cross-tenant operation because RLS will not do so.
+Check the deployed request role, not only the role declared in source-controlled configuration. PostgreSQL
+exposes rolsuper and rolbypassrls in pg_roles.
+## Scope Tenant Context to the Transaction
+The example policy depends on current_setting('app.current_tenant'). Because it omits the optional
+missing_ok => true argument, PostgreSQL raises an error if the setting does not exist instead of returning NULL;
+that is a deliberate fail-closed choice. The current_setting documentation describes both behaviors.
+
+A normal SET persists until the session ends after its transaction commits, while SET LOCAL lasts only for the
+current transaction. When an application or connection pool reuses a database session without resetting it,
+session-scoped tenant state can therefore be inherited by the next request.
+Begin a transaction, set the tenant context with SET LOCAL, or call set_config('app.current_tenant',
+tenant_id, true), then execute queries that depend on that setting in the same transaction. The true
+argument makes set_config transaction-local.
+Re-establish the tenant context for every transaction. Never assume a newly borrowed connection has the
+correct setting.
+Fail closed if the tenant context is missing or invalid; do not fall back to an unscoped query.
+Commit or roll back before returning the connection to the pool.
+SQLAlchemy deprecated QueryEvents.before_compile because it does not cover ORM-level attribute and
+relationship loads. The current recommended pattern combines SessionEvents.do_orm_execute with
+with_loader_criteria so criteria propagate to occurrences of the mapped entity, including eager and lazy
+relationship loads.
+Application-Level Enforcement (Python/SQLAlchemy)
+This ORM helper is defense in depth, not complete enforcement. It applies tenant criteria to ORM SELECTs
+issued through TenantAwareSession, with the criteria propagated to relationship loaders. Raw SQL, Core
+connections, bulk operations, and code using another session type require separate controls; use database policies
+or constrained roles as the final boundary where possible.
+## Verify Tenant Isolation
+Test isolation through the same role, connection path, and pooling mode used by the application. A privileged
+test connection can make a correct policy appear broken, while a test that never exercises the deployed request
+role can miss a bypass.
+Test the authorization matrix. For each RLS-protected table, prove that expected cross-tenant operations
+are denied and expected same-tenant operations succeed. Where sharing or platform administration is
+intentional, test the exact permitted path and prove that it grants no broader access.
+Discover coverage. Derive the expected tenant-scoped table inventory from the schema or an explicit
+classification, then compare it with PostgreSQL's pg_class.relrowsecurity and relforcerowsecurity and
+the pg_policies view. Fail when a new table has no classification, RLS is disabled, or the expected policy
+is absent.
+Assert the request role. In the deployed environment, fail a configuration test if the request-path role has
+rolsuper or rolbypassrls set.
+Exercise connection reuse. Run requests for two tenants over reused connections and prove the second
+request cannot observe the first request's tenant context.
+A hand-maintained table list can drift: the same omission that leaves RLS off a new table can also leave that
+table out of the test. Prefer schema-derived discovery, or gate schema changes so each new table must be
+classified as tenant-scoped, intentionally shared, or otherwise isolated.
+## 3. Preventing Cross-Tenant Data Access (IDOR Prevention)
+For each tenant-scoped resource, verify that the authenticated principal can act in the resource's tenant.
+Include tenant scope in the lookup or authorization policy when ownership is tenant-specific. A composite
+key (tenant_id + resource_id) is one option, not a universal requirement.
+Enforce authorization at a boundary traversed by every tenant-owned access path. Add data-layer checks
+as defense in depth where the architecture supports them.
+
+Treat opaque or random identifiers as defense in depth against enumeration, not as a substitute for
+authorization.
+Bad example: Direct object reference without tenant validation
+Good example: Tenant-scoped resource access
+## 4. Cache & Session Isolation
+Classify each cached value as global, tenant-scoped, or user-scoped.
+Include the tenant identifier in every cache key whose value or authorization varies by tenant.
+Give intentionally shared entries an explicit global namespace and document why they are safe to share.
+Include every other attribute that changes the result, such as user, locale, feature set, or permission version.
+Authorize the request before reading a protected cached value; cache-key separation does not replace
+authorization.
+Use separate cache instances for tenants that require stronger physical isolation.
+Choose TTL and invalidation behavior from freshness and authorization risk. Immutable, versioned global
+entries may not require expiry.
+Bad example: Tenant-scoped data stored under a shared key
+Good example: Explicit tenant and global cache scopes
+## 5. API, Asynchronous Work & Resource Controls
+## API Security & Rate Limiting
+When tenants share capacity or quotas, include tenant identity as one rate-limit dimension alongside any
+required global, endpoint, user, or IP limits.
+Rate limits at the HTTP boundary do not constrain every shared resource. Where tenant load can affect
+other tenants, apply tenant-aware limits or scheduling to the relevant bottlenecks, such as concurrent work,
+queued messages, database connections, fan-out, CPU, or memory. Retain global safety limits, and isolate
+a worker or resource pool when the risk or service commitment justifies the operational cost. The AWS
+SaaS Lens describes scaling, throttling, and selective resource isolation as complementary noisy-neighbor
+controls.
+Validate server-verified tenant context on every tenant-scoped API request. Public or global endpoints
+need no artificial tenant context.
+Bind API credentials to explicit tenant sets, environments, and permission scopes. An intentionally cross-
+tenant service identity must be separately authorized and least privileged.
+When B2B request signing is required, bind the signature to the security-relevant request context, such as
+tenant selection, target audience, method, path, body digest, and expiration, as applicable.
+The limits below are illustrative. Choose production limits from capacity, abuse risk, and contractual quotas, and
+mount tenant-aware middleware only on routes where tenant context is required.
+Tenant-Aware Rate Limiting
+## Tenant-Aware Asynchronous Work
+Classify asynchronous work as global, tenant-scoped, or explicitly cross-tenant. A shared queue or topic is not
+itself a tenant-isolation boundary. Microsoft's multitenant messaging guidance describes the trade-off between
+shared and dedicated messaging infrastructure and the need for application-enforced isolation when
+infrastructure is shared.
+
+For tenant-scoped work, derive tenant context from the authenticated producer and bind it to the message
+through trusted broker routing, authenticated metadata, or an integrity-protected payload. Do not let an
+unverified message field replace the producer's authorized scope.
+At the consumer, authenticate the producer or broker path, re-establish tenant context, and authorize the
+operation and target resource. Re-check time-sensitive membership or permission when delayed execution
+could make the original decision stale.
+Scope idempotency and deduplication keys, retry state, dead-letter access, and per-tenant ordering when
+their data or effects vary by tenant. Global jobs and authorized cross-tenant jobs should use explicit
+identities and scopes rather than a fabricated tenant.
+Apply tenant-aware queue depth, concurrency, and throughput controls when a shared worker fleet or
+broker is susceptible to noisy-neighbor load; retain service-wide limits for aggregate exhaustion.
+## 6. File Storage & Blob Isolation
+Classify stored objects as global, tenant-scoped, or user-scoped. Keep intentionally shared assets in an
+explicit global namespace.
+Partition tenant-scoped objects with a tenant-aware key, bucket, account, or enforceable storage policy.
+Authorize access to the exact object and operation before serving it or generating a signed URL.
+Limit signed URLs to the required object and method, with a lifetime appropriate to the operation and
+revocation model. The tenant identifier does not need to appear in the URL when authorization happened
+before signing.
+Use tenant-specific encryption keys when the risk or compliance model requires cryptographic isolation. A
+shared managed key with enforced access context can also be appropriate.
+Illustrative Tenant-Scoped File Storage
+## 7. Tenant Onboarding & Offboarding Security
+Implement secure tenant provisioning with isolated resources.
+Generate unique encryption keys per tenant where required.
+Apply a documented retention and deletion policy across active stores, caches, object versions, replicas,
+exports, and backups. Restrict any legally required retained records.
+Maintain audit trail of provisioning/deprovisioning.
+Provide tenant data export when contract, regulation, or product policy requires it.
+## Tenant Backup Restore
+A shared backup can contain data from several tenants. For a single-tenant recovery from a shared database,
+restore into a separate resource and selectively recover the target tenant's data, as described in Azure's
+multitenant storage guidance.
+Authorize the operator for the target tenant and record the source backup, target, reason, and outcome.
+Check tenant ownership before copying records or objects into the live tenant scope. Do not give a tenant
+operator access to a shared backup.
+Reapply current access and retention rules; a backup can contain old memberships or data that should no
+longer be accessible.
+Test a backup with two tenants: recover one tenant, verify the other tenant's records and objects are absent,
+and reject a restore request by an unauthorized actor.
+Illustrative Tenant Lifecycle Management
+The SHA-256 example applies only to the high-entropy random credential created by
+secrets.token_urlsafe(32). A fast digest does not make a low-entropy or user-chosen secret safe against offline
+
+guessing. Store passwords according to the Password Storage Cheat Sheet, using a suitable password-hashing
+function rather than this API-key pattern.
+## 8. Logging, Monitoring & Audit
+Include server-verified tenant context in tenant-scoped security and audit events; global infrastructure
+events may have no tenant.
+A centralized audit store is acceptable when read access enforces tenant scope and cross-tenant access
+requires an explicit platform permission.
+Monitor denied or unexpected cross-tenant access attempts without treating explicitly authorized platform
+operations as violations.
+Alert on tenant-isolation control failures and suspicious denial patterns.
+Apply the documented access and retention policy for each audit-data class.
+Tenant-Aware Logging & Monitoring
+## Do's and Don'ts
+Do:
+Derive tenant context from a server-verified identity and current membership or service authorization.
+Use an enforceable isolation boundary appropriate to the data and threat model; database controls such as
+RLS or schema and credential separation can provide defense in depth.
+Include tenant scope in queries, cache keys, and storage boundaries when the resource or result varies by
+tenant.
+Include tenant identity in rate limits and quotas when tenants share capacity or have tenant-level
+entitlements; retain any needed global, endpoint, user, or IP limits.
+Bound tenant consumption of other shared bottlenecks, such as queued work, concurrency, database
+connections, and compute, when those resources can create cross-tenant availability impact.
+Carry verified tenant context through tenant-scoped asynchronous work and re-establish authorization at
+the consumer.
+Log verified tenant context for tenant-scoped security and audit events.
+Enforce tenant ownership at a boundary traversed by every tenant-owned access path.
+Use separate encryption keys when the risk or compliance model requires cryptographic isolation.
+Apply and verify the documented retention and deletion policy during offboarding.
+Authorize and test tenant-scoped restores, especially when the source backup contains other tenants.
+Monitor and alert on denied or unexpected cross-tenant access attempts.
+For shared-table PostgreSQL RLS that uses a tenant setting, prefer transaction-local context and re-
+establish it for each transaction.
+For shared-table PostgreSQL RLS, inventory classified tenant-owned tables and test cross-tenant denial for
+each one.
+Verify that the ordinary tenant-request database role cannot bypass row security when RLS is the isolation
+boundary.
+Don't:
+Treat tenant IDs from client headers or request parameters as authorization proof; they are selectors that
+require server-side verification.
+Use a shared cache key for data or authorization that varies by tenant.
+Rely on identifier complexity to prevent cross-tenant access.
+Allow an ordinary tenant-owned request path to perform an unscoped query; make any cross-tenant
+administrative path explicit, separately authorized, and auditable.
+
+Store tenant-owned data without an enforceable tenant association or isolation boundary; a literal
+tenant_id column is not required by every architecture.
+Give a tenant-scoped credential access to other tenants. Explicitly cross-tenant service credentials require
+their own least-privileged scope and controls.
+Skip authorization merely because a service is internal.
+Treat a tenant identifier in a queued message as authorization proof without authenticating the producer
+path and authorizing the consumer operation.
+Allow one tenant unbounded consumption of a shared queue, worker pool, connection pool, or other
+resource that can degrade other tenants.
+Retain tenant data beyond the documented retention policy without a contractual or legal basis and
+appropriate access restrictions.
+Restore a shared snapshot over live data to recover only one tenant.
+Log sensitive tenant data in plain text.
+Serve ordinary tenant-scoped PostgreSQL RLS request paths with a superuser or BYPASSRLS role.
+Use a session-scoped database tenant setting across pooled requests without reliable reset-on-checkout or
+equivalent isolation and connection-reuse tests; prefer transaction-local settings.
+## References
+AWS SaaS Lens: Tenant Isolation
+PostgreSQL: Row Security Policies
+Microsoft: Messaging in Multitenant Solutions

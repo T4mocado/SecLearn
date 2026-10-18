@@ -1,0 +1,116 @@
+# Database_Security_Cheat_Sheet
+
+## Database Security Cheat Sheet
+## Introduction
+This cheat sheet provides guidance for securely configuring SQL databases such as MySQL, PostgreSQL,
+MariaDB, and Microsoft SQL Server. It is designed primarily for application developers and system
+administrators responsible for managing or interacting with relational databases.
+For application-layer injection defenses, see the SQL Injection Prevention Cheat Sheet. For guidance on non-
+relational systems (e.g., MongoDB, Redis, Cassandra, DynamoDB), refer to the NoSQL Security Cheat Sheet
+## Protecting the Backend Database
+The application's backend database should be isolated from other servers and only connect with as few hosts as
+possible. This task will depend on the system and network architecture. Consider these suggestions:
+Disabling network (TCP) access and requiring all access is over a local socket file or named pipe.
+Configuring the database to only bind on localhost.
+Restricting access to the network port to specific hosts with firewall rules.
+Placing the database server on a dedicated internal network segment that is isolated from the application
+server.
+Protect any web-based management tools (e.g., phpMyAdmin, pgAdmin) with authentication, HTTPS, and
+network restrictions.
+When an application is running on an untrusted system (such as a thick-client), it should always connect to the
+backend through an API that can enforce appropriate access control and restrictions. Direct connections should
+never be made from a thick client to the backend database.
+## Implementing Transport Layer Protection
+Most database default configurations start with unencrypted network connections, though some do encrypt the
+initial authentication (such as Microsoft SQL Server). Even if the initial authentication is encrypted, the rest of
+the traffic will be unencrypted and all kinds of sensitive information will be sent across the network in clear text.
+The following steps should be taken to prevent unencrypted traffic:
+Configure the database to only allow encrypted connections.
+Install a trusted digital certificate on the server.
+The client application should connect using TLSv1.2+ with modern ciphers (e.g, AES-GCM or
+ChaCha20).
+The client application should verify that the digital certificate is correct.
+The Transport Layer Security Cheat Sheet contains further guidance on securely configuring TLS.
+
+## Configuring Secure Authentication
+The database should always require authentication, including connections from the local server. Database
+accounts should be:
+Protected with strong and unique passwords.
+Used by a single application or service.
+Configured with the minimum permissions required as discussed in the permissions section below.
+As with any system that has its own user accounts, the usual account management processes should be followed,
+including:
+Regular reviews of the accounts to ensure that they are still required.
+Regular reviews of permissions.
+Removing user accounts when an application is decommissioned.
+Changing the passwords when staff leave, or there is reason to believe that they may have been
+compromised.
+For Microsoft SQL Server, consider the use of Windows or Integrated-Authentication, which uses existing
+Windows accounts rather than SQL Server accounts. This also removes the requirement to store credentials in
+the application, as it will connect using the credentials of the Windows user it is running under. The Windows
+Native Authentication Plugins provides similar functionality for MySQL.
+## Storing Database Credentials Securely
+Database credentials should never be stored in the application source code, especially if they are unencrypted.
+Instead, they should be stored in a configuration file that:
+Is outside of the web root.
+Has appropriate permissions so that it can only be read by the required user(s).
+Is not checked into source code repositories.
+Where possible, these credentials should also be encrypted or otherwise protected using built-in functionality,
+such as the web.config encryption available in ASP.NET.
+## Creating Secure Permissions
+When developers are assigning permissions to database user accounts, they should employ the principle of least
+privilege (i.e, the accounts should only have the minimal permissions required for the application to function).
+This principle can be applied at a number of increasingly granular levels depending on the functionality available
+in the database. You can do the following in all environments:
+Do not use the built-in root, sa or SYS accounts.
+Do not grant the account administrative rights over the database instance.
+Make sure the account can only connect from allowed hosts. This would often be localhost or the address
+of the application server.
+The account should only access the specific databases it needs. Development, UAT and Production
+environments should all use separate databases and accounts.
+Only grant the required permissions on the databases. Most applications would only need SELECT, UPDATE
+and DELETE permissions. The account should not be the owner of the database as this can lead to privilege
+escalation vulnerabilities.
+Avoid using database links or linked servers. Where they are required, use an account that has been
+granted access to only the minimum databases, tables, and system privileges required.
+
+Most security-critical applications, apply permissions at more granular levels, including:
+Table-level permissions.
+Column-level permissions.
+Row-level permissions
+Blocking access to the underlying tables, and requiring all access through restricted views.
+## Database Configuration and Hardening
+The database server's underlying operating system should be hardened by basing it on a secure baseline such as
+the CIS Benchmarks or the Microsoft Security Baselines.
+The database application should also be properly configured and hardened. The following principles should
+apply to any database application and platform:
+Install any required security updates and patches.
+Configure the database services to run under a low privileged user account.
+Remove any default accounts and databases.
+Store transaction logs on a separate disk to the main database files.
+Configure a regular backup of the database. Ensure that the backups are protected with appropriate
+permissions, and ideally encrypted.
+The following sections give some further recommendations for specific database software, in addition to the
+more general recommendations given above.
+## Hardening a Microsoft SQL Server
+Disable xp_cmdshell, xp_dirtree and other stored procedures that are not required.
+Disable Common Language Runtime (CLR) execution.
+Disable the SQL Browser service.
+Disable Mixed Mode Authentication unless it is required.
+Ensure that the sample Northwind and AdventureWorks databases have been removed.
+See Microsoft's articles on securing SQL Server.
+## Hardening a MySQL or a MariaDB Server
+Run the mysql_secure_installation script to remove the default databases and accounts.
+Disable the FILE privilege for all users to prevent them reading or writing files.
+See the Oracle MySQL and MariaDB hardening guides.
+## Hardening a PostgreSQL Server
+See the PostgreSQL Server Setup and Operation documentation and the older Security documentation.
+## MongoDB
+See the NoSQL Security Cheat Sheet for general guidance on securing NoSQL databases.
+See the MongoDB security checklist.
+## Redis
+See the Redis security guide.
+
+## References
+Microsoft: Securing SQL Server
+PostgreSQL: Secure TCP/IP Connections with SSL

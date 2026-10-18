@@ -60,12 +60,37 @@ export function removeSiteChrome(text: string): string {
     }
   }
   return lines
-    .map((l) => {
+    .flatMap((l) => {
       const heading = PILCROW_HEADING_RE.exec(l.trim());
-      return heading ? `## ${heading[1]}` : l;
+      if (!heading) return [l];
+      // "Cheat Sheet¶" wrapped as "…Cheat" + "Sheet¶" left a "## Sheet" heading in 10 documents.
+      return heading[1] === "Sheet" ? [] : [`## ${heading[1]}`];
     })
     .join("\n")
     .trim();
+}
+
+/** WSTG prints each test case as its name (one or two wrapped lines), then "ID", then "WSTG-INFO-01". */
+const WSTG_CASE_RE = /(^|\n\n)((?:[^\n]+\n){1,3}?)ID\n(WSTG-[A-Z]{4}-\d{2})\n/g;
+const WSTG_REMOVED_RE = /^This content has been removed[ \t]*/;
+
+/**
+ * The Web Security Testing Guide has no headings, so its chunks did not say which test case they belong
+ * to. Turns each test case's name + "ID" + code into "## WSTG-INFO-01 <name>"; a test case whose body is
+ * only "This content has been removed" (WSTG-INPV-13 Buffer Overflow) is dropped. Other documents keep their text.
+ */
+export function addWstgHeadings(text: string): string {
+  let out = "";
+  let from = 0;
+  for (const m of text.matchAll(WSTG_CASE_RE)) {
+    const [whole, lead = "", name = "", id = ""] = m;
+    out += text.slice(from, m.index);
+    from = m.index + whole.length;
+    const removed = WSTG_REMOVED_RE.exec(text.slice(from));
+    if (removed) from += removed[0].length;
+    else out += `${lead}## ${id} ${name.trim().replace(/\s*\n\s*/g, " ")}\n`;
+  }
+  return out + text.slice(from);
 }
 
 /**

@@ -2,21 +2,27 @@ import { mkdir, writeFile, unlink } from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { getEnv } from "@/lib/env";
-import { chunkMarkdown } from "@/lib/chunking";
-import { randomUUID } from "crypto";
+import { CHUNKER_VERSION, chunkMarkdownWithSpans } from "@/lib/chunking";
+import { createHash, randomUUID } from "crypto";
 import { assertEmbedConfigured, embedTexts, vectorLiteral } from "@/lib/embed";
 import { isAppError } from "@/lib/errors";
 import { sanitizeTextForDb } from "@/lib/text-sanitize";
-import { removeHeadersFooters, removeSiteChrome } from "@/lib/pdf-cleanup";
+import { addWstgHeadings, removeHeadersFooters, removeSiteChrome } from "@/lib/pdf-cleanup";
 import { enqueueDocument } from "@/lib/ingest-queue";
 
 /** Abort ingest when the embed backend looks down (server off, 402/429) instead of trying every chunk. */
 const MAX_CONSECUTIVE_CHUNK_FAILURES = 5;
 
-/** One multi-row INSERT (content, vector, keyword index) per batch instead of create + UPDATE per chunk. */
+/**
+ * Where a chunk's body lies in `Document.markdown` (`[char_start, char_end)`), so the eval set can map
+ * gold spans to chunks by offset; `md_sha256` and `chunker_version` say which markdown and rules it holds for.
+ */
+export type ChunkMetadata = { char_start: number; char_end: number; md_sha256: string; chunker_version: string };
+
+/** One multi-row INSERT (content, vector, keyword index, offsets) per batch instead of create + UPDATE per chunk. */
 async function insertChunks(
   documentId: string,
-  rows: Array<{ content: string; embedding: number[] }>,
+  rows: Array<{ content: string; embedding: number[]; metadata: ChunkMetadata }>,
   firstChunkIndex: number,
 ): Promise<void> {
   const params: unknown[] = [];
@@ -29,11 +35,12 @@ async function insertChunks(
       firstChunkIndex + i,
       Math.ceil(r.content.length / 4),
       vectorLiteral(r.embedding),
+      JSON.stringify(r.metadata),
     );
-    return `($${p + 1}, $${p + 2}, $${p + 3}, $${p + 4}, $${p + 5}, $${p + 6}::vector, to_tsvector('english', $${p + 3}))`;
+    return `($${p + 1}, $${p + 2}, $${p + 3}, $${p + 4}, $${p + 5}, $${p + 6}::vector, to_tsvector('english', $${p + 3}), $${p + 7}::jsonb)`;
   });
   await prisma.$executeRawUnsafe(
-    `INSERT INTO "DocumentChunk" ("id", "documentId", "content", "chunkIndex", "tokenCount", "embedding", "searchText") VALUES ${values.join(", ")}`,
+    `INSERT INTO "DocumentChunk" ("id", "documentId", "content", "chunkIndex", "tokenCount", "embedding", "searchText", "metadata") VALUES ${values.join(", ")}`,
     ...params,
   );
 }
@@ -54,7 +61,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
     console.error("[ingest] pdf-parse failed:", err);
     throw new Error(`PDF parse failed: ${detail} / Không đọc được PDF: ${detail}`);
   }
-  if (!result.pages?.length) return sanitizeTextForDb(removeSiteChrome(result.text || ""));
+  if (!result.pages?.length) return sanitizeTextForDb(addWstgHeadings(removeSiteChrome(result.text || "")));
   const { text, removed } = removeHeadersFooters(result.pages.map((p) => p.text));
   if (removed.length) {
     console.info(
@@ -62,7 +69,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
       removed.slice(0, 20),
     );
   }
-  return sanitizeTextForDb(removeSiteChrome(text));
+  return sanitizeTextForDb(addWstgHeadings(removeSiteChrome(text)));
 }
 
 function toMarkdown(text: string, title: string): string {
@@ -106,9 +113,15 @@ export async function processDocument(documentId: string): Promise<void> {
       }
       markdown = toMarkdown(text, doc.title);
     }
-    const rawChunks = chunkMarkdown(markdown, env.CHUNK_SIZE, env.CHUNK_OVERLAP)
-      .map((c) => sanitizeTextForDb(c).trim())
-      .filter((c) => c.length > 0);
+    const mdSha256 = createHash("sha256").update(markdown, "utf8").digest("hex");
+    // Text and offsets stay paired through sanitize and the empty-chunk filter.
+    const chunks = chunkMarkdownWithSpans(markdown, env.CHUNK_SIZE, env.CHUNK_OVERLAP)
+      .map((c) => ({
+        content: sanitizeTextForDb(c.text).trim(),
+        metadata: { char_start: c.charStart, char_end: c.charEnd, md_sha256: mdSha256, chunker_version: CHUNKER_VERSION },
+      }))
+      .filter((c) => c.content.length > 0);
+    const rawChunks = chunks.map((c) => c.content);
     if (!rawChunks.length) {
       throw new Error("No chunks produced from document / Không tạo được chunk");
     }
@@ -137,10 +150,15 @@ export async function processDocument(documentId: string): Promise<void> {
     for (let start = 0; start < rawChunks.length; start += env.EMBED_BATCH_SIZE) {
       const batch = rawChunks.slice(start, start + env.EMBED_BATCH_SIZE);
 
-      let rows: Array<{ index: number; content: string; embedding: number[] }>;
+      let rows: Array<{ index: number; content: string; embedding: number[]; metadata: ChunkMetadata }>;
       try {
         const vectors = await embedTexts(batch);
-        rows = batch.map((content, j) => ({ index: start + j, content, embedding: vectors[j]! }));
+        rows = batch.map((content, j) => ({
+          index: start + j,
+          content,
+          embedding: vectors[j]!,
+          metadata: chunks[start + j]!.metadata,
+        }));
       } catch (batchErr) {
         // Retry one by one so a single bad chunk does not drop the whole batch.
         console.warn(
@@ -151,7 +169,7 @@ export async function processDocument(documentId: string): Promise<void> {
         for (let j = 0; j < batch.length; j++) {
           try {
             const [embedding] = await embedTexts([batch[j]!]);
-            rows.push({ index: start + j, content: batch[j]!, embedding: embedding! });
+            rows.push({ index: start + j, content: batch[j]!, embedding: embedding!, metadata: chunks[start + j]!.metadata });
             consecutiveFailures = 0;
           } catch (chunkErr) {
             skip(start + j, chunkErr);

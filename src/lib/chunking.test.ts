@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { chunkMarkdown } from "./chunking";
-import { removeSiteChrome } from "./pdf-cleanup";
+import { chunkMarkdown, chunkMarkdownWithSpans } from "./chunking";
+import { addWstgHeadings, removeSiteChrome } from "./pdf-cleanup";
 
 // As pdf-parse extracts an OWASP cheat sheet printed from the website (shortened).
 const PRINTED = [
@@ -142,4 +142,97 @@ test("chunkMarkdown names a generic heading after its parent section", () => {
   // Specific headings stay as they are.
   assert.match(joined, /## Hardware Tokens\n/);
   assert.doesNotMatch(joined, /— Hardware Tokens/);
+});
+
+test("removeSiteChrome drops the '## Sheet' left by a wrapped 'Cheat Sheet¶'", () => {
+  const text = "Skip to content\nOWASP Cheat Sheet Series\nIDOR Prevention Cheat\nSheet¶\nIntroduction¶\nIDOR is a vulnerability.";
+  assert.equal(removeSiteChrome(text), "## Introduction\nIDOR is a vulnerability.");
+});
+
+// As the WSTG text reaches ingest (shortened): a test case's name may wrap over two lines.
+const WSTG = [
+  "4.1 Information Gathering",
+  "4.1.1 Conduct Search Engine Discovery Reconnaissance for Information Leakage",
+  "",
+  "Conduct Search Engine Discovery Reconnaissance for",
+  "Information Leakage",
+  "ID",
+  "WSTG-INFO-01",
+  "Summary",
+  "In order for search engines to work, computer programs regularly fetch data.",
+  "",
+  "Testing for Buffer Overflow",
+  "ID",
+  "WSTG-INPV-13",
+  "This content has been removed",
+  "",
+  "Testing for Format String Injection",
+  "ID",
+  "WSTG-INPV-13",
+  "Summary",
+  "A format string is a null-terminated character sequence.",
+].join("\n");
+
+test("addWstgHeadings turns each test case into a '## WSTG-XXXX-NN <name>' section", () => {
+  assert.equal(
+    addWstgHeadings(WSTG),
+    [
+      "4.1 Information Gathering",
+      "4.1.1 Conduct Search Engine Discovery Reconnaissance for Information Leakage",
+      "",
+      "## WSTG-INFO-01 Conduct Search Engine Discovery Reconnaissance for Information Leakage",
+      "Summary",
+      "In order for search engines to work, computer programs regularly fetch data.",
+      "",
+      "## WSTG-INPV-13 Testing for Format String Injection",
+      "Summary",
+      "A format string is a null-terminated character sequence.",
+    ].join("\n"),
+  );
+});
+
+test("addWstgHeadings leaves other documents alone", () => {
+  const text = "## Introduction\nThe ID of a session is random.\nID\nnot a test case";
+  assert.equal(addWstgHeadings(text), text);
+});
+
+/** Text without heading lines (the chunker renames generic ones) and with whitespace collapsed. */
+const comparable = (s: string) =>
+  s
+    .split("\n")
+    .filter((l) => !/^#{1,6}\s/.test(l.trim()))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** The invariant gold spans rely on: the markdown under each chunk's span is that chunk's body. */
+function assertSpans(markdown: string, size: number, overlap: number) {
+  const spans = chunkMarkdownWithSpans(markdown, size, overlap);
+  assert.deepEqual(
+    spans.map((s) => s.text),
+    chunkMarkdown(markdown, size, overlap),
+  );
+  for (const s of spans) {
+    assert.ok(0 <= s.charStart && s.charStart < s.charEnd && s.charEnd <= markdown.length, `${s.charStart}-${s.charEnd}`);
+    assert.equal(comparable(markdown.slice(s.charStart, s.charEnd)), comparable(s.text), s.text.slice(0, 60));
+  }
+  return spans;
+}
+
+test("chunkMarkdownWithSpans: a chunk's span starts at its first sentence, overlap included, not at the heading put back", () => {
+  const body = Array.from({ length: 40 }, (_, i) => sentence(i)).join(" ").replace(/ (word6)/g, "\n$1");
+  const md = `# Doc\n\n## Section\n${body}\n\n## Cons\n${body}`;
+  const spans = assertSpans(md, 400, 200);
+  const later = spans.find((s, i) => i > 0 && s.text.startsWith("## Section\n"))!;
+  const firstSentence = later.text.slice("## Section\n".length).split("\n")[0]!;
+  assert.ok(md.slice(later.charStart).startsWith(firstSentence), firstSentence);
+  assert.ok(spans[1]!.charStart < spans[0]!.charEnd, "overlap: the next span starts inside the previous one");
+});
+
+test("chunkMarkdownWithSpans: hard-split blocks, WSTG sections, CRLF and leading whitespace", () => {
+  const code = Array.from({ length: 60 }, (_, i) => `const value${i} = compute(${i})`).join("\n");
+  assert.ok(assertSpans(`## Code\n${code}`, 300, 0).length > 1);
+  assertSpans(`# wstg-v4.2\n\n${addWstgHeadings(WSTG)}`, 120, 30);
+  const crlf = `  \r\n# T\r\n\r\n## A\r\n${Array.from({ length: 20 }, (_, i) => sentence(i)).join("\r\n")}`;
+  assert.ok(assertSpans(crlf, 300, 60).length > 1);
 });

@@ -1,0 +1,11 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# API responses and embeddings: re-creatable, large, and may hold paid results
+cache/
+
+# Raw Label Studio exports: imported into judgments/ by `annotate import`
+annotation/exports/raw/

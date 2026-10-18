@@ -39,7 +39,7 @@ export default function LessonsPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-3xl flex-1 space-y-4 p-4 md:p-8">
+      <div className="mx-auto w-full max-w-3xl flex-1 space-y-4 p-4 md:p-8 overflow-y-auto">
         <h1 className="text-3xl font-semibold text-[var(--accent)]">{t("title")}</h1>
         {loading && <p className="text-[var(--text-muted)]">{t("loading")}</p>}
         {error && <p className="text-[var(--danger)]">{t("empty")}</p>}

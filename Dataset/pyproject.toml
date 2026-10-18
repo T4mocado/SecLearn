@@ -1,0 +1,26 @@
+[project]
+name = "seclearn-eval"
+version = "0.1.0"
+description = "SecLearn eval set: builds and checks the gold set from a corpus snapshot (ADR 0004)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pydantic>=2.9,<3",
+]
+
+[project.scripts]
+seclearn-eval = "seclearn_eval.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/seclearn_eval"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

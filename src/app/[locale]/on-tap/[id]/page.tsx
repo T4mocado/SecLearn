@@ -72,7 +72,7 @@ export default function QuizTakePage() {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-3xl flex-1 space-y-4 p-4 md:p-8">
+      <div className="mx-auto w-full max-w-3xl flex-1 space-y-4 p-4 md:p-8 overflow-y-auto">
         <button className="text-sm text-[var(--accent)]" onClick={() => router.push(`/${locale}/on-tap`)}>
           ← {t("title")}
         </button>

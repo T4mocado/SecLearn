@@ -50,7 +50,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4 p-4 md:p-8">
+    <div className="mx-auto w-full max-w-4xl space-y-4 p-4 md:p-8 overflow-y-auto">
       <h1 className="text-2xl font-semibold text-[var(--accent)]">{t("users")}</h1>
       {error && <p className="text-[var(--danger)]">{error}</p>}
       <div className="space-y-2">

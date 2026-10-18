@@ -1,0 +1,3 @@
+# Snapshot markdown must stay byte-identical to Document.markdown: its sha256 is in the manifest
+# and gold spans are character offsets into it. No CRLF conversion anywhere in the eval set.
+* -text

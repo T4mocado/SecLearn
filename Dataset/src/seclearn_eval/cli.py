@@ -7,7 +7,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from .check import CheckInputs, run_checks
+from .check import CheckInputs, discover, run_checks, skipped
 from .clusters import build_cluster_map
 from .filter import candidates_to_questions, run_filter
 from .generate import generate
@@ -46,10 +46,23 @@ def _snapshot(args: argparse.Namespace) -> int:
 
 
 def _check(args: argparse.Namespace) -> int:
-    inputs = CheckInputs(snapshot=args.snapshot, questions=args.questions, units=args.units, plan=args.plan, runs=args.runs)
+    found = discover(args.snapshot, args.root, args.version)
+    inputs = CheckInputs(
+        snapshot=args.snapshot,
+        questions=found.questions if args.questions is None else args.questions,
+        units=args.units or found.units,
+        plan=args.plan or found.plan,
+        runs=found.runs if args.runs is None else args.runs,
+    )
+    print(
+        f"checking: {len(inputs.questions)} question file(s), units {inputs.units or '-'}, "
+        f"plan {inputs.plan or '-'}, {len(inputs.runs)} run(s)"
+    )
     problems = run_checks(inputs)
     for p in problems:
         print(p)
+    for s in skipped(inputs):
+        print(f"skipped: {s}")
     print("check: OK" if not problems else f"check: {len(problems)} problem(s)")
     return 1 if problems else 0
 
@@ -211,10 +224,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("check", help="all checks to run before a measurement; exit 1 on any problem")
     p.add_argument("--snapshot", type=Path, required=True)
-    p.add_argument("--questions", type=Path, nargs="*", default=[], help="question files (dev.jsonl, test.jsonl)")
-    p.add_argument("--units", type=Path, help="units.jsonl, for excluded regions")
-    p.add_argument("--plan", type=Path, help="sample-plan.json")
-    p.add_argument("--runs", type=Path, nargs="*", default=[], help="runs/<run_id>/ directories")
+    p.add_argument("--root", type=Path, default=Path("."), help="eval-set root holding questions/ and runs/")
+    p.add_argument("--version", default="v1.0", help="questions/<version>/ to check")
+    p.add_argument("--questions", type=Path, nargs="*", help="question files; default questions/<version>/*.jsonl")
+    p.add_argument("--units", type=Path, help="default: <snapshot>/units.jsonl")
+    p.add_argument("--plan", type=Path, help="default: questions/<version>/sample-plan.json")
+    p.add_argument("--runs", type=Path, nargs="*", help="runs/<run_id>/ directories; default every one under runs/")
     p.set_defaults(run=_check)
 
     p = sub.add_parser("reanchor", help="move gold spans onto a snapshot by finding their quotes again")

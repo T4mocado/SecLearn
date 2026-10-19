@@ -7,7 +7,7 @@ from pathlib import Path
 
 from conftest import CANARY, question, span
 
-from seclearn_eval.check import CheckInputs, run_checks
+from seclearn_eval.check import CheckInputs, discover, run_checks, skipped
 from seclearn_eval.io import read_questions, write_json, write_questions
 from seclearn_eval.schema import QuestionFileHeader, RunConfig
 
@@ -129,3 +129,51 @@ def test_canary_missing_or_wrong(eval_files):
     # The file no longer loads, so its questions also miss from the plan; the canary is what is reported for it.
     problems = [p for p in run_checks(inputs(eval_files)) if p.check == "canary"]
     assert len(problems) == 1 and "header with the canary" in problems[0].message
+
+
+def test_snapshot_from_uncommitted_app_code(eval_files):
+    manifest_path = eval_files["snapshot"] / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["source_git_dirty"] = True
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    assert any("uncommitted app code" in p.message for p in run_checks(inputs(eval_files)) if p.check == "snapshot")
+
+
+def test_discover_finds_inputs_at_their_usual_places(eval_files, tmp_path):
+    root = tmp_path / "evalset"
+    qdir = root / "questions" / "v1.0"
+    qdir.mkdir(parents=True)
+    (qdir / "test.jsonl").write_bytes(eval_files["questions"].read_bytes())
+    (qdir / "sample-plan.json").write_bytes(eval_files["plan"].read_bytes())
+    (eval_files["snapshot"] / "units.jsonl").write_bytes(eval_files["units"].read_bytes())
+    (root / "runs" / "r1").mkdir(parents=True)
+    (root / "runs" / "r1" / "config.json").write_bytes((eval_files["run"] / "config.json").read_bytes())
+
+    found = discover(eval_files["snapshot"], root, "v1.0")
+    assert found.questions == [qdir / "test.jsonl"]
+    assert found.units == eval_files["snapshot"] / "units.jsonl"
+    assert found.plan == qdir / "sample-plan.json"
+    assert found.runs == [root / "runs" / "r1"]
+    assert skipped(found) == [] and run_checks(found) == []
+
+
+def test_skipped_says_what_was_not_checked(eval_files, tmp_path):
+    bare = discover(eval_files["snapshot"], tmp_path / "empty", "v1.0")
+    assert run_checks(bare) == []
+    assert skipped(bare) == [
+        "quote, coverage, excluded, split, canary: no question files",
+        "plan: no sample-plan.json",
+        "run: no runs/<run_id>/ directories",
+    ]
+    # A plan with no questions yet is not compared (every cell would read 0), and says so.
+    with_plan = CheckInputs(snapshot=eval_files["snapshot"], plan=eval_files["plan"])
+    assert run_checks(with_plan) == []
+    assert "plan: no question files to compare with the plan" in skipped(with_plan)
+
+
+def test_check_cli_reports_skipped_checks(eval_files, tmp_path, capsys):
+    from seclearn_eval.cli import main
+
+    assert main(["check", "--snapshot", str(eval_files["snapshot"]), "--root", str(tmp_path / "empty")]) == 0
+    out = capsys.readouterr().out
+    assert "skipped: run: no runs/<run_id>/ directories" in out and "check: OK" in out

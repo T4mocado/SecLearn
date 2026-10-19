@@ -15,6 +15,7 @@ from conftest import MINI
 from seclearn_eval.clusters import UnmappedDocuments, build_cluster_map
 from seclearn_eval.plan import (
     PlanError,
+    _unit_counts,
     PlanParams,
     build_plan,
     capped_shares,
@@ -143,6 +144,18 @@ def test_plan_quotas_by_hand():
     # auth: A √10 vs its WSTG part √6 (one document) → 13, 10; WSTG by √4 : √2 → 6, 4; A's sections by 6 : 3 : 1 → 8, 4, 1.
     anchors = Counter(s.unit_ids[0] for s in test if s.cluster == "auth")
     assert anchors == {"A#s0": 8, "A#s1": 4, "A#s2": 1, "wstg-v4.2#WSTG-SESS-01": 6, "wstg-v4.2#WSTG-SESS-02": 4}
+
+
+def test_a_clusters_wstg_part_is_capped_like_a_document():
+    # WSTG √200 against a cheat sheet's √1 would take 28 of 30; as one document it stops at the cap of 20.
+    units = [
+        unit("C#s0", "C", "inj", 1),
+        unit("wstg-v4.2#WSTG-INPV-01", "wstg-v4.2", "inj", 100, "wstg_case"),
+        unit("wstg-v4.2#WSTG-INPV-05", "wstg-v4.2", "inj", 100, "wstg_case"),
+    ]
+    counts = _unit_counts(units, 30, 20, random.Random(0))
+    assert counts["wstg-v4.2#WSTG-INPV-01"] + counts["wstg-v4.2#WSTG-INPV-05"] == 20
+    assert counts["C#s0"] == 10
 
 
 def test_plan_levels_l6_and_capabilities():

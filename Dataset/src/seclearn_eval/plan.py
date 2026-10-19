@@ -5,7 +5,7 @@ cluster, document, unit and level gets, as slots a generator fills.
   is shared by √ among the clusters above it.
 - In a cluster, each cheat sheet gets √(its chunks) and the cluster's part of WSTG counts as ONE document;
   that part is then shared by √(chunks) among its test cases (and front / back matter units). A cheat sheet's
-  share goes to its sections in proportion to their chunks. Documents and WSTG units are capped.
+  share goes to its sections in proportion to their chunks. Documents (a cluster's WSTG part included) and WSTG units are capped.
 - Levels L1-L5, L7 are equal; the cluster × level table is rounded to match both margins. L3 goes to units of
   at least 2 chunks, L4 / L5 get a second unit of the same cluster. L6: (a) out of domain and (b) not in the
   corpus belong to no cluster; (c) false premise follows the clusters, from an L1 slot's unit.
@@ -45,7 +45,7 @@ class PlanParams:
     dev_answerable: int = 150
     #: L6 on dev, 25 at 1 : 2 : 1.
     dev_l6: list[int] = field(default_factory=lambda: [6, 13, 6])
-    #: At most this many questions from one cheat sheet, or one WSTG unit, per split.
+    #: At most this many questions from one document (a cluster's WSTG part counts as one) or one WSTG unit, per split.
     cap: int = 20
 
 
@@ -174,7 +174,8 @@ def _unit_counts(units: list[Unit], cluster_total: int, cap: int, rng: random.Ra
     for u in units:
         docs[u.doc_key].append(u)
     doc_weight = {d: math.sqrt(sum(u.weight_chunks for u in us)) for d, us in docs.items()}
-    caps = {d: (math.inf if d == WSTG_KEY else float(cap)) for d in docs}
+    # The cluster's WSTG part is one document, so it has the same cap (spec user story 19).
+    caps = {d: float(cap) for d in docs}
     doc_quota = largest_remainder(capped_shares(doc_weight, cluster_total, caps), cluster_total, rng)
     counts: dict[str, int] = {}
     for d, us in docs.items():

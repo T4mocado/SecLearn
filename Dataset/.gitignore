@@ -11,3 +11,10 @@ cache/
 
 # Raw Label Studio exports: imported into judgments/ by `annotate import`
 annotation/exports/raw/
+
+# Label Studio database and uploads (docker compose volume)
+annotation/ls-data/
+# Outputs of the one-off Label Studio offset test (ticket 06)
+annotation/offset-test/tasks.json
+annotation/offset-test/reviewed.jsonl
+annotation/offset-test/labels.jsonl

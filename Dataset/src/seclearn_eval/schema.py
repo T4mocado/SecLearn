@@ -183,6 +183,8 @@ class Review(Record):
     lead_time: float | None = None
     annotated_at: datetime | None = None
     notes: str = ""
+    #: The annotator's verdict on the question alone, given before reading the sources.
+    question_check: Literal["ok", "ambiguous", "needs_context", "opinion"] | None = None
 
 
 class Generation(Record):

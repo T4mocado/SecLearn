@@ -1,0 +1,15 @@
+# Label Studio for the two annotation projects (review.xml, pool.xml). Run from Dataset/annotation/:
+#   docker compose up -d        → http://localhost:8080 (create the local account on first visit)
+# Projects, users and annotations live in ./ls-data (git-ignored). Exports go to exports/raw/ (git-ignored),
+# then `seclearn-eval annotate import` brings them into questions/ and judgments/.
+services:
+  label-studio:
+    image: heartexlabs/label-studio:1.13.1
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./ls-data:/label-studio/data
+    environment:
+      # Tasks are imported as JSON files from the UI; no cloud or local-file storage is needed.
+      LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK: "false"
+    restart: unless-stopped

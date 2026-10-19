@@ -46,6 +46,38 @@ class CheckInputs:
     runs: list[Path] = field(default_factory=list)
 
 
+def discover(snapshot: Path, root: Path, version: str) -> CheckInputs:
+    """Every input found at its usual place: `<snapshot>/units.jsonl`, `questions/<version>/*.jsonl` and
+    `sample-plan.json`, `runs/*/`. A bare `check --snapshot` once passed with 7 of 9 checks never run."""
+    qdir = root / "questions" / version
+    units = snapshot / "units.jsonl"
+    plan = qdir / "sample-plan.json"
+    runs = root / "runs"
+    return CheckInputs(
+        snapshot=snapshot,
+        questions=sorted(qdir.glob("*.jsonl")) if qdir.is_dir() else [],
+        units=units if units.is_file() else None,
+        plan=plan if plan.is_file() else None,
+        runs=sorted(p for p in runs.iterdir() if p.is_dir()) if runs.is_dir() else [],
+    )
+
+
+def skipped(inputs: CheckInputs) -> list[str]:
+    """The checks these inputs leave out, and why: a pass must say what it did not look at."""
+    out: list[str] = []
+    if not inputs.questions:
+        out.append("quote, coverage, excluded, split, canary: no question files")
+    elif not inputs.units:
+        out.append("excluded: no units.jsonl")
+    if not inputs.plan:
+        out.append("plan: no sample-plan.json")
+    elif not inputs.questions:
+        out.append("plan: no question files to compare with the plan")
+    if not inputs.runs:
+        out.append("run: no runs/<run_id>/ directories")
+    return out
+
+
 def _kept(q: Question) -> bool:
     return q.review.status != "rejected"
 
@@ -119,6 +151,9 @@ def run_checks(inputs: CheckInputs) -> list[Problem]:
     except (FormatError, OSError) as err:
         return [Problem("format", f"snapshot: {err}")]
     out += [Problem("snapshot", p) for p in verify_snapshot(snap)]
+    if snap.manifest.source_git_dirty:
+        commit = snap.manifest.source_git_commit
+        out.append(Problem("snapshot", f"snapshot {snap.snapshot_id} was exported from uncommitted app code ({commit}, dirty)"))
 
     units: list[Unit] = []
     if inputs.units:
@@ -157,7 +192,7 @@ def run_checks(inputs: CheckInputs) -> list[Problem]:
         splits[q.seed_id].add(q.split)
     out += [Problem("split", f"seed {s}: in splits {sorted(v)}") for s, v in sorted(splits.items()) if len(v) > 1]
 
-    if inputs.plan:
+    if inputs.plan and inputs.questions:
         try:
             _check_plan(read_json(inputs.plan, SamplePlan), questions, out)
         except (FormatError, OSError) as err:

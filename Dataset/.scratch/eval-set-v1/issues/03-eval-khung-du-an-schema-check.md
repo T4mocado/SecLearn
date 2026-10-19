@@ -23,3 +23,8 @@
 - Snapshot mẫu `tests/fixtures/snapshot-mini` được sinh bằng chính bộ cắt và `buildSnapshot` của app (`npx tsx Dataset/tests/fixtures/make-snapshot-mini.ts`), nên test phía Python chạy trên đúng định dạng app xuất ra. Đây là công cụ dev viết bằng TS, mã Python vẫn không import mã app.
 - `.gitattributes` đặt `* -text` để git không đổi CRLF trên markdown của snapshot, vì sha256 và offset phụ thuộc từng byte.
 - Lưu ý môi trường: uv 0.13.1 trên máy này không tạo được liên kết `cpython-3.12` (lỗi "Missing expected target directory for Python minor version link"). Python 3.12.15 vẫn được cài, và `uv sync --python <đường dẫn python.exe>` chạy bình thường. Đã có `.venv`, nên các lần `uv run` sau không cần thêm cờ này.
+
+**2026-10-19, agent (sau `/code-review`, trục Spec):**
+- `check` trước đây báo `check: OK` khi chỉ có `--snapshot`, dù 7/9 kiểm tra không chạy. Giờ lệnh tự tìm `<snapshot>/units.jsonl`, `questions/<version>/*.jsonl`, `questions/<version>/sample-plan.json` và `runs/*/` (với `--root .` và `--version v1.0`), in ra những gì đã kiểm, và in một dòng `skipped: …` cho mỗi kiểm tra bị bỏ qua kèm lý do. Kiểm tra `plan` chỉ chạy khi đã có câu hỏi.
+- `check` báo lỗi khi manifest có `source_git_dirty: true` (snapshot xuất từ mã app chưa commit).
+- **Còn chờ quyết định:** "phân bố lệch kế hoạch quá 5%" hiện tính theo từng ô cụm × mức × split. 75/140 ô có target ≤ 5, nên lệch 1 câu là `check` báo lỗi. Cần chọn: giữ theo ô, tính theo biên (cụm, mức), hay cho phép lệch tuyệt đối tối thiểu ±1. Hằng số liên quan: `PLAN_TOLERANCE` trong `check.py`.

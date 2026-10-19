@@ -15,7 +15,7 @@
 | (none) | 0 | 0 | 0 | 0 | 0 | 0 | 150 | 150 |
 | total | 183 | 184 | 183 | 184 | 183 | 183 | 200 | 1300 |
 
-Answerable 1100; WSTG 120 (10.9%) over 79 WSTG units; cheat sheets with questions 133; most from one document: GraphQL_Cheat_Sheet 15; most from one WSTG unit: 13
+Answerable 1100; WSTG 113 (10.3%) over 75 WSTG units; cheat sheets with questions 133; most from one document: GraphQL_Cheat_Sheet 15; most from one WSTG unit: 13
 
 | dev | L1 | L2 | L3 | L4 | L5 | L7 | L6 | total |
 |---|---|---|---|---|---|---|---|---|

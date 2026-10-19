@@ -1,0 +1,87 @@
+<!--
+  Label Studio labeling config, project "kiểm câu" (spec user stories 41-43).
+  Tasks come from `seclearn-eval annotate export` (kind review); names and choice values are the contract with
+  src/seclearn_eval/annotate.py (tests/test_annotation_configs.py checks it).
+
+  Order on screen, top to bottom, is the order of work (guideline section 1):
+    1. the question alone, judged before reading anything else;
+    2. the source markdown (whole units, no chunk boundaries), where the annotator marks spans themself;
+    3. a "done" tick that reveals the LLM's level, answer and quotes, then the decision, level, answer edit and notes.
+  The LLM's spans are never sent as predictions, so nothing is pre-highlighted.
+-->
+<View>
+  <Header value="1. Câu hỏi (đánh giá trước khi đọc nguồn)"/>
+  <Text name="question" value="$question"/>
+  <Text name="turns" value="$turns"/>
+  <Text name="compare_cells" value="$compare_cells"/>
+  <Choices name="question_check" toName="question" choice="single-radio" required="true" showInline="true">
+    <Choice value="Tự đứng được"/>
+    <Choice value="Mơ hồ"/>
+    <Choice value="Cần ngữ cảnh tài liệu"/>
+    <Choice value="Hỏi ý kiến"/>
+  </Choices>
+
+  <Header value="2. Nguồn: tự bôi span bằng chứng (span tối thiểu đủ trả lời)"/>
+  <Header value="$source_0_title" size="5"/>
+  <Labels name="span_0" toName="source_0">
+    <Label value="Bằng chứng" background="#2e7d32"/>
+    <Label value="Bác bỏ tiền đề" background="#c62828"/>
+    <Label value="Ô 1" background="#1565c0"/>
+    <Label value="Ô 2" background="#6a1b9a"/>
+    <Label value="Ô 3" background="#ef6c00"/>
+    <Label value="Ô 4" background="#00838f"/>
+  </Labels>
+  <Text name="source_0" value="$source_0" saveTextResult="yes"/>
+  <Header value="$source_1_title" size="5"/>
+  <Labels name="span_1" toName="source_1">
+    <Label value="Bằng chứng" background="#2e7d32"/>
+    <Label value="Bác bỏ tiền đề" background="#c62828"/>
+    <Label value="Ô 1" background="#1565c0"/>
+    <Label value="Ô 2" background="#6a1b9a"/>
+    <Label value="Ô 3" background="#ef6c00"/>
+    <Label value="Ô 4" background="#00838f"/>
+  </Labels>
+  <Text name="source_1" value="$source_1" saveTextResult="yes"/>
+
+  <Header value="3. Xong phần span thì mới mở đáp án của LLM"/>
+  <Choices name="reveal" toName="question" choice="single" showInline="true">
+    <Choice value="Đã bôi xong span"/>
+  </Choices>
+  <View visibleWhen="choice-selected" whenTagName="reveal" whenChoiceValue="Đã bôi xong span">
+    <Header value="Mức LLM khai báo" size="5"/>
+    <Text name="llm_level" value="$llm_level"/>
+    <Header value="Đáp án của LLM" size="5"/>
+    <Text name="llm_answer" value="$llm_answer"/>
+    <Header value="Trích dẫn của LLM" size="5"/>
+    <Text name="llm_quotes" value="$llm_quotes"/>
+    <Header value="Bản tiếng Anh của câu hỏi" size="5"/>
+    <Text name="question_en" value="$question_en"/>
+
+    <Header value="Quyết định" size="5"/>
+    <Choices name="decision" toName="question" choice="single-radio" showInline="true">
+      <Choice value="Chấp nhận"/>
+      <Choice value="Sửa"/>
+      <Choice value="Loại"/>
+    </Choices>
+    <Header value="Mức (chọn lại kể cả khi giữ nguyên)" size="5"/>
+    <Choices name="level" toName="question" choice="single-radio" showInline="true">
+      <Choice value="L1"/>
+      <Choice value="L2"/>
+      <Choice value="L3"/>
+      <Choice value="L4"/>
+      <Choice value="L5"/>
+      <Choice value="L6"/>
+      <Choice value="L7"/>
+    </Choices>
+    <Header value="Loại L6 (chỉ khi mức là L6)" size="5"/>
+    <Choices name="l6_kind" toName="question" choice="single-radio" showInline="true">
+      <Choice value="Ngoài lĩnh vực"/>
+      <Choice value="Corpus không có"/>
+      <Choice value="Tiền đề sai"/>
+    </Choices>
+    <Header value="Đáp án sửa (để trống = giữ đáp án LLM)" size="5"/>
+    <TextArea name="answer" toName="question" rows="4" maxSubmissions="1" editable="true"/>
+    <Header value="Ghi chú (L6(b): ghi lệnh grep / truy vấn đã dùng)" size="5"/>
+    <TextArea name="notes" toName="question" rows="2" maxSubmissions="1" editable="true"/>
+  </View>
+</View>

@@ -1,0 +1,17 @@
+<!--
+  Label Studio labeling config, project "chấm pool" (spec user story 44).
+  Tasks come from `seclearn-eval annotate export` (kind pool): one (question, chunk) per task. The LLM judge's grade is
+  not in the task, so the grade is blind. Scale: guideline section "Thang 0-3".
+-->
+<View>
+  <Header value="Câu hỏi"/>
+  <Text name="question" value="$question"/>
+  <Header value="$chunk_key" size="5"/>
+  <Text name="chunk" value="$chunk"/>
+  <Choices name="grade" toName="chunk" choice="single-radio" required="true">
+    <Choice value="3 - Trả lời trực tiếp" hotkey="3"/>
+    <Choice value="2 - Có đáp án nhưng lẫn / không rõ" hotkey="2"/>
+    <Choice value="1 - Đúng chủ đề, không trả lời" hotkey="1"/>
+    <Choice value="0 - Không liên quan" hotkey="0"/>
+  </Choices>
+</View>

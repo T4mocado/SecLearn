@@ -31,11 +31,13 @@ def utf16(text: str, codepoint_index: int) -> int:
     return len(text[:codepoint_index].encode("utf-16-le")) // 2
 
 
-def ls_span(task: dict, source: int, quote: str, label: str = "Bằng chứng") -> dict:
-    """A region as Label Studio's `<Text>` + `<Labels>` export it: UTF-16 offsets on the shown text."""
+def ls_span(task: dict, source: int, quote: str, label: str = "Bằng chứng", unit: str = "codepoint") -> dict:
+    """A region as Label Studio's `<Text>` + `<Labels>` export it. Label Studio 1.13.1 counts code points on the shown
+    text (measured in ticket 06: 2011 / 2082 after the 🙂, not 2012 / 2083); `unit="utf16"` mimics a browser's count."""
     text = task["data"][f"source_{source}"]
     at = text.index(quote)
-    value = {"start": utf16(text, at), "end": utf16(text, at + len(quote)), "text": quote, "labels": [label]}
+    start, end = (utf16(text, at), utf16(text, at + len(quote))) if unit == "utf16" else (at, at + len(quote))
+    value = {"start": start, "end": end, "text": quote, "labels": [label]}
     return {"id": f"r{source}{at}", "from_name": f"span_{source}", "to_name": f"source_{source}", "type": "labels", "value": value}
 
 
@@ -99,7 +101,7 @@ def import_review(snap_dir: Path, questions: Path, export: Path, tmp_path: Path)
     return main([*argv, "--out", str(out), "--labels", str(labels)]), out, labels
 
 
-def test_round_trip_keeps_every_field_and_converts_utf16_offsets(snap_dir, tmp_path):
+def test_round_trip_keeps_every_field_and_code_point_offsets(snap_dir, tmp_path):
     snap, units, questions, guideline, header, q1, q2 = review_setup(snap_dir, tmp_path)
     tasks = export_review(snap_dir, units, questions, guideline, tmp_path)
     assert [t["data"]["question_id"] for t in tasks] == ["q1", "q2"]
@@ -159,9 +161,21 @@ def test_offsets_read_in_the_wrong_unit_fail_instead_of_shifting_spans(snap_dir,
     export = ls_export(tasks, {"q1": [ls_annotation([ls_span(tasks[0], 0, AFTER_EMOJI)])]}, tmp_path)
     out, labels = tmp_path / "reviewed.jsonl", tmp_path / "labels.jsonl"
     argv = ["annotate", "import", "--snapshot", str(snap_dir), "--questions", str(questions), "--export", str(export)]
-    assert main([*argv, "--out", str(out), "--labels", str(labels), "--offset-unit", "codepoint"]) == 1
+    assert main([*argv, "--out", str(out), "--labels", str(labels), "--offset-unit", "utf16"]) == 1
     assert "offset" in capsys.readouterr().err
     assert not out.exists() and not labels.exists()
+
+
+def test_utf16_offsets_still_import_when_asked(snap_dir, tmp_path):
+    # Another Label Studio version may count UTF-16 units like the browser does.
+    _, units, questions, guideline, *_ = review_setup(snap_dir, tmp_path)
+    tasks = export_review(snap_dir, units, questions, guideline, tmp_path)
+    export = ls_export(tasks, {"q1": [ls_annotation([ls_span(tasks[0], 0, AFTER_EMOJI, unit="utf16")])]}, tmp_path)
+    out, labels = tmp_path / "reviewed.jsonl", tmp_path / "labels.jsonl"
+    argv = ["annotate", "import", "--snapshot", str(snap_dir), "--questions", str(questions), "--export", str(export)]
+    assert main([*argv, "--out", str(out), "--labels", str(labels), "--offset-unit", "utf16"]) == 0
+    (got, _), = [read_questions(out)[1]]
+    assert got.gold_evidence[0] == span(snap_dir, SESSION, AFTER_EMOJI)
 
 
 def test_skipped_task_stays_pending_and_reimport_adds_no_labels(snap_dir, tmp_path):
@@ -270,7 +284,8 @@ def test_offset_test_task_on_the_real_snapshot(tmp_path):
     tasks = json.loads(tasks_file.read_text(encoding="utf-8"))
     sentence = "Build arguments passed like that to Docker are kept in the history log."
     region = ls_span(tasks[0], 0, sentence)
-    assert (region["value"]["start"], region["value"]["end"]) == (2012, 2083)
+    # What real Label Studio 1.13.1 exported for this sentence (ticket 06): code points, one less than UTF-16's 2012 / 2083.
+    assert (region["value"]["start"], region["value"]["end"]) == (2011, 2082)
 
     export = ls_export(tasks, {"offset-test-1": [ls_annotation([region])]}, tmp_path)
     code, out, _ = import_review(REAL, OFFSET_TEST, export, tmp_path)

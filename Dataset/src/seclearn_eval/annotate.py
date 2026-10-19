@@ -1,9 +1,10 @@
 """Questions and pools ↔ Label Studio tasks, and Label Studio exports back into questions and labels.
 
 Two projects, configs in `annotation/`: "kiểm câu" (`review.xml`) and "chấm pool" (`pool.xml`). The names and choice values
-below are the contract with those configs. Label Studio runs in the browser, so region offsets come back in UTF-16 code units
-on the text shown; the snapshot counts Unicode code points (`manifest.offset_unit`). Import converts, then checks the
-region's text against the snapshot markdown, so a wrong unit fails loudly instead of shifting spans.
+below are the contract with those configs. Region offsets are on the text shown; Label Studio 1.13.1 counts them in Unicode
+code points like the snapshot (`manifest.offset_unit`), not in the browser's UTF-16 units (ticket 06 measured 2011, not 2012,
+after a 🙂). Import converts when told the other unit, then checks the region's text against the snapshot markdown, so a
+wrong unit fails loudly instead of shifting spans.
 """
 
 from __future__ import annotations

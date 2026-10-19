@@ -9,7 +9,7 @@
 **Status:** ready-for-human
 
 - [x] Test khứ hồi câu hỏi → task → nhập nhãn về không mất trường nào
-- [ ] Thử thật một lần: bôi một span trong Label Studio, export, xác nhận offset ký tự đúng trên markdown của snapshot (ghi kết quả vào ticket)
+- [x] Thử thật một lần: bôi một span trong Label Studio, export, xác nhận offset ký tự đúng trên markdown của snapshot (ghi kết quả vào ticket)
 - [x] Thứ tự hiển thị đảm bảo người gán không thấy đáp án LLM trước khi tự bôi span
 - [x] Hướng dẫn v0 có đủ các mục và ví dụ trích từ corpus thật, có số phiên bản
 
@@ -49,3 +49,11 @@
 - `annotate --help` không còn crash trên console cp1252 (ký tự `↔` đổi thành `<->`, và CLI ghi UTF-8).
 
 **2026-10-19, agent:** Phần code đã xong và đã gộp vào `eval/tickets-05-06-10`. Ticket chuyển sang `ready-for-human`: còn tiêu chí 2 (thử thật trong Label Studio, các bước ở comment trên, kể cả bước 3a ẩn cột LLM trong Data Manager). Xong thì ghi kết quả vào đây và đổi `Status:` thành `resolved`.
+
+**2026-10-19, agent (kết quả thử offset thật, tiêu chí 2):**
+- Label Studio `1.13.1` (Docker) nhận `review.xml`: Save được, UI Preview hiện đủ ba phần (câu hỏi, nguồn, ô "Đã bôi xong span"). Lần import task đầu bị từ chối với `"question_enq" key is expected`, do một chữ `q` lỡ gõ vào ô Code (file trong repo không có lỗi). Dán lại `review.xml` thì import được 1 task.
+- Export (`annotation/exports/raw/offset-test.json`, git bỏ qua) cho hai region trên `source_0`: `1703 / 1735` (trước emoji) và `2011 / 2129` (sau emoji). Region thứ hai bôi dài hơn kế hoạch, sang thêm "Let’s see with our own eyes. Run this command:".
+- **Label Studio 1.13.1 đếm offset theo code point**, không theo UTF-16: đầu câu sau 🙂 là 2011 (code point), không phải 2012 (UTF-16). 17386 + 2011 = 19397, khớp vị trí câu trong markdown của snapshot.
+- `annotate import` cho `gold_evidence` = `19089 / 19121` "And then we build it as follows:" và `19397 / 19515` "Build arguments … Run this command:". Chữ trong region khớp nguyên văn markdown, nên offset đúng. 19515 thay vì 19468 chỉ là do span bôi dài hơn.
+- Theo bước 7: **mặc định `--offset-unit` đã đổi sang `codepoint`**. `utf16` vẫn dùng được khi chỉ định rõ (cho bản Label Studio khác). Test sửa theo số đo thật: vùng mẫu giờ xuất theo code point; thêm test cho đường `utf16` tường minh; test "đọc sai đơn vị thì báo lỗi" giờ dùng `utf16` trên export code point; test task thật kỳ vọng 2011 / 2082. Viết test trước và thấy đỏ, rồi mới đổi mặc định. Tổng 108 pytest qua.
+- Chưa có xác nhận bằng mắt cho bước 3a (ẩn cột `llm_*` trong Data Manager) và bước 4 (không thấy đáp án LLM trước khi tích "Đã bôi xong span").

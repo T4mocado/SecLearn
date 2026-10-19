@@ -378,7 +378,7 @@ def build_parser() -> argparse.ArgumentParser:
     i.add_argument("--questions", type=Path, help="review: the file the tasks were made from")
     i.add_argument("--out", type=Path, help="review: reviewed question file")
     i.add_argument("--labels", type=Path, default=Path("judgments/labels.jsonl"), help="labels accumulate here")
-    i.add_argument("--offset-unit", choices=["utf16", "codepoint"], default="utf16", help="what Label Studio's region offsets count")
+    i.add_argument("--offset-unit", choices=["utf16", "codepoint"], default="codepoint", help="what Label Studio's region offsets count (1.13.1: code points, measured in ticket 06)")
     i.set_defaults(run=_annotate_import)
 
     p = sub.add_parser("score", help="retrieval scores of a run on the answerable questions, with cluster-adjusted error bars")

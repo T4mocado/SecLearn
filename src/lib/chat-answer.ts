@@ -117,8 +117,10 @@ export async function retrieveForQuestion(opts: {
   visibilities: DocVisibility[];
   /** Turns sent to the answer model (`historyForAnswer`); computed from `history` when left out. */
   recent?: HistoryTurn[];
+  /** A plan made earlier, replayed so two retrieval runs differ only in the corpus (scripts/smoke-retrieval.ts). */
+  plan?: SearchPlan;
 }): Promise<{ plan: SearchPlan; chunks: RetrievedChunk[] }> {
-  const plan = await planSearch(opts.question, opts.history);
+  const plan = opts.plan ?? (await planSearch(opts.question, opts.history));
   if (plan.intent === "conversation") return { plan, chunks: [] };
   const recent = opts.recent ?? historyForAnswer(opts.history).recent;
   const [entityFound, chunks] = await Promise.all([

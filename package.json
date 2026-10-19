@@ -12,6 +12,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reindex": "tsx --env-file=.env scripts/reindex-all.ts",
     "db:snapshot": "tsx --env-file=.env scripts/export-snapshot.ts",
+    "smoke:retrieval": "tsx --env-file=.env scripts/smoke-retrieval.ts",
     "smoke": "tsx scripts/smoke.ts",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "postinstall": "prisma generate"

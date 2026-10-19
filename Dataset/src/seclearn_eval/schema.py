@@ -276,6 +276,27 @@ class RunLine(Record):
     tag: str
 
 
+class AnswerLine(Record):
+    """One answer of the measured system to one question, in `runs/<run_id>/answers.jsonl` (K = 3 runs per question).
+
+    Defined now, filled when the SecLearn runner exists. `refused` comes from the system; the graded fields are
+    filled by the judge / annotator afterwards and stay None until then.
+    """
+
+    qid: str
+    #: Which of the K runs (0, 1, 2).
+    k: int = Field(ge=0)
+    answer: str
+    refused: bool
+    cited_chunks: list[str] = []
+    #: Answer correctness 0-2 against the reference answer.
+    correctness: int | None = Field(default=None, ge=0, le=2)
+    #: Every claim supported by the retrieved sources.
+    faithful: bool | None = None
+    #: Every citation points to a chunk that supports the cited claim.
+    citations_correct: bool | None = None
+
+
 class RunConfig(Record):
     run_id: str
     snapshot_id: str
@@ -363,3 +384,70 @@ class FilterReport(Record):
     steps: list[FilterStep]
     n_kept: int
     rejected: list[Rejection]
+
+
+# --- Scores (written by `score`, read by `report`) -----------------------------------------------
+
+
+class Estimate(Record):
+    """A mean with its cluster-adjusted standard error and a 95% interval (Wilson on small 0/1 strata, else normal)."""
+
+    n: int
+    #: Error groups behind the SE: documents or WSTG test cases (variants gathered by `seed_id`).
+    n_groups: int
+    mean: float
+    se: float
+    ci_low: float
+    ci_high: float
+    method: Literal["normal", "wilson"]
+
+
+ScopeName = Literal["micro", "macro", "poststrat", "cluster", "level"]
+
+
+class Stratum(Record):
+    """One row of the report: a scope (and its key, for a cluster or a level) with an estimate per metric."""
+
+    scope: ScopeName
+    key: str | None = None
+    estimates: dict[str, Estimate]
+
+
+class Comparison(Record):
+    """Run minus baseline on the same questions: paired difference, its cluster-adjusted SE and randomization p-values."""
+
+    metric: str
+    scope: ScopeName
+    key: str | None = None
+    diff: Estimate
+    #: Randomization test flipping whole error groups (exact when there are few groups).
+    p_value: float
+    #: ranx's Fisher randomization test, flipping single questions (micro only): ignores the error groups.
+    p_value_per_question: float | None = None
+
+
+class Refusals(Record):
+    """L6, kept apart from every answerable score: correct refusals on L6, false refusals on answerable questions."""
+
+    l6_questions: int
+    answerable_questions: int
+    #: False until a run has answers.jsonl.
+    measured: bool
+    #: L6 overall ("all") and by kind.
+    correct_refusal: dict[str, Estimate] = {}
+    false_refusal: Estimate | None = None
+
+
+class ScoreReport(Record):
+    run_id: str
+    baseline_id: str | None = None
+    questions_file: str
+    qrels_file: str
+    #: Grade from which a chunk counts as relevant for the binary metrics (nDCG uses the grades themselves).
+    min_grade: int
+    metrics: list[str]
+    #: Topic cluster weights used for the post-stratified score (share of the corpus' sampleable chunks).
+    poststrat_weights: dict[str, float] = {}
+    strata: list[Stratum]
+    comparisons: list[Comparison] = []
+    refusals: Refusals

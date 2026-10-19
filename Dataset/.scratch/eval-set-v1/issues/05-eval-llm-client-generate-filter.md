@@ -40,4 +40,4 @@ Chạy lại lệnh nào cũng đọc từ `cache/llm/` (đã gitignore); dòng 
 
 Ngưỡng 0,9 và 0,6 là giá trị khởi đầu, nên chỉnh sau khi xem `filter-report.json` của lần chạy thật.
 
-**Test:** 21 test mới (tổng 53 pytest). Gồm: generate đúng số ứng viên mỗi ô, đúng schema, quote theo từng đơn vị của cặp; từng bước lọc loại đúng ca hỏng và đếm đúng; chạy lại không gọi lại client; adapter Claude / Gemini thật nhưng HTTP đi vào mock transport (kiểm header khoá lấy từ env, `output_config` json_schema, JSON mode); chạy `generate` rồi `filter` qua CLI, quét mọi file ghi ra (cả cache) không thấy khoá.
+**Test:** 21 test mới (tổng 58 pytest sau khi merge `eval/tickets-05-06-10`). Gồm: generate đúng số ứng viên mỗi ô, đúng schema, quote theo từng đơn vị của cặp; từng bước lọc loại đúng ca hỏng và đếm đúng; chạy lại không gọi lại client; adapter Claude / Gemini thật nhưng HTTP đi vào mock transport (kiểm header khoá lấy từ env, `output_config` json_schema, JSON mode); chạy `generate` rồi `filter` qua CLI, quét mọi file ghi ra (cả cache) không thấy khoá.

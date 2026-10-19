@@ -8,6 +8,34 @@
 
 **Status:** ready-for-agent
 
-- [ ] Test trên dữ liệu nhỏ có đáp số tính tay: micro, macro, SE theo cụm, Wilson, so sánh ghép cặp
-- [ ] L6 không bị gộp vào điểm câu trả lời được
-- [ ] Report sinh được cả markdown và LaTeX từ cùng kết quả
+- [x] Test trên dữ liệu nhỏ có đáp số tính tay: micro, macro, SE theo cụm, Wilson, so sánh ghép cặp
+- [x] L6 không bị gộp vào điểm câu trả lời được
+- [x] Report sinh được cả markdown và LaTeX từ cùng kết quả
+
+## Comments
+
+**2026-10-19, agent:** Phần code đã xong (chưa chạy trên dữ liệu thật vì chưa có qrels của 08 và chưa có bộ chạy SecLearn).
+
+**Lệnh** (chạy trong `Dataset/`):
+1. `uv run seclearn-eval score --questions questions/v1.0/test.jsonl --qrels <qrels> --run runs/<run_id> [--baseline runs/<run_id_khác>] [--units corpus/<snapshot>/units.jsonl] [--min-grade 2]`: đọc `runs/<run_id>/run.trec` (và `answers.jsonl` nếu có), ghi `runs/<run_id>/scores.json` (hoặc `--out`).
+2. `uv run seclearn-eval report --scores runs/<run_id>/scores.json [--out reports/<tên>]`: ghi `<tên>.md` và `<tên>.tex` từ cùng một danh sách bảng, nên hai bản không thể lệch nhau.
+
+**Đã làm:**
+- Độ đo theo câu: ranx cho Hit@1/5/10, MRR@10, nDCG@10, Recall@5/10; ir-measures cho Judged@10. Thứ hạng lấy theo cột `rank` của run, không theo `score`. Câu không có gì trong run được 0 ở mọi độ đo.
+- Tầng: micro, macro trên các cụm chủ đề (số chính), hậu phân tầng (trọng số = tỉ lệ `weight_chunks` của đơn vị lấy mẫu được trong từng cụm, chỉ khi có `--units`), từng cụm (kèm số câu, số tài liệu / test case), từng mức.
+- Sai số chuẩn theo cụm: phương trình 4 của Miller 2024. Nhóm sai số của một câu là tài liệu của đơn vị đầu tiên trong `unit_ids`, riêng WSTG thì là chính đơn vị (test case, phần mở đầu, Reporting…); biến thể lấy nhóm của câu gốc theo `seed_id`. Macro và hậu phân tầng: SE² = Σ w²·SE²_cụm (nhóm lồng trong cụm nên các cụm độc lập).
+- Khoảng tin cậy: tầng dưới 300 câu có điểm 0/1 (Hit@k) dùng Wilson trên cỡ mẫu hiệu dụng n / hệ số thiết kế (SE²_cụm / (p(1−p)/n), sàn 1); còn lại dùng trung bình ± 1,96 SE, cắt về [0, 1].
+- So sánh ghép cặp (`--baseline`): hiệu theo câu, SE theo cụm của hiệu (phương trình 8 + điều chỉnh của phương trình 4), cho micro, macro và từng cụm. p-value chính là kiểm định ngẫu nhiên hoá **đổi nhãn A/B cho cả nhóm** (cả tài liệu / test case), đúng 2^G khi G ≤ 16 nhóm, ngoài ra 20.000 lần lấy mẫu với seed cố định. Cột phụ "p (theo câu, ranx)" là Fisher randomization của ranx, đổi nhãn từng câu (chỉ ở micro).
+- L6: không vào bất kỳ số nào của phần truy xuất (không vào micro, macro, cụm hay mức). Báo riêng: từ chối đúng trên L6 (chung và theo loại a/b/c) và từ chối sai trên câu trả lời được, mỗi câu là tỉ lệ từ chối trên K lần trả lời. Khi chưa có `answers.jsonl` thì báo "chưa đo".
+- Định dạng phần trả lời: `AnswerLine` trong `schema.py` (`qid`, `k`, `answer`, `refused`, `cited_chunks`, và `correctness` 0-2, `faithful`, `citations_correct` để người / judge điền sau). Chỉ phần từ chối được tính; các độ đo còn lại chưa chạy.
+
+**Test:** 18 pytest mới (tổng 50). Số tính tay gồm: SE theo cụm (0,0096 và 0,125), Wilson (có và không co theo hệ số thiết kế), macro 0,75 / hậu phân tầng 0,625, hiệu ghép cặp và SE, p theo nhóm (0,5; 1; 0,75 với trọng số macro) so với p theo câu 0,125, và một bộ 5 câu đi qua CLI (micro, macro, cụm, mức, hậu phân tầng, nDCG có mức, Judged, L6, từ chối, so sánh, report).
+
+**Bạn xem lại:**
+1. **Var trong phương trình 4** dùng phương sai tổng thể (chia n, như p(1−p) của Miller), không chia n−1.
+2. **Ngưỡng liên quan** cho Hit / MRR / Recall mặc định là mức ≥ 2 (`--min-grade`); nDCG dùng nguyên mức 0-3 (gain tuyến tính của ranx). Nếu muốn mức 1 cũng tính là liên quan thì đổi mặc định.
+3. **p-value**: spec ghi "ranx cho Fisher randomization", nhưng Fisher của ranx đổi nhãn từng câu, bỏ qua cụm, nên lạc quan như SE không điều chỉnh. Agent lấy p theo nhóm làm số chính và giữ p của ranx làm cột phụ. Bạn chọn cột nào báo trong luận văn.
+4. **Wilson + cụm**: spec chỉ nói "dưới 300 câu dùng Wilson"; agent co n theo hệ số thiết kế để khoảng vẫn có điều chỉnh theo cụm (user story 65). Độ đo không phải 0/1 (MRR, nDCG, Recall, Judged) ở tầng nhỏ vẫn dùng khoảng chuẩn.
+5. **Câu L4 / L5** (hai đơn vị) được xếp vào nhóm của đơn vị đầu tiên. Gộp hai tài liệu thành một nhóm (union-find) sẽ dễ nối cả cụm thành một nhóm.
+6. **Hậu phân tầng** cân theo tỉ lệ chunk của corpus trong từng cụm. Spec không nói rõ trọng số; nếu bạn muốn cân theo cách khác (ví dụ theo mức) thì cần sửa.
+7. **Judged@10** của câu mà run không trả gì được tính là 0.

@@ -8,10 +8,20 @@ from pathlib import Path
 
 from .check import CheckInputs, run_checks
 from .clusters import build_cluster_map
-from .io import FormatError, read_json, read_jsonl, read_questions, write_json, write_jsonl, write_questions
+from .io import (
+    FormatError,
+    read_json,
+    read_jsonl,
+    read_qrels,
+    read_questions,
+    read_run,
+    write_json,
+    write_jsonl,
+    write_questions,
+)
 from .plan import PlanParams, build_plan, plan_table
 from .reanchor import reanchor
-from .schema import ClusterMap, Unit
+from .schema import AnswerLine, ClusterMap, ScoreReport, Unit
 from .snapshot import load_snapshot, verify_snapshot
 from .units import build_units
 
@@ -23,8 +33,6 @@ PLANNED = {
     "pool": "08",
     "judge": "08",
     "qrels": "08",
-    "score": "10",
-    "report": "10",
     "card": "11",
 }
 
@@ -60,6 +68,52 @@ def _reanchor(args: argparse.Namespace) -> int:
     print(report.summary())
     for line in report.lost:
         print(f"  lost: {line}")
+    return 0
+
+
+def _score(args: argparse.Namespace) -> int:
+    from .score import MIN_GRADE, ScoreError, ScoreInputs, score
+
+    _, questions = read_questions(args.questions)
+    answers_file = args.run / "answers.jsonl"
+    inputs = ScoreInputs(
+        run_id=args.run.name,
+        questions=questions,
+        qrels=read_qrels(args.qrels),
+        run=read_run(args.run / "run.trec"),
+        questions_file=args.questions.as_posix(),
+        qrels_file=args.qrels.as_posix(),
+        baseline_id=args.baseline.name if args.baseline else None,
+        baseline=read_run(args.baseline / "run.trec") if args.baseline else None,
+        units=read_jsonl(args.units, Unit) if args.units else None,
+        answers=read_jsonl(answers_file, AnswerLine) if answers_file.exists() else None,
+        min_grade=args.min_grade if args.min_grade is not None else MIN_GRADE,
+    )
+    try:
+        report = score(inputs)
+    except ScoreError as err:
+        print(f"score: {err}", file=sys.stderr)
+        return 1
+    out = args.out or args.run / "scores.json"
+    write_json(out, report)
+    micro = next(s for s in report.strata if s.scope == "micro").estimates
+    macro = next(s for s in report.strata if s.scope == "macro").estimates
+    print(f"{report.run_id}: {micro['hit@5'].n} answerable questions, {report.refusals.l6_questions} L6 apart → {out}")
+    for m in report.metrics:
+        print(f"  {m:<10} macro {macro[m].mean:.3f} ± {macro[m].se:.3f}   micro {micro[m].mean:.3f} ± {micro[m].se:.3f}")
+    return 0
+
+
+def _report(args: argparse.Namespace) -> int:
+    from .report import render_latex, render_markdown
+
+    report = read_json(args.scores, ScoreReport)
+    stem = args.out or args.scores.with_suffix("")
+    stem.parent.mkdir(parents=True, exist_ok=True)
+    md, tex = stem.with_suffix(".md"), stem.with_suffix(".tex")
+    md.write_text(render_markdown(report), encoding="utf-8", newline="\n")
+    tex.write_text(render_latex(report), encoding="utf-8", newline="\n")
+    print(f"{md}, {tex}")
     return 0
 
 
@@ -155,6 +209,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", type=Path, required=True)
     p.set_defaults(run=_reanchor)
 
+    p = sub.add_parser("score", help="retrieval scores of a run on the answerable questions, with cluster-adjusted error bars")
+    p.add_argument("--questions", type=Path, required=True, help="question file (test.jsonl)")
+    p.add_argument("--qrels", type=Path, required=True, help="qrels for the run's chunker_version")
+    p.add_argument("--run", type=Path, required=True, help="runs/<run_id>/ with run.trec (and answers.jsonl, if any)")
+    p.add_argument("--baseline", type=Path, help="runs/<run_id>/ to compare against, paired by question")
+    p.add_argument("--units", type=Path, help="units.jsonl: corpus shares for the post-stratified score")
+    p.add_argument("--min-grade", type=int, help="grade from which a chunk is relevant for hit / MRR / recall (default 2)")
+    p.add_argument("--out", type=Path, help="default: <run>/scores.json")
+    p.set_defaults(run_cmd=_score)
+
+    p = sub.add_parser("report", help="markdown and LaTeX tables from a scores.json")
+    p.add_argument("--scores", type=Path, required=True)
+    p.add_argument("--out", type=Path, help="output path without suffix (default: next to the scores file)")
+    p.set_defaults(run_cmd=_report)
+
     for name, ticket in PLANNED.items():
         p = sub.add_parser(name, help=f"not built yet (ticket {ticket})")
         p.set_defaults(run=lambda _a, name=name, ticket=ticket: _planned(name, ticket))
@@ -168,8 +237,10 @@ def _planned(name: str, ticket: str) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    # `score --run` is a path, so those subcommands keep their handler in `run_cmd`.
+    handler = getattr(args, "run_cmd", None) or args.run
     try:
-        return args.run(args)
+        return handler(args)
     except FormatError as err:
         print(f"format error: {err}", file=sys.stderr)
         return 1

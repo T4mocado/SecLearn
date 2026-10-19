@@ -6,12 +6,12 @@
 
 **Blocked by:** 03 (code trên fixture); 02 (chạy thật và duyệt file phân cụm)
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] Test `plan` trên fixture cho hạn mức khớp số tính tay với seed cố định
 - [x] Đơn vị lấy mẫu có offset trên markdown; vùng loại bị đánh dấu không lấy mẫu
 - [x] Bảng phân bố cụm × mức được in và lưu cùng seed
-- [ ] Chạy thật trên snapshot của 02: file phân cụm được người duyệt, kế hoạch cho WSTG khoảng 10% bộ đánh giá
+- [x] Chạy thật trên snapshot của 02: file phân cụm được người duyệt, kế hoạch cho WSTG khoảng 10% bộ đánh giá
 
 ## Comments
 
@@ -39,3 +39,7 @@ Sau khi sửa `clusters.json`, chạy lại bước 2 và 3.
 - Cùng seed cho cùng kế hoạch (có test).
 
 **Test:** 31 pytest. Gồm số tính tay (hạn mức cụm 23/19/18; trong cụm, cheat sheet 13 câu, WSTG 10 câu chia 6/4, các mục 8/4/1), sàn, trần, khớp biên, khả năng theo mức, và đơn vị của snapshot mẫu (đã thêm Foreword, Reporting, phụ lục và một stub "merged" vào WSTG mẫu).
+
+**2026-10-19, agent:** Người duyệt giữ nguyên `clusters.json` khởi đầu. Ticket đóng.
+
+Lần chạy lại `plan` của người duyệt làm lộ một lỗi: kế hoạch không tái lập được giữa các tiến trình. Thứ tự duyệt `set` (phụ thuộc `PYTHONHASHSEED`) lọt vào thứ tự khoá trước khi RNG xáo, nên cùng seed vẫn ra hai kế hoạch khác nhau (chênh vài ô ở ai, api, transport). Đã sửa bằng cách sắp khoá trước mỗi lần xáo. Thêm test chạy kế hoạch trong 3 tiến trình với 3 `PYTHONHASHSEED` khác nhau; test này đỏ trên code cũ và xanh trên code mới. `sample-plan.json` đã được sinh lại bằng code mới (vẫn 1.475 slot, WSTG 10,9%, 5 cụm đúng sàn).

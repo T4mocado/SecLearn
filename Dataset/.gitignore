@@ -1,5 +1,7 @@
 # Python
 .venv/
+# Python 3.12 for .venv, installed here (UV_PYTHON_INSTALL_DIR) because the Claude app's AppData is virtualized
+.uv-python/
 __pycache__/
 *.pyc
 .pytest_cache/

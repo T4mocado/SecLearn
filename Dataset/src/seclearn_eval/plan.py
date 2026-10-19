@@ -61,7 +61,8 @@ def largest_remainder(weights: dict[K, float], total: int, rng: random.Random) -
     shares = {k: total * w / mass for k, w in weights.items()}
     for k, s in shares.items():
         out[k] = math.floor(s + 1e-9)
-    keys = list(weights)
+    # Sorted before the shuffle: dict order can come from a set, whose order changes with PYTHONHASHSEED.
+    keys = sorted(weights, key=str)
     rng.shuffle(keys)
     keys.sort(key=lambda k: -(shares[k] - out[k]))
     for k in keys[: total - sum(out.values())]:
@@ -99,7 +100,8 @@ def floored_quotas(weights: dict[K, float], total: int, floor: int, rng: random.
         mass = sum(free.values())
         low = {k for k, w in free.items() if left * w / mass < floor - 1e-9}
         if not low:
-            return {**fixed, **largest_remainder(free, left, rng)}
+            out = {**fixed, **largest_remainder(free, left, rng)}
+            return {k: out[k] for k in weights}
         for k in low:
             fixed[k] = floor
 
@@ -113,7 +115,7 @@ def match_margins(rows: dict[K, int], cols: dict[Level, int], rng: random.Random
     table = {k: math.floor(v + 1e-9) for k, v in exact.items()}
     need_r = {r: rows[r] - sum(table[(r, c)] for c in cols) for r in rows}
     need_c = {c: cols[c] - sum(table[(r, c)] for r in rows) for c in cols}
-    cells = list(exact)
+    cells = sorted(exact, key=str)
     rng.shuffle(cells)
     cells.sort(key=lambda k: -(exact[k] - table[k]))
     for r, c in cells:

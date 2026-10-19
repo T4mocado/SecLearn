@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import os
 import random
+import subprocess
+import sys
 from collections import Counter
 from pathlib import Path
 
@@ -169,6 +172,25 @@ def test_plan_is_seeded():
     assert build_plan("snap", UNITS, PARAMS) == build_plan("snap", UNITS, PARAMS)
     other = build_plan("snap", UNITS, PlanParams(**{**PARAMS.__dict__, "seed": 8}))
     assert other.slots != build_plan("snap", UNITS, PARAMS).slots
+
+
+def test_plan_is_the_same_in_every_process():
+    # Set order changes with PYTHONHASHSEED; a plan run in another process must not change with it.
+    # Floor 19 puts two clusters at the floor at once, the case where set order once leaked into the plan.
+    script = (
+        "import hashlib, sys; sys.path.insert(0, 'tests'); from test_plan import UNITS, PARAMS; "
+        "from seclearn_eval.plan import PlanParams, build_plan; "
+        "p = PlanParams(**{**PARAMS.__dict__, 'test_floor': 19}); "
+        "print(hashlib.sha1(build_plan('snap', UNITS, p).model_dump_json().encode()).hexdigest())"
+    )
+    root = Path(__file__).parent.parent
+    digests = {
+        subprocess.run(
+            [sys.executable, "-c", script], cwd=root, env={**os.environ, "PYTHONHASHSEED": seed}, capture_output=True, text=True, check=True
+        ).stdout.strip()
+        for seed in ("1", "2", "3")
+    }
+    assert len(digests) == 1
 
 
 def test_plan_refuses_l3_without_units_of_two_chunks():

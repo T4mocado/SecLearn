@@ -106,7 +106,7 @@ def test_trec_round_trip(tmp_path):
 
 def test_cli(eval_files, capsys, tmp_path: Path):
     assert main(["snapshot", str(eval_files["snapshot"])]) == 0
-    assert "3 documents, 11 chunks" in capsys.readouterr().out
+    assert "3 documents, 18 chunks" in capsys.readouterr().out
     args = ["check", "--snapshot", str(eval_files["snapshot"]), "--questions", str(eval_files["questions"])]
     assert main([*args, "--plan", str(eval_files["plan"]), "--runs", str(eval_files["run"])]) == 0
     out = tmp_path / "moved.jsonl"

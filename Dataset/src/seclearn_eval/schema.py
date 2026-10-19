@@ -86,13 +86,37 @@ L6Kind = Literal["out_of_domain", "not_in_corpus", "false_premise"]
 SplitName = Literal["dev", "test"]
 
 
+ClusterId = Literal["arch", "supply", "inj", "auth", "browser", "framework", "ai", "transport", "authz", "api"]
+
+
+class ClusterMap(Record):
+    """The 10 topic clusters, and which cluster each document and each WSTG group belongs to. Reviewed by hand before planning."""
+
+    #: Cluster id → human name.
+    clusters: dict[ClusterId, str]
+    #: Cheat sheet doc_key → cluster. WSTG is not listed here: it is split by test case group.
+    documents: dict[str, ClusterId]
+    #: WSTG group ("ATHN", "INPV", …) → cluster.
+    wstg_groups: dict[str, ClusterId]
+    #: Cluster of WSTG's front matter (chapters 1-3), Reporting chapter and kept appendices.
+    wstg_front_matter: ClusterId
+
+
+UnitKind = Literal["section", "wstg_case", "wstg_front", "wstg_back"]
+
+
 class Unit(Span):
-    """A sampling unit: a cheat sheet `##` section, a WSTG test case, or the WSTG front matter. Unsampleable units are excluded regions."""
+    """A sampling unit: a cheat sheet `##` section, a WSTG test case, or a part of WSTG outside the test cases. Unsampleable units are excluded regions."""
 
     unit_id: str
     doc_key: str
-    cluster: str | None
+    kind: UnitKind
+    title: str
+    cluster: ClusterId | None
+    #: Chunks overlapping the unit (L3 needs a unit of at least 2).
     chunks: int = Field(ge=0)
+    #: Chunks whose body midpoint lies inside the unit: these add up to the document's chunk count, so they weigh units in the plan.
+    weight_chunks: int = Field(ge=0)
     sampleable: bool
     exclude_reason: str | None = None
 
@@ -107,10 +131,26 @@ class PlanCell(Record):
     target: int = Field(ge=0)
 
 
+class PlanSlot(Record):
+    """One question the gold set should keep: where to generate it from. L4 / L5 slots hold a pair of units of one cluster."""
+
+    slot_id: str
+    split: SplitName
+    cluster: ClusterId | None
+    level: Level
+    l6_kind: L6Kind | None = None
+    #: The document the slot's quota came from (WSTG test cases: "wstg-v4.2"); None for L6(a) / L6(b).
+    doc_key: str | None
+    unit_ids: list[str]
+
+
 class SamplePlan(Record):
     snapshot_id: str
     seed: int
+    #: Every number the plan was computed with, so it can be recomputed.
+    params: dict[str, int | float | str | list[int]]
     cells: list[PlanCell]
+    slots: list[PlanSlot]
 
 
 # --- Questions -----------------------------------------------------------------------------------

@@ -4,21 +4,23 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections import Counter
 from pathlib import Path
 
 from .check import CheckInputs, discover, run_checks, skipped
 from .clusters import build_cluster_map
+from .filter import candidates_to_questions, run_filter
+from .generate import generate
 from .io import FormatError, read_json, read_jsonl, read_questions, write_json, write_jsonl, write_questions
+from .llm import CachedClient, LLMError, make_clients
 from .plan import PlanParams, build_plan, plan_table
 from .reanchor import reanchor
-from .schema import ClusterMap, Unit
+from .schema import Candidate, ClusterMap, LLMConfig, QuestionFileHeader, SamplePlan, Unit
 from .snapshot import load_snapshot, verify_snapshot
 from .units import build_units
 
 #: Pipeline steps still to build, and the ticket in Dataset/.scratch/eval-set-v1/issues/ that builds them.
 PLANNED = {
-    "generate": "05",
-    "filter": "05",
     "annotate": "06",
     "pool": "08",
     "judge": "08",
@@ -122,6 +124,58 @@ def _plan(args: argparse.Namespace) -> int:
     return 0
 
 
+def _clients(args: argparse.Namespace, config: LLMConfig) -> dict:
+    return make_clients(config, None if args.no_cache else args.cache)
+
+
+def _cache_line(*clients: object) -> str:
+    cached = [c for c in clients if isinstance(c, CachedClient)]
+    if not cached:
+        return "cache off"
+    return f"API calls {sum(c.misses for c in cached)}, from cache {sum(c.hits for c in cached)}"
+
+
+def _generate(args: argparse.Namespace) -> int:
+    snap = load_snapshot(args.snapshot)
+    units = read_jsonl(args.units or args.snapshot / "units.jsonl", Unit)
+    plan = read_json(args.plan, SamplePlan)
+    config = read_json(args.config, LLMConfig)
+    client = _clients(args, config)["generator"]
+    candidates = generate(snap, units, plan, client, oversample=config.oversample)
+    write_jsonl(args.out, candidates)
+    per_level = Counter(f"{c.split}/{c.level}" for c in candidates)
+    print(f"{len(candidates)} candidates → {args.out}: " + ", ".join(f"{k} {n}" for k, n in sorted(per_level.items())))
+    print(_cache_line(client))
+    return 0
+
+
+def _filter(args: argparse.Namespace) -> int:
+    snap = load_snapshot(args.snapshot)
+    units = read_jsonl(args.units or args.snapshot / "units.jsonl", Unit)
+    candidates = read_jsonl(args.candidates, Candidate)
+    config = read_json(args.config, LLMConfig)
+    clients = _clients(args, config)
+    kept, report = run_filter(candidates, snap, units, judge=clients["judge"], embedder=clients["embedder"], config=config)
+    header = QuestionFileHeader(canary=snap.manifest.canary, eval_version=args.eval_version, snapshot_id=snap.snapshot_id)
+    write_questions(args.out, header, candidates_to_questions(kept, snap, units))
+    write_json(args.report, report)
+    for s in report.steps:
+        reasons = ", ".join(f"{r} {n}" for r, n in s.reasons.items())
+        relabel = f", relabelled {s.n_relabelled}" if s.n_relabelled else ""
+        print(f"{s.step:<15} in {s.n_in:>5}  rejected {s.n_rejected:>4}{relabel}" + (f"  ({reasons})" if reasons else ""))
+    print(f"kept {report.n_kept} → {args.out} (report: {args.report})")
+    print(_cache_line(clients["judge"], clients["embedder"]))
+    return 0
+
+
+def _llm_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--snapshot", type=Path, required=True)
+    p.add_argument("--units", type=Path, help="default: <snapshot>/units.jsonl")
+    p.add_argument("--config", type=Path, default=Path("llm-config.json"), help="pinned models and thresholds")
+    p.add_argument("--cache", type=Path, default=Path("cache/llm"), help="API responses, keyed by model + prompt + input")
+    p.add_argument("--no-cache", action="store_true", help="call the API for every request")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="seclearn-eval", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -153,6 +207,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dev-answerable", type=int, default=defaults.dev_answerable)
     p.add_argument("--cap", type=int, default=defaults.cap)
     p.set_defaults(run=_plan)
+
+    p = sub.add_parser("generate", help="candidates for the plan's root-level slots (Claude), about 1.6x the plan")
+    _llm_args(p)
+    p.add_argument("--plan", type=Path, default=Path("questions/v1.0/sample-plan.json"))
+    p.add_argument("--out", type=Path, default=Path("questions/v1.0/candidates.jsonl"))
+    p.set_defaults(run=_generate)
+
+    p = sub.add_parser("filter", help="the 6 filter steps; kept candidates become pending questions")
+    _llm_args(p)
+    p.add_argument("--candidates", type=Path, default=Path("questions/v1.0/candidates.jsonl"))
+    p.add_argument("--out", type=Path, default=Path("questions/v1.0/filtered.jsonl"))
+    p.add_argument("--report", type=Path, default=Path("questions/v1.0/filter-report.json"))
+    p.add_argument("--eval-version", default="1.0.0")
+    p.set_defaults(run=_filter)
 
     p = sub.add_parser("check", help="all checks to run before a measurement; exit 1 on any problem")
     p.add_argument("--snapshot", type=Path, required=True)
@@ -187,6 +255,9 @@ def main(argv: list[str] | None = None) -> int:
         return args.run(args)
     except FormatError as err:
         print(f"format error: {err}", file=sys.stderr)
+        return 1
+    except LLMError as err:
+        print(f"LLM error: {err}", file=sys.stderr)
         return 1
 
 

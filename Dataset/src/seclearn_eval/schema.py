@@ -283,3 +283,81 @@ class RunConfig(Record):
     git_dirty: bool
     created_at: datetime
     params: dict[str, str | int | float | bool | None]
+
+
+# --- Generation and filtering --------------------------------------------------------------------
+
+
+class ModelRef(Record):
+    provider: Literal["claude", "gemini"]
+    #: Pinned model id, never an alias that moves.
+    model: str
+
+    @model_validator(mode="after")
+    def _not_deepseek(self) -> ModelRef:
+        if "deepseek" in self.model.lower():
+            raise ValueError("DeepSeek (the app's chat LLM) must not be used anywhere in the eval set")
+        return self
+
+
+class LLMConfig(Record):
+    """Models and thresholds for `generate` / `filter`. Holds no key: keys are read from the environment."""
+
+    #: Writes the candidates (Claude).
+    generator: ModelRef
+    #: Answers from evidence and re-levels (Gemini).
+    judge: ModelRef
+    #: Embeds `question_en` for semantic dedup.
+    embedder: ModelRef
+    oversample: float = Field(default=1.6, ge=1)
+    #: Two questions of one cluster whose embeddings have at least this cosine are duplicates.
+    dedup_cosine: float = Field(default=0.9, gt=0, le=1)
+    #: An L2 question with at least this share of its content words in its evidence is too close to the document's wording.
+    l2_max_overlap: float = Field(default=0.6, gt=0, le=1)
+
+
+class Quote(Record):
+    doc_key: str
+    quote: str
+
+
+class Candidate(Record):
+    """A generated question before filtering and review. `level` is the level asked for, or the judge's relabel."""
+
+    candidate_id: str
+    slot_id: str
+    split: SplitName
+    cluster: ClusterId | None
+    level: Level
+    l6_kind: L6Kind | None = None
+    unit_ids: list[str]
+    question: str
+    question_en: str
+    reference_answer: str | None
+    reference_claims: list[str] = []
+    quotes: list[Quote] = []
+    generation: Generation
+    #: Set by `filter` when the judge moved the candidate to another level.
+    relabelled_from: Level | None = None
+
+
+class Rejection(Record):
+    candidate_id: str
+    step: str
+    reason: str
+    detail: str = ""
+
+
+class FilterStep(Record):
+    step: str
+    n_in: int
+    n_rejected: int
+    n_relabelled: int = 0
+    #: Reason → candidates rejected for it.
+    reasons: dict[str, int]
+
+
+class FilterReport(Record):
+    steps: list[FilterStep]
+    n_kept: int
+    rejected: list[Rejection]

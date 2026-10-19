@@ -6,7 +6,7 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Test bằng client giả: generate ra ứng viên đúng schema, đúng ô của kế hoạch
 - [x] Mỗi bước lọc ghi số vào, số loại, lý do; test từng bước loại đúng ca hỏng

@@ -6,7 +6,7 @@
 
 **Blocked by:** 03; 02 (ví dụ trong hướng dẫn lấy từ snapshot thật)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
 - [x] Test khứ hồi câu hỏi → task → nhập nhãn về không mất trường nào
 - [ ] Thử thật một lần: bôi một span trong Label Studio, export, xác nhận offset ký tự đúng trên markdown của snapshot (ghi kết quả vào ticket)
@@ -47,3 +47,5 @@
 - `sources` của task đọc qua model `TaskSource` có kiểu; danh sách mức lấy từ `schema.Level`.
 - **Rò đáp án LLM qua Data Manager** (user story 42): bảng task của Label Studio hiện mọi trường `task.data` thành cột, cấu hình XML không ẩn được. Gom vào một khoá lồng nhau cũng không giúp (Data Manager hiện cả object). Nên: `annotate.LLM_FIELDS` liệt kê các trường do LLM viết (`llm_level`, `llm_answer`, `llm_quotes`, `question_en`), test kiểm chúng chỉ nằm trong khung ẩn của `review.xml`, đầu `review.xml` có ghi chú, và đã thêm **bước 3a** vào danh sách việc của bạn ở comment trên: ẩn các cột đó trong Data Manager rồi kiểm bằng mắt.
 - `annotate --help` không còn crash trên console cp1252 (ký tự `↔` đổi thành `<->`, và CLI ghi UTF-8).
+
+**2026-10-19, agent:** Phần code đã xong và đã gộp vào `eval/tickets-05-06-10`. Ticket chuyển sang `ready-for-human`: còn tiêu chí 2 (thử thật trong Label Studio, các bước ở comment trên, kể cả bước 3a ẩn cột LLM trong Data Manager). Xong thì ghi kết quả vào đây và đổi `Status:` thành `resolved`.

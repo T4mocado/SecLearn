@@ -6,7 +6,7 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Test trên dữ liệu nhỏ có đáp số tính tay: micro, macro, SE theo cụm, Wilson, so sánh ghép cặp
 - [x] L6 không bị gộp vào điểm câu trả lời được

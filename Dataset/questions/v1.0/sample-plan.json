@@ -3395,7 +3395,7 @@
       "l6_kind": null,
       "doc_key": "Business_Logic_Security_Cheat_Sheet",
       "unit_ids": [
-        "Business_Logic_Security_Cheat_Sheet#s47"
+        "Business_Logic_Security_Cheat_Sheet#s19"
       ]
     },
     {
@@ -3404,9 +3404,9 @@
       "cluster": "arch",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "Denial_of_Service_Cheat_Sheet",
+      "doc_key": "Business_Logic_Security_Cheat_Sheet",
       "unit_ids": [
-        "Denial_of_Service_Cheat_Sheet#s01"
+        "Business_Logic_Security_Cheat_Sheet#s47"
       ]
     },
     {
@@ -3428,7 +3428,7 @@
       "l6_kind": null,
       "doc_key": "Error_Handling_Cheat_Sheet",
       "unit_ids": [
-        "Error_Handling_Cheat_Sheet#s04"
+        "Error_Handling_Cheat_Sheet#s03"
       ]
     },
     {
@@ -3439,7 +3439,7 @@
       "l6_kind": null,
       "doc_key": "Legacy_Application_Management_Cheat_Sheet",
       "unit_ids": [
-        "Legacy_Application_Management_Cheat_Sheet#s01"
+        "Legacy_Application_Management_Cheat_Sheet#s00"
       ]
     },
     {
@@ -3448,9 +3448,9 @@
       "cluster": "arch",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "Logging_Cheat_Sheet",
+      "doc_key": "Legacy_Application_Management_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Cheat_Sheet#s03"
+        "Legacy_Application_Management_Cheat_Sheet#s06"
       ]
     },
     {
@@ -3461,7 +3461,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Cheat_Sheet#s08"
+        "Logging_Cheat_Sheet#s07"
       ]
     },
     {
@@ -3472,7 +3472,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Vocabulary_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Vocabulary_Cheat_Sheet#s57"
+        "Logging_Vocabulary_Cheat_Sheet#s50"
       ]
     },
     {
@@ -3483,7 +3483,7 @@
       "l6_kind": null,
       "doc_key": "Microservices_Security_Cheat_Sheet",
       "unit_ids": [
-        "Microservices_Security_Cheat_Sheet#s05"
+        "Microservices_Security_Cheat_Sheet#s00"
       ]
     },
     {
@@ -3494,7 +3494,7 @@
       "l6_kind": null,
       "doc_key": "Microservices_Security_Cheat_Sheet",
       "unit_ids": [
-        "Microservices_Security_Cheat_Sheet#s06"
+        "Microservices_Security_Cheat_Sheet#s05"
       ]
     },
     {
@@ -3505,7 +3505,7 @@
       "l6_kind": null,
       "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
       "unit_ids": [
-        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s07"
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s02"
       ]
     },
     {
@@ -3514,9 +3514,9 @@
       "cluster": "arch",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "Mobile_Application_Security_Cheat_Sheet",
+      "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
       "unit_ids": [
-        "Mobile_Application_Security_Cheat_Sheet#s14"
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s16"
       ]
     },
     {
@@ -3525,9 +3525,9 @@
       "cluster": "arch",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "Secure_Code_Review_Cheat_Sheet",
+      "doc_key": "Mobile_Application_Security_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Code_Review_Cheat_Sheet#s00"
+        "Mobile_Application_Security_Cheat_Sheet#s35"
       ]
     },
     {
@@ -3536,9 +3536,9 @@
       "cluster": "arch",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "Secure_Code_Review_Cheat_Sheet",
+      "doc_key": "Mobile_Application_Security_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Code_Review_Cheat_Sheet#s05"
+        "Mobile_Application_Security_Cheat_Sheet#s37"
       ]
     },
     {
@@ -3549,7 +3549,7 @@
       "l6_kind": null,
       "doc_key": "Security_Terminology_Cheat_Sheet",
       "unit_ids": [
-        "Security_Terminology_Cheat_Sheet#s09"
+        "Security_Terminology_Cheat_Sheet#s01"
       ]
     },
     {
@@ -3558,9 +3558,9 @@
       "cluster": "arch",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "User_Privacy_Protection_Cheat_Sheet",
+      "doc_key": "Threat_Modeling_Cheat_Sheet",
       "unit_ids": [
-        "User_Privacy_Protection_Cheat_Sheet#s04"
+        "Threat_Modeling_Cheat_Sheet#s13"
       ]
     },
     {
@@ -3569,9 +3569,9 @@
       "cluster": "arch",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
+      "doc_key": "Virtual_Patching_Cheat_Sheet",
       "unit_ids": [
-        "Vulnerability_Disclosure_Cheat_Sheet#s11"
+        "Virtual_Patching_Cheat_Sheet#s24"
       ]
     },
     {
@@ -3582,7 +3582,7 @@
       "l6_kind": null,
       "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
       "unit_ids": [
-        "Vulnerability_Disclosure_Cheat_Sheet#s13"
+        "Vulnerability_Disclosure_Cheat_Sheet#s04"
       ]
     },
     {
@@ -3593,7 +3593,7 @@
       "l6_kind": null,
       "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
       "unit_ids": [
-        "Vulnerability_Disclosure_Cheat_Sheet#s14"
+        "Vulnerability_Disclosure_Cheat_Sheet#s06"
       ]
     },
     {
@@ -3602,9 +3602,9 @@
       "cluster": "arch",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "wstg-v4.2",
+      "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
       "unit_ids": [
-        "wstg-v4.2#WSTG-BUSL-07"
+        "Vulnerability_Disclosure_Cheat_Sheet#s14"
       ]
     },
     {
@@ -3615,7 +3615,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INFO-03"
+        "wstg-v4.2#WSTG-INFO-02"
       ]
     },
     {
@@ -3626,7 +3626,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#wstg_back99"
+        "wstg-v4.2#wstg_back106"
       ]
     },
     {
@@ -3659,7 +3659,7 @@
       "l6_kind": null,
       "doc_key": "Business_Logic_Security_Cheat_Sheet",
       "unit_ids": [
-        "Business_Logic_Security_Cheat_Sheet#s03"
+        "Business_Logic_Security_Cheat_Sheet#s01"
       ]
     },
     {
@@ -3670,7 +3670,7 @@
       "l6_kind": null,
       "doc_key": "Business_Logic_Security_Cheat_Sheet",
       "unit_ids": [
-        "Business_Logic_Security_Cheat_Sheet#s18"
+        "Business_Logic_Security_Cheat_Sheet#s14"
       ]
     },
     {
@@ -3681,7 +3681,7 @@
       "l6_kind": null,
       "doc_key": "Denial_of_Service_Cheat_Sheet",
       "unit_ids": [
-        "Denial_of_Service_Cheat_Sheet#s07"
+        "Denial_of_Service_Cheat_Sheet#s05"
       ]
     },
     {
@@ -3692,7 +3692,7 @@
       "l6_kind": null,
       "doc_key": "Drone_Security_Cheat_Sheet",
       "unit_ids": [
-        "Drone_Security_Cheat_Sheet#s06"
+        "Drone_Security_Cheat_Sheet#s00"
       ]
     },
     {
@@ -3703,7 +3703,7 @@
       "l6_kind": null,
       "doc_key": "Error_Handling_Cheat_Sheet",
       "unit_ids": [
-        "Error_Handling_Cheat_Sheet#s02"
+        "Error_Handling_Cheat_Sheet#s00"
       ]
     },
     {
@@ -3712,9 +3712,9 @@
       "cluster": "arch",
       "level": "L2",
       "l6_kind": null,
-      "doc_key": "Legacy_Application_Management_Cheat_Sheet",
+      "doc_key": "Error_Handling_Cheat_Sheet",
       "unit_ids": [
-        "Legacy_Application_Management_Cheat_Sheet#s00"
+        "Error_Handling_Cheat_Sheet#s05"
       ]
     },
     {
@@ -3725,7 +3725,7 @@
       "l6_kind": null,
       "doc_key": "Legacy_Application_Management_Cheat_Sheet",
       "unit_ids": [
-        "Legacy_Application_Management_Cheat_Sheet#s06"
+        "Legacy_Application_Management_Cheat_Sheet#s03"
       ]
     },
     {
@@ -3736,7 +3736,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Cheat_Sheet#s07"
+        "Logging_Cheat_Sheet#s06"
       ]
     },
     {
@@ -3747,7 +3747,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Cheat_Sheet#s15"
+        "Logging_Cheat_Sheet#s08"
       ]
     },
     {
@@ -3756,9 +3756,9 @@
       "cluster": "arch",
       "level": "L2",
       "l6_kind": null,
-      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "doc_key": "Logging_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Vocabulary_Cheat_Sheet#s00"
+        "Logging_Cheat_Sheet#s15"
       ]
     },
     {
@@ -3769,7 +3769,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Vocabulary_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Vocabulary_Cheat_Sheet#s39"
+        "Logging_Vocabulary_Cheat_Sheet#s36"
       ]
     },
     {
@@ -3780,7 +3780,7 @@
       "l6_kind": null,
       "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
       "unit_ids": [
-        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s01"
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s00"
       ]
     },
     {
@@ -3791,7 +3791,7 @@
       "l6_kind": null,
       "doc_key": "Secure_Code_Review_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Code_Review_Cheat_Sheet#s26"
+        "Secure_Code_Review_Cheat_Sheet#s18"
       ]
     },
     {
@@ -3800,9 +3800,9 @@
       "cluster": "arch",
       "level": "L2",
       "l6_kind": null,
-      "doc_key": "Secure_Product_Design_Cheat_Sheet",
+      "doc_key": "Secure_Code_Review_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Product_Design_Cheat_Sheet#s06"
+        "Secure_Code_Review_Cheat_Sheet#s25"
       ]
     },
     {
@@ -3813,7 +3813,7 @@
       "l6_kind": null,
       "doc_key": "Secure_Product_Design_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Product_Design_Cheat_Sheet#s09"
+        "Secure_Product_Design_Cheat_Sheet#s02"
       ]
     },
     {
@@ -3822,13 +3822,24 @@
       "cluster": "arch",
       "level": "L2",
       "l6_kind": null,
-      "doc_key": "Security_Terminology_Cheat_Sheet",
+      "doc_key": "Secure_Product_Design_Cheat_Sheet",
       "unit_ids": [
-        "Security_Terminology_Cheat_Sheet#s01"
+        "Secure_Product_Design_Cheat_Sheet#s08"
       ]
     },
     {
       "slot_id": "test-00252",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L2",
+      "l6_kind": null,
+      "doc_key": "Security_Terminology_Cheat_Sheet",
+      "unit_ids": [
+        "Security_Terminology_Cheat_Sheet#s09"
+      ]
+    },
+    {
+      "slot_id": "test-00253",
       "split": "test",
       "cluster": "arch",
       "level": "L2",
@@ -3839,25 +3850,14 @@
       ]
     },
     {
-      "slot_id": "test-00253",
-      "split": "test",
-      "cluster": "arch",
-      "level": "L2",
-      "l6_kind": null,
-      "doc_key": "Threat_Modeling_Cheat_Sheet",
-      "unit_ids": [
-        "Threat_Modeling_Cheat_Sheet#s07"
-      ]
-    },
-    {
       "slot_id": "test-00254",
       "split": "test",
       "cluster": "arch",
       "level": "L2",
       "l6_kind": null,
-      "doc_key": "Virtual_Patching_Cheat_Sheet",
+      "doc_key": "User_Privacy_Protection_Cheat_Sheet",
       "unit_ids": [
-        "Virtual_Patching_Cheat_Sheet#s18"
+        "User_Privacy_Protection_Cheat_Sheet#s07"
       ]
     },
     {
@@ -3866,9 +3866,9 @@
       "cluster": "arch",
       "level": "L2",
       "l6_kind": null,
-      "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
+      "doc_key": "Virtual_Patching_Cheat_Sheet",
       "unit_ids": [
-        "Vulnerability_Disclosure_Cheat_Sheet#s04"
+        "Virtual_Patching_Cheat_Sheet#s11"
       ]
     },
     {
@@ -3879,7 +3879,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INFO-01"
+        "wstg-v4.2#WSTG-CONF-06"
       ]
     },
     {
@@ -3890,7 +3890,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INFO-10"
+        "wstg-v4.2#WSTG-INFO-08"
       ]
     },
     {
@@ -3954,9 +3954,9 @@
       "cluster": "arch",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "Business_Logic_Security_Cheat_Sheet",
+      "doc_key": "Bot_Management_and_Anti-Automation_Cheat_Sheet",
       "unit_ids": [
-        "Business_Logic_Security_Cheat_Sheet#s00"
+        "Bot_Management_and_Anti-Automation_Cheat_Sheet#s06"
       ]
     },
     {
@@ -3965,13 +3965,24 @@
       "cluster": "arch",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "Business_Logic_Security_Cheat_Sheet",
+      "doc_key": "Bot_Management_and_Anti-Automation_Cheat_Sheet",
       "unit_ids": [
-        "Business_Logic_Security_Cheat_Sheet#s14"
+        "Bot_Management_and_Anti-Automation_Cheat_Sheet#s16"
       ]
     },
     {
       "slot_id": "test-00265",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L3",
+      "l6_kind": null,
+      "doc_key": "Denial_of_Service_Cheat_Sheet",
+      "unit_ids": [
+        "Denial_of_Service_Cheat_Sheet#s07"
+      ]
+    },
+    {
+      "slot_id": "test-00266",
       "split": "test",
       "cluster": "arch",
       "level": "L3",
@@ -3982,25 +3993,14 @@
       ]
     },
     {
-      "slot_id": "test-00266",
+      "slot_id": "test-00267",
       "split": "test",
       "cluster": "arch",
       "level": "L3",
       "l6_kind": null,
       "doc_key": "Error_Handling_Cheat_Sheet",
       "unit_ids": [
-        "Error_Handling_Cheat_Sheet#s05"
-      ]
-    },
-    {
-      "slot_id": "test-00267",
-      "split": "test",
-      "cluster": "arch",
-      "level": "L3",
-      "l6_kind": null,
-      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
-      "unit_ids": [
-        "Logging_Vocabulary_Cheat_Sheet#s35"
+        "Error_Handling_Cheat_Sheet#s04"
       ]
     },
     {
@@ -4011,7 +4011,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Vocabulary_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Vocabulary_Cheat_Sheet#s41"
+        "Logging_Vocabulary_Cheat_Sheet#s39"
       ]
     },
     {
@@ -4022,7 +4022,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Vocabulary_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Vocabulary_Cheat_Sheet#s43"
+        "Logging_Vocabulary_Cheat_Sheet#s41"
       ]
     },
     {
@@ -4033,7 +4033,7 @@
       "l6_kind": null,
       "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
       "unit_ids": [
-        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s02"
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s01"
       ]
     },
     {
@@ -4044,7 +4044,7 @@
       "l6_kind": null,
       "doc_key": "Mobile_Application_Security_Cheat_Sheet",
       "unit_ids": [
-        "Mobile_Application_Security_Cheat_Sheet#s33"
+        "Mobile_Application_Security_Cheat_Sheet#s32"
       ]
     },
     {
@@ -4055,7 +4055,7 @@
       "l6_kind": null,
       "doc_key": "Mobile_Application_Security_Cheat_Sheet",
       "unit_ids": [
-        "Mobile_Application_Security_Cheat_Sheet#s35"
+        "Mobile_Application_Security_Cheat_Sheet#s33"
       ]
     },
     {
@@ -4066,7 +4066,7 @@
       "l6_kind": null,
       "doc_key": "Secure_Code_Review_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Code_Review_Cheat_Sheet#s18"
+        "Secure_Code_Review_Cheat_Sheet#s00"
       ]
     },
     {
@@ -4075,9 +4075,9 @@
       "cluster": "arch",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "Secure_Code_Review_Cheat_Sheet",
+      "doc_key": "Secure_Product_Design_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Code_Review_Cheat_Sheet#s25"
+        "Secure_Product_Design_Cheat_Sheet#s06"
       ]
     },
     {
@@ -4086,9 +4086,9 @@
       "cluster": "arch",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "Secure_Product_Design_Cheat_Sheet",
+      "doc_key": "Third_Party_Payment_Gateway_Integration_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Product_Design_Cheat_Sheet#s10"
+        "Third_Party_Payment_Gateway_Integration_Cheat_Sheet#s03"
       ]
     },
     {
@@ -4097,9 +4097,9 @@
       "cluster": "arch",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "Threat_Modeling_Cheat_Sheet",
+      "doc_key": "User_Privacy_Protection_Cheat_Sheet",
       "unit_ids": [
-        "Threat_Modeling_Cheat_Sheet#s06"
+        "User_Privacy_Protection_Cheat_Sheet#s04"
       ]
     },
     {
@@ -4110,7 +4110,7 @@
       "l6_kind": null,
       "doc_key": "Virtual_Patching_Cheat_Sheet",
       "unit_ids": [
-        "Virtual_Patching_Cheat_Sheet#s07"
+        "Virtual_Patching_Cheat_Sheet#s21"
       ]
     },
     {
@@ -4119,9 +4119,9 @@
       "cluster": "arch",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
+      "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "Vulnerability_Disclosure_Cheat_Sheet#s08"
+        "wstg-v4.2#WSTG-BUSL-03"
       ]
     },
     {
@@ -4143,7 +4143,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-CONF-03"
+        "wstg-v4.2#WSTG-INFO-03"
       ]
     },
     {
@@ -4175,10 +4175,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Bot_Management_and_Anti-Automation_Cheat_Sheet",
+      "doc_key": "Business_Logic_Security_Cheat_Sheet",
       "unit_ids": [
-        "Bot_Management_and_Anti-Automation_Cheat_Sheet#s13",
-        "Secure_Code_Review_Cheat_Sheet#s24"
+        "Business_Logic_Security_Cheat_Sheet#s03",
+        "wstg-v4.2#wstg_front01"
       ]
     },
     {
@@ -4190,7 +4190,7 @@
       "doc_key": "Business_Logic_Security_Cheat_Sheet",
       "unit_ids": [
         "Business_Logic_Security_Cheat_Sheet#s09",
-        "wstg-v4.2#wstg_front01"
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s00"
       ]
     },
     {
@@ -4201,7 +4201,7 @@
       "l6_kind": null,
       "doc_key": "Denial_of_Service_Cheat_Sheet",
       "unit_ids": [
-        "Denial_of_Service_Cheat_Sheet#s03",
+        "Denial_of_Service_Cheat_Sheet#s01",
         "Bot_Management_and_Anti-Automation_Cheat_Sheet#s06"
       ]
     },
@@ -4213,8 +4213,8 @@
       "l6_kind": null,
       "doc_key": "Drone_Security_Cheat_Sheet",
       "unit_ids": [
-        "Drone_Security_Cheat_Sheet#s00",
-        "Vulnerability_Disclosure_Cheat_Sheet#s09"
+        "Drone_Security_Cheat_Sheet#s06",
+        "wstg-v4.2#WSTG-INFO-10"
       ]
     },
     {
@@ -4226,7 +4226,7 @@
       "doc_key": "Drone_Security_Cheat_Sheet",
       "unit_ids": [
         "Drone_Security_Cheat_Sheet#s09",
-        "wstg-v4.2#wstg_back106"
+        "Abuse_Case_Cheat_Sheet#s11"
       ]
     },
     {
@@ -4235,10 +4235,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Error_Handling_Cheat_Sheet",
+      "doc_key": "Legacy_Application_Management_Cheat_Sheet",
       "unit_ids": [
-        "Error_Handling_Cheat_Sheet#s00",
-        "Abuse_Case_Cheat_Sheet#s11"
+        "Legacy_Application_Management_Cheat_Sheet#s01",
+        "wstg-v4.2#WSTG-CONF-07"
       ]
     },
     {
@@ -4250,7 +4250,7 @@
       "doc_key": "Legacy_Application_Management_Cheat_Sheet",
       "unit_ids": [
         "Legacy_Application_Management_Cheat_Sheet#s02",
-        "wstg-v4.2#WSTG-CONF-07"
+        "wstg-v4.2#WSTG-CONF-02"
       ]
     },
     {
@@ -4259,10 +4259,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Legacy_Application_Management_Cheat_Sheet",
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
       "unit_ids": [
-        "Legacy_Application_Management_Cheat_Sheet#s03",
-        "wstg-v4.2#WSTG-CONF-02"
+        "Logging_Vocabulary_Cheat_Sheet#s18",
+        "Logging_Cheat_Sheet#s08"
       ]
     },
     {
@@ -4271,10 +4271,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
+      "doc_key": "Microservices_Security_Cheat_Sheet",
       "unit_ids": [
-        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s00",
-        "Error_Handling_Cheat_Sheet#s03"
+        "Microservices_Security_Cheat_Sheet#s06",
+        "Error_Handling_Cheat_Sheet#s02"
       ]
     },
     {
@@ -4285,7 +4285,7 @@
       "l6_kind": null,
       "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
       "unit_ids": [
-        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s16",
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s07",
         "wstg-v4.2#WSTG-CONF-04"
       ]
     },
@@ -4295,10 +4295,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Mobile_Application_Security_Cheat_Sheet",
+      "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
       "unit_ids": [
-        "Mobile_Application_Security_Cheat_Sheet#s24",
-        "Logging_Cheat_Sheet#s08"
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s26",
+        "Vulnerability_Disclosure_Cheat_Sheet#s09"
       ]
     },
     {
@@ -4309,7 +4309,7 @@
       "l6_kind": null,
       "doc_key": "Mobile_Application_Security_Cheat_Sheet",
       "unit_ids": [
-        "Mobile_Application_Security_Cheat_Sheet#s32",
+        "Mobile_Application_Security_Cheat_Sheet#s14",
         "wstg-v4.2#WSTG-BUSL-04"
       ]
     },
@@ -4321,8 +4321,8 @@
       "l6_kind": null,
       "doc_key": "Mobile_Application_Security_Cheat_Sheet",
       "unit_ids": [
-        "Mobile_Application_Security_Cheat_Sheet#s37",
-        "wstg-v4.2#WSTG-CONF-04"
+        "Mobile_Application_Security_Cheat_Sheet#s24",
+        "Secure_Code_Review_Cheat_Sheet#s24"
       ]
     },
     {
@@ -4331,10 +4331,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Secure_Product_Design_Cheat_Sheet",
+      "doc_key": "Secure_Code_Review_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Product_Design_Cheat_Sheet#s02",
-        "Secure_Product_Design_Cheat_Sheet#s06"
+        "Secure_Code_Review_Cheat_Sheet#s11",
+        "wstg-v4.2#WSTG-CONF-04"
       ]
     },
     {
@@ -4343,10 +4343,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Security_Terminology_Cheat_Sheet",
+      "doc_key": "Secure_Code_Review_Cheat_Sheet",
       "unit_ids": [
-        "Security_Terminology_Cheat_Sheet#s04",
-        "Secure_Code_Review_Cheat_Sheet#s15"
+        "Secure_Code_Review_Cheat_Sheet#s24",
+        "Secure_Product_Design_Cheat_Sheet#s06"
       ]
     },
     {
@@ -4355,10 +4355,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Security_Terminology_Cheat_Sheet",
+      "doc_key": "Secure_Product_Design_Cheat_Sheet",
       "unit_ids": [
-        "Security_Terminology_Cheat_Sheet#s07",
-        "wstg-v4.2#wstg_back106"
+        "Secure_Product_Design_Cheat_Sheet#s09",
+        "Secure_Code_Review_Cheat_Sheet#s14"
       ]
     },
     {
@@ -4367,10 +4367,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Third_Party_Payment_Gateway_Integration_Cheat_Sheet",
+      "doc_key": "Secure_Product_Design_Cheat_Sheet",
       "unit_ids": [
-        "Third_Party_Payment_Gateway_Integration_Cheat_Sheet#s01",
-        "Business_Logic_Security_Cheat_Sheet#s28"
+        "Secure_Product_Design_Cheat_Sheet#s10",
+        "wstg-v4.2#wstg_back106"
       ]
     },
     {
@@ -4379,10 +4379,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Virtual_Patching_Cheat_Sheet",
+      "doc_key": "Security_Terminology_Cheat_Sheet",
       "unit_ids": [
-        "Virtual_Patching_Cheat_Sheet#s03",
-        "Security_Terminology_Cheat_Sheet#s06"
+        "Security_Terminology_Cheat_Sheet#s04",
+        "Business_Logic_Security_Cheat_Sheet#s28"
       ]
     },
     {
@@ -4391,10 +4391,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Virtual_Patching_Cheat_Sheet",
+      "doc_key": "User_Privacy_Protection_Cheat_Sheet",
       "unit_ids": [
-        "Virtual_Patching_Cheat_Sheet#s11",
-        "wstg-v4.2#wstg_back106"
+        "User_Privacy_Protection_Cheat_Sheet#s02",
+        "Security_Terminology_Cheat_Sheet#s06"
       ]
     },
     {
@@ -4403,10 +4403,10 @@
       "cluster": "arch",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "wstg-v4.2",
+      "doc_key": "User_Privacy_Protection_Cheat_Sheet",
       "unit_ids": [
-        "wstg-v4.2#WSTG-CONF-04",
-        "wstg-v4.2#WSTG-CONF-02"
+        "User_Privacy_Protection_Cheat_Sheet#s06",
+        "wstg-v4.2#wstg_back106"
       ]
     },
     {
@@ -4417,8 +4417,8 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INFO-04",
-        "Microservices_Security_Cheat_Sheet#s05"
+        "wstg-v4.2#WSTG-CONF-02",
+        "wstg-v4.2#WSTG-CONF-04"
       ]
     },
     {
@@ -4429,7 +4429,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INFO-05",
+        "wstg-v4.2#WSTG-INFO-04",
         "wstg-v4.2#WSTG-CONF-03"
       ]
     },
@@ -4441,7 +4441,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#wstg_back106",
+        "wstg-v4.2#WSTG-INFO-10",
         "wstg-v4.2#wstg_front01"
       ]
     },
@@ -4501,7 +4501,7 @@
       "l6_kind": null,
       "doc_key": "Bot_Management_and_Anti-Automation_Cheat_Sheet",
       "unit_ids": [
-        "Bot_Management_and_Anti-Automation_Cheat_Sheet#s06",
+        "Bot_Management_and_Anti-Automation_Cheat_Sheet#s05",
         "wstg-v4.2#WSTG-INFO-02"
       ]
     },
@@ -4513,7 +4513,7 @@
       "l6_kind": null,
       "doc_key": "Business_Logic_Security_Cheat_Sheet",
       "unit_ids": [
-        "Business_Logic_Security_Cheat_Sheet#s01",
+        "Business_Logic_Security_Cheat_Sheet#s00",
         "Drone_Security_Cheat_Sheet#s09"
       ]
     },
@@ -4525,7 +4525,7 @@
       "l6_kind": null,
       "doc_key": "Denial_of_Service_Cheat_Sheet",
       "unit_ids": [
-        "Denial_of_Service_Cheat_Sheet#s04",
+        "Denial_of_Service_Cheat_Sheet#s03",
         "wstg-v4.2#wstg_front01"
       ]
     },
@@ -4537,8 +4537,8 @@
       "l6_kind": null,
       "doc_key": "Denial_of_Service_Cheat_Sheet",
       "unit_ids": [
-        "Denial_of_Service_Cheat_Sheet#s05",
-        "Logging_Cheat_Sheet#s05"
+        "Denial_of_Service_Cheat_Sheet#s04",
+        "Logging_Cheat_Sheet#s04"
       ]
     },
     {
@@ -4549,7 +4549,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Cheat_Sheet#s04",
+        "Logging_Cheat_Sheet#s03",
         "wstg-v4.2#WSTG-INFO-02"
       ]
     },
@@ -4561,7 +4561,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Vocabulary_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Vocabulary_Cheat_Sheet#s18",
+        "Logging_Vocabulary_Cheat_Sheet#s00",
         "wstg-v4.2#wstg_front01"
       ]
     },
@@ -4573,7 +4573,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Vocabulary_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Vocabulary_Cheat_Sheet#s36",
+        "Logging_Vocabulary_Cheat_Sheet#s35",
         "Secure_Code_Review_Cheat_Sheet#s23"
       ]
     },
@@ -4585,7 +4585,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Vocabulary_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Vocabulary_Cheat_Sheet#s50",
+        "Logging_Vocabulary_Cheat_Sheet#s43",
         "wstg-v4.2#WSTG-BUSL-09"
       ]
     },
@@ -4595,9 +4595,9 @@
       "cluster": "arch",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "Microservices_Security_Cheat_Sheet",
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
       "unit_ids": [
-        "Microservices_Security_Cheat_Sheet#s00",
+        "Logging_Vocabulary_Cheat_Sheet#s57",
         "wstg-v4.2#WSTG-INFO-02"
       ]
     },
@@ -4607,9 +4607,9 @@
       "cluster": "arch",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "Third_Party_Payment_Gateway_Integration_Cheat_Sheet",
+      "doc_key": "Security_Terminology_Cheat_Sheet",
       "unit_ids": [
-        "Third_Party_Payment_Gateway_Integration_Cheat_Sheet#s03",
+        "Security_Terminology_Cheat_Sheet#s07",
         "wstg-v4.2#wstg_back99"
       ]
     },
@@ -4621,7 +4621,7 @@
       "l6_kind": null,
       "doc_key": "Threat_Modeling_Cheat_Sheet",
       "unit_ids": [
-        "Threat_Modeling_Cheat_Sheet#s08",
+        "Threat_Modeling_Cheat_Sheet#s00",
         "wstg-v4.2#WSTG-CONF-04"
       ]
     },
@@ -4631,9 +4631,9 @@
       "cluster": "arch",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "User_Privacy_Protection_Cheat_Sheet",
+      "doc_key": "Threat_Modeling_Cheat_Sheet",
       "unit_ids": [
-        "User_Privacy_Protection_Cheat_Sheet#s02",
+        "Threat_Modeling_Cheat_Sheet#s10",
         "Secure_Code_Review_Cheat_Sheet#s21"
       ]
     },
@@ -4645,7 +4645,7 @@
       "l6_kind": null,
       "doc_key": "User_Privacy_Protection_Cheat_Sheet",
       "unit_ids": [
-        "User_Privacy_Protection_Cheat_Sheet#s07",
+        "User_Privacy_Protection_Cheat_Sheet#s01",
         "Secure_Code_Review_Cheat_Sheet#s24"
       ]
     },
@@ -4657,7 +4657,7 @@
       "l6_kind": null,
       "doc_key": "Virtual_Patching_Cheat_Sheet",
       "unit_ids": [
-        "Virtual_Patching_Cheat_Sheet#s24",
+        "Virtual_Patching_Cheat_Sheet#s07",
         "wstg-v4.2#wstg_front01"
       ]
     },
@@ -4667,9 +4667,9 @@
       "cluster": "arch",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
+      "doc_key": "Virtual_Patching_Cheat_Sheet",
       "unit_ids": [
-        "Vulnerability_Disclosure_Cheat_Sheet#s06",
+        "Virtual_Patching_Cheat_Sheet#s18",
         "wstg-v4.2#WSTG-INFO-03"
       ]
     },
@@ -4679,10 +4679,10 @@
       "cluster": "arch",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "wstg-v4.2",
+      "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
       "unit_ids": [
-        "wstg-v4.2#WSTG-BUSL-03",
-        "Third_Party_Payment_Gateway_Integration_Cheat_Sheet#s01"
+        "Vulnerability_Disclosure_Cheat_Sheet#s13",
+        "Third_Party_Payment_Gateway_Integration_Cheat_Sheet#s03"
       ]
     },
     {
@@ -4693,7 +4693,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-CONF-02",
+        "wstg-v4.2#WSTG-BUSL-09",
         "Abuse_Case_Cheat_Sheet#s08"
       ]
     },
@@ -4705,7 +4705,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-CONF-05",
+        "wstg-v4.2#WSTG-CONF-03",
         "Logging_Cheat_Sheet#s13"
       ]
     },
@@ -4717,7 +4717,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INFO-06",
+        "wstg-v4.2#WSTG-INFO-05",
         "wstg-v4.2#WSTG-CONF-02"
       ]
     },
@@ -4729,8 +4729,8 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#wstg_front01",
-        "Microservices_Security_Cheat_Sheet#s06"
+        "wstg-v4.2#wstg_back99",
+        "Mobile_Application_Security_Cheat_Sheet#s36"
       ]
     },
     {
@@ -4739,9 +4739,9 @@
       "cluster": "arch",
       "level": "L6",
       "l6_kind": "false_premise",
-      "doc_key": "Error_Handling_Cheat_Sheet",
+      "doc_key": "Attack_Surface_Analysis_Cheat_Sheet",
       "unit_ids": [
-        "Error_Handling_Cheat_Sheet#s05"
+        "Attack_Surface_Analysis_Cheat_Sheet#s03"
       ]
     },
     {
@@ -4752,7 +4752,7 @@
       "l6_kind": "false_premise",
       "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
       "unit_ids": [
-        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s07"
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s02"
       ]
     },
     {
@@ -4761,9 +4761,9 @@
       "cluster": "arch",
       "level": "L6",
       "l6_kind": "false_premise",
-      "doc_key": "Secure_Code_Review_Cheat_Sheet",
+      "doc_key": "Mobile_Application_Security_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Code_Review_Cheat_Sheet#s05"
+        "Mobile_Application_Security_Cheat_Sheet#s33"
       ]
     },
     {
@@ -4772,9 +4772,9 @@
       "cluster": "arch",
       "level": "L6",
       "l6_kind": "false_premise",
-      "doc_key": "Threat_Modeling_Cheat_Sheet",
+      "doc_key": "Mobile_Application_Security_Cheat_Sheet",
       "unit_ids": [
-        "Threat_Modeling_Cheat_Sheet#s06"
+        "Mobile_Application_Security_Cheat_Sheet#s37"
       ]
     },
     {
@@ -4783,9 +4783,9 @@
       "cluster": "arch",
       "level": "L6",
       "l6_kind": "false_premise",
-      "doc_key": "Virtual_Patching_Cheat_Sheet",
+      "doc_key": "Secure_Product_Design_Cheat_Sheet",
       "unit_ids": [
-        "Virtual_Patching_Cheat_Sheet#s07"
+        "Secure_Product_Design_Cheat_Sheet#s06"
       ]
     },
     {
@@ -4794,9 +4794,9 @@
       "cluster": "arch",
       "level": "L6",
       "l6_kind": "false_premise",
-      "doc_key": "wstg-v4.2",
+      "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
       "unit_ids": [
-        "wstg-v4.2#WSTG-BUSL-07"
+        "Vulnerability_Disclosure_Cheat_Sheet#s14"
       ]
     },
     {
@@ -4840,7 +4840,7 @@
       "l6_kind": null,
       "doc_key": "Bot_Management_and_Anti-Automation_Cheat_Sheet",
       "unit_ids": [
-        "Bot_Management_and_Anti-Automation_Cheat_Sheet#s16"
+        "Bot_Management_and_Anti-Automation_Cheat_Sheet#s13"
       ]
     },
     {
@@ -4851,7 +4851,7 @@
       "l6_kind": null,
       "doc_key": "Business_Logic_Security_Cheat_Sheet",
       "unit_ids": [
-        "Business_Logic_Security_Cheat_Sheet#s19"
+        "Business_Logic_Security_Cheat_Sheet#s18"
       ]
     },
     {
@@ -4862,7 +4862,7 @@
       "l6_kind": null,
       "doc_key": "Error_Handling_Cheat_Sheet",
       "unit_ids": [
-        "Error_Handling_Cheat_Sheet#s03"
+        "Error_Handling_Cheat_Sheet#s02"
       ]
     },
     {
@@ -4873,7 +4873,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Cheat_Sheet#s05"
+        "Logging_Cheat_Sheet#s04"
       ]
     },
     {
@@ -4884,7 +4884,7 @@
       "l6_kind": null,
       "doc_key": "Logging_Cheat_Sheet",
       "unit_ids": [
-        "Logging_Cheat_Sheet#s06"
+        "Logging_Cheat_Sheet#s05"
       ]
     },
     {
@@ -4906,7 +4906,7 @@
       "l6_kind": null,
       "doc_key": "Secure_Code_Review_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Code_Review_Cheat_Sheet#s24"
+        "Secure_Code_Review_Cheat_Sheet#s05"
       ]
     },
     {
@@ -4915,9 +4915,9 @@
       "cluster": "arch",
       "level": "L7",
       "l6_kind": null,
-      "doc_key": "Secure_Product_Design_Cheat_Sheet",
+      "doc_key": "Secure_Code_Review_Cheat_Sheet",
       "unit_ids": [
-        "Secure_Product_Design_Cheat_Sheet#s08"
+        "Secure_Code_Review_Cheat_Sheet#s26"
       ]
     },
     {
@@ -4926,9 +4926,9 @@
       "cluster": "arch",
       "level": "L7",
       "l6_kind": null,
-      "doc_key": "Threat_Modeling_Cheat_Sheet",
+      "doc_key": "Third_Party_Payment_Gateway_Integration_Cheat_Sheet",
       "unit_ids": [
-        "Threat_Modeling_Cheat_Sheet#s00"
+        "Third_Party_Payment_Gateway_Integration_Cheat_Sheet#s01"
       ]
     },
     {
@@ -4939,7 +4939,7 @@
       "l6_kind": null,
       "doc_key": "Threat_Modeling_Cheat_Sheet",
       "unit_ids": [
-        "Threat_Modeling_Cheat_Sheet#s10"
+        "Threat_Modeling_Cheat_Sheet#s06"
       ]
     },
     {
@@ -4950,7 +4950,7 @@
       "l6_kind": null,
       "doc_key": "Threat_Modeling_Cheat_Sheet",
       "unit_ids": [
-        "Threat_Modeling_Cheat_Sheet#s13"
+        "Threat_Modeling_Cheat_Sheet#s07"
       ]
     },
     {
@@ -4959,9 +4959,9 @@
       "cluster": "arch",
       "level": "L7",
       "l6_kind": null,
-      "doc_key": "User_Privacy_Protection_Cheat_Sheet",
+      "doc_key": "Threat_Modeling_Cheat_Sheet",
       "unit_ids": [
-        "User_Privacy_Protection_Cheat_Sheet#s01"
+        "Threat_Modeling_Cheat_Sheet#s08"
       ]
     },
     {
@@ -4972,7 +4972,7 @@
       "l6_kind": null,
       "doc_key": "Virtual_Patching_Cheat_Sheet",
       "unit_ids": [
-        "Virtual_Patching_Cheat_Sheet#s21"
+        "Virtual_Patching_Cheat_Sheet#s03"
       ]
     },
     {
@@ -4983,7 +4983,7 @@
       "l6_kind": null,
       "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
       "unit_ids": [
-        "Vulnerability_Disclosure_Cheat_Sheet#s19"
+        "Vulnerability_Disclosure_Cheat_Sheet#s08"
       ]
     },
     {
@@ -4992,9 +4992,9 @@
       "cluster": "arch",
       "level": "L7",
       "l6_kind": null,
-      "doc_key": "wstg-v4.2",
+      "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
       "unit_ids": [
-        "wstg-v4.2#WSTG-BUSL-01"
+        "Vulnerability_Disclosure_Cheat_Sheet#s11"
       ]
     },
     {
@@ -5003,9 +5003,9 @@
       "cluster": "arch",
       "level": "L7",
       "l6_kind": null,
-      "doc_key": "wstg-v4.2",
+      "doc_key": "Vulnerability_Disclosure_Cheat_Sheet",
       "unit_ids": [
-        "wstg-v4.2#WSTG-BUSL-09"
+        "Vulnerability_Disclosure_Cheat_Sheet#s19"
       ]
     },
     {
@@ -5016,7 +5016,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-CONF-06"
+        "wstg-v4.2#WSTG-CONF-04"
       ]
     },
     {
@@ -5027,7 +5027,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-CONF-10"
+        "wstg-v4.2#WSTG-CONF-05"
       ]
     },
     {
@@ -5038,7 +5038,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INFO-02"
+        "wstg-v4.2#WSTG-INFO-01"
       ]
     },
     {
@@ -5049,7 +5049,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INFO-08"
+        "wstg-v4.2#WSTG-INFO-06"
       ]
     },
     {
@@ -10176,7 +10176,7 @@
       "l6_kind": null,
       "doc_key": "File_Upload_Cheat_Sheet",
       "unit_ids": [
-        "File_Upload_Cheat_Sheet#s11"
+        "File_Upload_Cheat_Sheet#s10"
       ]
     },
     {
@@ -10185,9 +10185,9 @@
       "cluster": "inj",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "Injection_Prevention_Cheat_Sheet",
+      "doc_key": "File_Upload_Cheat_Sheet",
       "unit_ids": [
-        "Injection_Prevention_Cheat_Sheet#s00"
+        "File_Upload_Cheat_Sheet#s12"
       ]
     },
     {
@@ -10198,7 +10198,7 @@
       "l6_kind": null,
       "doc_key": "Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Injection_Prevention_Cheat_Sheet#s01"
+        "Injection_Prevention_Cheat_Sheet#s00"
       ]
     },
     {
@@ -10209,7 +10209,7 @@
       "l6_kind": null,
       "doc_key": "Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Injection_Prevention_Cheat_Sheet#s22"
+        "Injection_Prevention_Cheat_Sheet#s11"
       ]
     },
     {
@@ -10220,7 +10220,7 @@
       "l6_kind": null,
       "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "LDAP_Injection_Prevention_Cheat_Sheet#s06"
+        "LDAP_Injection_Prevention_Cheat_Sheet#s05"
       ]
     },
     {
@@ -10231,7 +10231,7 @@
       "l6_kind": null,
       "doc_key": "NoSQL_Security_Cheat_Sheet",
       "unit_ids": [
-        "NoSQL_Security_Cheat_Sheet#s03"
+        "NoSQL_Security_Cheat_Sheet#s01"
       ]
     },
     {
@@ -10242,7 +10242,7 @@
       "l6_kind": null,
       "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_External_Entity_Prevention_Cheat_Sheet#s13"
+        "XML_External_Entity_Prevention_Cheat_Sheet#s05"
       ]
     },
     {
@@ -10253,7 +10253,7 @@
       "l6_kind": null,
       "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_External_Entity_Prevention_Cheat_Sheet#s30"
+        "XML_External_Entity_Prevention_Cheat_Sheet#s16"
       ]
     },
     {
@@ -10264,7 +10264,7 @@
       "l6_kind": null,
       "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s15"
+        "XML_Security_Cheat_Sheet#s11"
       ]
     },
     {
@@ -10275,7 +10275,7 @@
       "l6_kind": null,
       "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s33"
+        "XML_Security_Cheat_Sheet#s19"
       ]
     },
     {
@@ -10286,7 +10286,7 @@
       "l6_kind": null,
       "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s40"
+        "XML_Security_Cheat_Sheet#s23"
       ]
     },
     {
@@ -10295,9 +10295,9 @@
       "cluster": "inj",
       "level": "L1",
       "l6_kind": null,
-      "doc_key": "XPath_Injection_Prevention_Cheat_Sheet",
+      "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "XPath_Injection_Prevention_Cheat_Sheet#s03"
+        "XML_Security_Cheat_Sheet#s49"
       ]
     },
     {
@@ -10308,7 +10308,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-05"
+        "wstg-v4.2#WSTG-INPV-04"
       ]
     },
     {
@@ -10319,7 +10319,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-06"
+        "wstg-v4.2#WSTG-INPV-05"
       ]
     },
     {
@@ -10330,7 +10330,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-07"
+        "wstg-v4.2#WSTG-INPV-05"
       ]
     },
     {
@@ -10341,7 +10341,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-14"
+        "wstg-v4.2#WSTG-INPV-13"
       ]
     },
     {
@@ -10374,7 +10374,7 @@
       "l6_kind": null,
       "doc_key": "Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Injection_Prevention_Cheat_Sheet#s03"
+        "Injection_Prevention_Cheat_Sheet#s01"
       ]
     },
     {
@@ -10385,7 +10385,7 @@
       "l6_kind": null,
       "doc_key": "Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Injection_Prevention_Cheat_Sheet#s26"
+        "Injection_Prevention_Cheat_Sheet#s22"
       ]
     },
     {
@@ -10396,7 +10396,7 @@
       "l6_kind": null,
       "doc_key": "Input_Validation_Cheat_Sheet",
       "unit_ids": [
-        "Input_Validation_Cheat_Sheet#s03"
+        "Input_Validation_Cheat_Sheet#s00"
       ]
     },
     {
@@ -10407,7 +10407,7 @@
       "l6_kind": null,
       "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "LDAP_Injection_Prevention_Cheat_Sheet#s03"
+        "LDAP_Injection_Prevention_Cheat_Sheet#s02"
       ]
     },
     {
@@ -10418,7 +10418,7 @@
       "l6_kind": null,
       "doc_key": "OS_Command_Injection_Defense_Cheat_Sheet",
       "unit_ids": [
-        "OS_Command_Injection_Defense_Cheat_Sheet#s10"
+        "OS_Command_Injection_Defense_Cheat_Sheet#s08"
       ]
     },
     {
@@ -10429,7 +10429,7 @@
       "l6_kind": null,
       "doc_key": "Query_Parameterization_Cheat_Sheet",
       "unit_ids": [
-        "Query_Parameterization_Cheat_Sheet#s13"
+        "Query_Parameterization_Cheat_Sheet#s03"
       ]
     },
     {
@@ -10438,9 +10438,9 @@
       "cluster": "inj",
       "level": "L2",
       "l6_kind": null,
-      "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
+      "doc_key": "Query_Parameterization_Cheat_Sheet",
       "unit_ids": [
-        "SQL_Injection_Prevention_Cheat_Sheet#s00"
+        "Query_Parameterization_Cheat_Sheet#s13"
       ]
     },
     {
@@ -10451,7 +10451,7 @@
       "l6_kind": null,
       "doc_key": "Server_Side_Template_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s07"
+        "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s00"
       ]
     },
     {
@@ -10462,7 +10462,7 @@
       "l6_kind": null,
       "doc_key": "Unvalidated_Redirects_and_Forwards_Cheat_Sheet",
       "unit_ids": [
-        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s05"
+        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s03"
       ]
     },
     {
@@ -10473,7 +10473,7 @@
       "l6_kind": null,
       "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_External_Entity_Prevention_Cheat_Sheet#s12"
+        "XML_External_Entity_Prevention_Cheat_Sheet#s02"
       ]
     },
     {
@@ -10484,7 +10484,7 @@
       "l6_kind": null,
       "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_External_Entity_Prevention_Cheat_Sheet#s42"
+        "XML_External_Entity_Prevention_Cheat_Sheet#s30"
       ]
     },
     {
@@ -10495,7 +10495,7 @@
       "l6_kind": null,
       "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s49"
+        "XML_Security_Cheat_Sheet#s39"
       ]
     },
     {
@@ -10504,9 +10504,9 @@
       "cluster": "inj",
       "level": "L2",
       "l6_kind": null,
-      "doc_key": "XPath_Injection_Prevention_Cheat_Sheet",
+      "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "XPath_Injection_Prevention_Cheat_Sheet#s00"
+        "XML_Security_Cheat_Sheet#s40"
       ]
     },
     {
@@ -10539,7 +10539,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-09"
+        "wstg-v4.2#WSTG-INPV-07"
       ]
     },
     {
@@ -10550,7 +10550,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-10"
+        "wstg-v4.2#WSTG-INPV-08"
       ]
     },
     {
@@ -10594,7 +10594,7 @@
       "l6_kind": null,
       "doc_key": "File_Upload_Cheat_Sheet",
       "unit_ids": [
-        "File_Upload_Cheat_Sheet#s10"
+        "File_Upload_Cheat_Sheet#s05"
       ]
     },
     {
@@ -10605,7 +10605,7 @@
       "l6_kind": null,
       "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "LDAP_Injection_Prevention_Cheat_Sheet#s02"
+        "LDAP_Injection_Prevention_Cheat_Sheet#s00"
       ]
     },
     {
@@ -10616,7 +10616,7 @@
       "l6_kind": null,
       "doc_key": "OS_Command_Injection_Defense_Cheat_Sheet",
       "unit_ids": [
-        "OS_Command_Injection_Defense_Cheat_Sheet#s08"
+        "OS_Command_Injection_Defense_Cheat_Sheet#s06"
       ]
     },
     {
@@ -10625,9 +10625,9 @@
       "cluster": "inj",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
+      "doc_key": "OS_Command_Injection_Defense_Cheat_Sheet",
       "unit_ids": [
-        "SQL_Injection_Prevention_Cheat_Sheet#s06"
+        "OS_Command_Injection_Defense_Cheat_Sheet#s10"
       ]
     },
     {
@@ -10638,7 +10638,7 @@
       "l6_kind": null,
       "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "SQL_Injection_Prevention_Cheat_Sheet#s23"
+        "SQL_Injection_Prevention_Cheat_Sheet#s15"
       ]
     },
     {
@@ -10649,7 +10649,7 @@
       "l6_kind": null,
       "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s07"
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s03"
       ]
     },
     {
@@ -10660,7 +10660,7 @@
       "l6_kind": null,
       "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s14"
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s08"
       ]
     },
     {
@@ -10669,9 +10669,9 @@
       "cluster": "inj",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "Server_Side_Template_Injection_Prevention_Cheat_Sheet",
+      "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s00"
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s09"
       ]
     },
     {
@@ -10680,9 +10680,9 @@
       "cluster": "inj",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "Unvalidated_Redirects_and_Forwards_Cheat_Sheet",
+      "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s03"
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s12"
       ]
     },
     {
@@ -10691,9 +10691,9 @@
       "cluster": "inj",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
+      "doc_key": "Server_Side_Template_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_External_Entity_Prevention_Cheat_Sheet#s16"
+        "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s08"
       ]
     },
     {
@@ -10704,7 +10704,7 @@
       "l6_kind": null,
       "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_External_Entity_Prevention_Cheat_Sheet#s17"
+        "XML_External_Entity_Prevention_Cheat_Sheet#s12"
       ]
     },
     {
@@ -10713,9 +10713,9 @@
       "cluster": "inj",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "XML_Security_Cheat_Sheet",
+      "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s11"
+        "XML_External_Entity_Prevention_Cheat_Sheet#s13"
       ]
     },
     {
@@ -10724,9 +10724,9 @@
       "cluster": "inj",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "XML_Security_Cheat_Sheet",
+      "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s13"
+        "XML_External_Entity_Prevention_Cheat_Sheet#s32"
       ]
     },
     {
@@ -10735,9 +10735,9 @@
       "cluster": "inj",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "XML_Security_Cheat_Sheet",
+      "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s39"
+        "XML_External_Entity_Prevention_Cheat_Sheet#s42"
       ]
     },
     {
@@ -10746,9 +10746,9 @@
       "cluster": "inj",
       "level": "L3",
       "l6_kind": null,
-      "doc_key": "wstg-v4.2",
+      "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-01"
+        "XML_Security_Cheat_Sheet#s20"
       ]
     },
     {
@@ -10759,7 +10759,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-11"
+        "wstg-v4.2#WSTG-INPV-10"
       ]
     },
     {
@@ -10770,7 +10770,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-16"
+        "wstg-v4.2#WSTG-INPV-15"
       ]
     },
     {
@@ -10781,7 +10781,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-17"
+        "wstg-v4.2#WSTG-INPV-16"
       ]
     },
     {
@@ -10790,10 +10790,10 @@
       "cluster": "inj",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "File_Upload_Cheat_Sheet",
+      "doc_key": "Deserialization_Cheat_Sheet",
       "unit_ids": [
-        "File_Upload_Cheat_Sheet#s04",
-        "wstg-v4.2#WSTG-INPV-05"
+        "Deserialization_Cheat_Sheet#s19",
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s08"
       ]
     },
     {
@@ -10802,9 +10802,9 @@
       "cluster": "inj",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Input_Validation_Cheat_Sheet",
+      "doc_key": "Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Input_Validation_Cheat_Sheet#s00",
+        "Injection_Prevention_Cheat_Sheet#s26",
         "Injection_Prevention_Cheat_Sheet#s19"
       ]
     },
@@ -10814,9 +10814,9 @@
       "cluster": "inj",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
+      "doc_key": "Input_Validation_Cheat_Sheet",
       "unit_ids": [
-        "LDAP_Injection_Prevention_Cheat_Sheet#s00",
+        "Input_Validation_Cheat_Sheet#s10",
         "File_Upload_Cheat_Sheet#s13"
       ]
     },
@@ -10828,7 +10828,7 @@
       "l6_kind": null,
       "doc_key": "OS_Command_Injection_Defense_Cheat_Sheet",
       "unit_ids": [
-        "OS_Command_Injection_Defense_Cheat_Sheet#s06",
+        "OS_Command_Injection_Defense_Cheat_Sheet#s00",
         "Bean_Validation_Cheat_Sheet#s02"
       ]
     },
@@ -10840,7 +10840,7 @@
       "l6_kind": null,
       "doc_key": "OS_Command_Injection_Defense_Cheat_Sheet",
       "unit_ids": [
-        "OS_Command_Injection_Defense_Cheat_Sheet#s08",
+        "OS_Command_Injection_Defense_Cheat_Sheet#s07",
         "wstg-v4.2#WSTG-INPV-05"
       ]
     },
@@ -10850,10 +10850,10 @@
       "cluster": "inj",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Prototype_Pollution_Prevention_Cheat_Sheet",
+      "doc_key": "OS_Command_Injection_Defense_Cheat_Sheet",
       "unit_ids": [
-        "Prototype_Pollution_Prevention_Cheat_Sheet#s02",
-        "wstg-v4.2#WSTG-INPV-14"
+        "OS_Command_Injection_Defense_Cheat_Sheet#s08",
+        "wstg-v4.2#WSTG-INPV-15"
       ]
     },
     {
@@ -10864,7 +10864,7 @@
       "l6_kind": null,
       "doc_key": "Prototype_Pollution_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Prototype_Pollution_Prevention_Cheat_Sheet#s03",
+        "Prototype_Pollution_Prevention_Cheat_Sheet#s02",
         "wstg-v4.2#WSTG-INPV-05"
       ]
     },
@@ -10874,10 +10874,10 @@
       "cluster": "inj",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Prototype_Pollution_Prevention_Cheat_Sheet",
+      "doc_key": "Query_Parameterization_Cheat_Sheet",
       "unit_ids": [
-        "Prototype_Pollution_Prevention_Cheat_Sheet#s04",
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s08"
+        "Query_Parameterization_Cheat_Sheet#s14",
+        "wstg-v4.2#WSTG-INPV-05"
       ]
     },
     {
@@ -10888,7 +10888,7 @@
       "l6_kind": null,
       "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "SQL_Injection_Prevention_Cheat_Sheet#s08",
+        "SQL_Injection_Prevention_Cheat_Sheet#s00",
         "wstg-v4.2#WSTG-INPV-05"
       ]
     },
@@ -10900,8 +10900,8 @@
       "l6_kind": null,
       "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "SQL_Injection_Prevention_Cheat_Sheet#s15",
-        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s07"
+        "SQL_Injection_Prevention_Cheat_Sheet#s08",
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s18"
       ]
     },
     {
@@ -10912,8 +10912,8 @@
       "l6_kind": null,
       "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "SQL_Injection_Prevention_Cheat_Sheet#s17",
-        "XML_External_Entity_Prevention_Cheat_Sheet#s37"
+        "SQL_Injection_Prevention_Cheat_Sheet#s10",
+        "XML_External_Entity_Prevention_Cheat_Sheet#s36"
       ]
     },
     {
@@ -10922,9 +10922,9 @@
       "cluster": "inj",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
+      "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s03",
+        "SQL_Injection_Prevention_Cheat_Sheet#s17",
         "wstg-v4.2#WSTG-INPV-05"
       ]
     },
@@ -10936,8 +10936,8 @@
       "l6_kind": null,
       "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s12",
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s18"
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s14",
+        "wstg-v4.2#WSTG-INPV-02"
       ]
     },
     {
@@ -10946,10 +10946,10 @@
       "cluster": "inj",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "Server_Side_Template_Injection_Prevention_Cheat_Sheet",
+      "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s06",
-        "wstg-v4.2#WSTG-INPV-02"
+        "XML_Security_Cheat_Sheet#s13",
+        "wstg-v4.2#WSTG-INPV-05"
       ]
     },
     {
@@ -10958,10 +10958,10 @@
       "cluster": "inj",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "XML_Security_Cheat_Sheet",
+      "doc_key": "XPath_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s20",
-        "wstg-v4.2#WSTG-INPV-05"
+        "XPath_Injection_Prevention_Cheat_Sheet#s00",
+        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s06"
       ]
     },
     {
@@ -10970,10 +10970,10 @@
       "cluster": "inj",
       "level": "L4",
       "l6_kind": null,
-      "doc_key": "wstg-v4.2",
+      "doc_key": "XPath_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-02",
-        "File_Upload_Cheat_Sheet#s12"
+        "XPath_Injection_Prevention_Cheat_Sheet#s03",
+        "File_Upload_Cheat_Sheet#s14"
       ]
     },
     {
@@ -10984,8 +10984,8 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-05",
-        "XML_External_Entity_Prevention_Cheat_Sheet#s12"
+        "wstg-v4.2#WSTG-INPV-02",
+        "XML_Security_Cheat_Sheet#s23"
       ]
     },
     {
@@ -10996,7 +10996,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-08",
+        "wstg-v4.2#WSTG-INPV-06",
         "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s16"
       ]
     },
@@ -11008,7 +11008,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-12",
+        "wstg-v4.2#WSTG-INPV-11",
         "wstg-v4.2#WSTG-INPV-02"
       ]
     },
@@ -11020,8 +11020,8 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-15",
-        "wstg-v4.2#WSTG-INPV-14"
+        "wstg-v4.2#WSTG-INPV-14",
+        "wstg-v4.2#WSTG-INPV-15"
       ]
     },
     {
@@ -11080,7 +11080,7 @@
       "l6_kind": null,
       "doc_key": "File_Upload_Cheat_Sheet",
       "unit_ids": [
-        "File_Upload_Cheat_Sheet#s12",
+        "File_Upload_Cheat_Sheet#s11",
         "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s07"
       ]
     },
@@ -11092,7 +11092,7 @@
       "l6_kind": null,
       "doc_key": "Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Injection_Prevention_Cheat_Sheet#s11",
+        "Injection_Prevention_Cheat_Sheet#s07",
         "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s07"
       ]
     },
@@ -11104,8 +11104,8 @@
       "l6_kind": null,
       "doc_key": "Input_Validation_Cheat_Sheet",
       "unit_ids": [
-        "Input_Validation_Cheat_Sheet#s05",
-        "XML_External_Entity_Prevention_Cheat_Sheet#s02"
+        "Input_Validation_Cheat_Sheet#s03",
+        "XML_External_Entity_Prevention_Cheat_Sheet#s03"
       ]
     },
     {
@@ -11116,7 +11116,7 @@
       "l6_kind": null,
       "doc_key": "NoSQL_Security_Cheat_Sheet",
       "unit_ids": [
-        "NoSQL_Security_Cheat_Sheet#s04",
+        "NoSQL_Security_Cheat_Sheet#s03",
         "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s04"
       ]
     },
@@ -11126,9 +11126,9 @@
       "cluster": "inj",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "Query_Parameterization_Cheat_Sheet",
+      "doc_key": "Prototype_Pollution_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Query_Parameterization_Cheat_Sheet#s01",
+        "Prototype_Pollution_Prevention_Cheat_Sheet#s03",
         "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s02"
       ]
     },
@@ -11138,9 +11138,9 @@
       "cluster": "inj",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "Query_Parameterization_Cheat_Sheet",
+      "doc_key": "Prototype_Pollution_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Query_Parameterization_Cheat_Sheet#s03",
+        "Prototype_Pollution_Prevention_Cheat_Sheet#s04",
         "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s00"
       ]
     },
@@ -11152,7 +11152,7 @@
       "l6_kind": null,
       "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "SQL_Injection_Prevention_Cheat_Sheet#s10",
+        "SQL_Injection_Prevention_Cheat_Sheet#s06",
         "wstg-v4.2#WSTG-INPV-15"
       ]
     },
@@ -11162,9 +11162,9 @@
       "cluster": "inj",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
+      "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s05",
+        "SQL_Injection_Prevention_Cheat_Sheet#s23",
         "wstg-v4.2#WSTG-INPV-11"
       ]
     },
@@ -11176,8 +11176,8 @@
       "l6_kind": null,
       "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s09",
-        "NoSQL_Security_Cheat_Sheet#s01"
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s08",
+        "NoSQL_Security_Cheat_Sheet#s00"
       ]
     },
     {
@@ -11188,7 +11188,7 @@
       "l6_kind": null,
       "doc_key": "Server_Side_Template_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s08",
+        "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s06",
         "XML_External_Entity_Prevention_Cheat_Sheet#s19"
       ]
     },
@@ -11198,9 +11198,9 @@
       "cluster": "inj",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "Unvalidated_Redirects_and_Forwards_Cheat_Sheet",
+      "doc_key": "Server_Side_Template_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s00",
+        "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s07",
         "wstg-v4.2#WSTG-INPV-05"
       ]
     },
@@ -11210,9 +11210,9 @@
       "cluster": "inj",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
+      "doc_key": "Unvalidated_Redirects_and_Forwards_Cheat_Sheet",
       "unit_ids": [
-        "XML_External_Entity_Prevention_Cheat_Sheet#s02",
+        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s04",
         "wstg-v4.2#WSTG-INPV-05"
       ]
     },
@@ -11222,9 +11222,9 @@
       "cluster": "inj",
       "level": "L5",
       "l6_kind": null,
-      "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
+      "doc_key": "Unvalidated_Redirects_and_Forwards_Cheat_Sheet",
       "unit_ids": [
-        "XML_External_Entity_Prevention_Cheat_Sheet#s05",
+        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s05",
         "wstg-v4.2#WSTG-INPV-05"
       ]
     },
@@ -11236,7 +11236,7 @@
       "l6_kind": null,
       "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_External_Entity_Prevention_Cheat_Sheet#s32",
+        "XML_External_Entity_Prevention_Cheat_Sheet#s17",
         "wstg-v4.2#WSTG-INPV-13"
       ]
     },
@@ -11248,8 +11248,8 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-11",
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s14"
+        "wstg-v4.2#WSTG-INPV-09",
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s18"
       ]
     },
     {
@@ -11260,8 +11260,8 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-13",
-        "XML_External_Entity_Prevention_Cheat_Sheet#s15"
+        "wstg-v4.2#WSTG-INPV-12",
+        "XML_External_Entity_Prevention_Cheat_Sheet#s16"
       ]
     },
     {
@@ -11270,9 +11270,9 @@
       "cluster": "inj",
       "level": "L6",
       "l6_kind": "false_premise",
-      "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
+      "doc_key": "File_Upload_Cheat_Sheet",
       "unit_ids": [
-        "LDAP_Injection_Prevention_Cheat_Sheet#s02"
+        "File_Upload_Cheat_Sheet#s00"
       ]
     },
     {
@@ -11283,7 +11283,7 @@
       "l6_kind": "false_premise",
       "doc_key": "OS_Command_Injection_Defense_Cheat_Sheet",
       "unit_ids": [
-        "OS_Command_Injection_Defense_Cheat_Sheet#s08"
+        "OS_Command_Injection_Defense_Cheat_Sheet#s06"
       ]
     },
     {
@@ -11292,9 +11292,9 @@
       "cluster": "inj",
       "level": "L6",
       "l6_kind": "false_premise",
-      "doc_key": "XML_Security_Cheat_Sheet",
+      "doc_key": "SQL_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s11"
+        "SQL_Injection_Prevention_Cheat_Sheet#s15"
       ]
     },
     {
@@ -11303,9 +11303,9 @@
       "cluster": "inj",
       "level": "L6",
       "l6_kind": "false_premise",
-      "doc_key": "wstg-v4.2",
+      "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-01"
+        "XML_External_Entity_Prevention_Cheat_Sheet#s32"
       ]
     },
     {
@@ -11316,7 +11316,7 @@
       "l6_kind": "false_premise",
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-05"
+        "wstg-v4.2#WSTG-INPV-04"
       ]
     },
     {
@@ -11338,7 +11338,7 @@
       "l6_kind": null,
       "doc_key": "File_Upload_Cheat_Sheet",
       "unit_ids": [
-        "File_Upload_Cheat_Sheet#s05"
+        "File_Upload_Cheat_Sheet#s04"
       ]
     },
     {
@@ -11349,7 +11349,7 @@
       "l6_kind": null,
       "doc_key": "Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Injection_Prevention_Cheat_Sheet#s07"
+        "Injection_Prevention_Cheat_Sheet#s03"
       ]
     },
     {
@@ -11360,7 +11360,7 @@
       "l6_kind": null,
       "doc_key": "Input_Validation_Cheat_Sheet",
       "unit_ids": [
-        "Input_Validation_Cheat_Sheet#s10"
+        "Input_Validation_Cheat_Sheet#s05"
       ]
     },
     {
@@ -11371,7 +11371,7 @@
       "l6_kind": null,
       "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "LDAP_Injection_Prevention_Cheat_Sheet#s05"
+        "LDAP_Injection_Prevention_Cheat_Sheet#s03"
       ]
     },
     {
@@ -11380,9 +11380,9 @@
       "cluster": "inj",
       "level": "L7",
       "l6_kind": null,
-      "doc_key": "NoSQL_Security_Cheat_Sheet",
+      "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "NoSQL_Security_Cheat_Sheet#s01"
+        "LDAP_Injection_Prevention_Cheat_Sheet#s06"
       ]
     },
     {
@@ -11393,7 +11393,7 @@
       "l6_kind": null,
       "doc_key": "NoSQL_Security_Cheat_Sheet",
       "unit_ids": [
-        "NoSQL_Security_Cheat_Sheet#s05"
+        "NoSQL_Security_Cheat_Sheet#s04"
       ]
     },
     {
@@ -11404,7 +11404,7 @@
       "l6_kind": null,
       "doc_key": "NoSQL_Security_Cheat_Sheet",
       "unit_ids": [
-        "NoSQL_Security_Cheat_Sheet#s12"
+        "NoSQL_Security_Cheat_Sheet#s05"
       ]
     },
     {
@@ -11413,9 +11413,9 @@
       "cluster": "inj",
       "level": "L7",
       "l6_kind": null,
-      "doc_key": "OS_Command_Injection_Defense_Cheat_Sheet",
+      "doc_key": "NoSQL_Security_Cheat_Sheet",
       "unit_ids": [
-        "OS_Command_Injection_Defense_Cheat_Sheet#s00"
+        "NoSQL_Security_Cheat_Sheet#s12"
       ]
     },
     {
@@ -11426,7 +11426,7 @@
       "l6_kind": null,
       "doc_key": "Query_Parameterization_Cheat_Sheet",
       "unit_ids": [
-        "Query_Parameterization_Cheat_Sheet#s08"
+        "Query_Parameterization_Cheat_Sheet#s01"
       ]
     },
     {
@@ -11437,7 +11437,7 @@
       "l6_kind": null,
       "doc_key": "Query_Parameterization_Cheat_Sheet",
       "unit_ids": [
-        "Query_Parameterization_Cheat_Sheet#s14"
+        "Query_Parameterization_Cheat_Sheet#s08"
       ]
     },
     {
@@ -11448,7 +11448,7 @@
       "l6_kind": null,
       "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s08"
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s05"
       ]
     },
     {
@@ -11459,7 +11459,7 @@
       "l6_kind": null,
       "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
       "unit_ids": [
-        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s08"
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s07"
       ]
     },
     {
@@ -11470,7 +11470,7 @@
       "l6_kind": null,
       "doc_key": "Unvalidated_Redirects_and_Forwards_Cheat_Sheet",
       "unit_ids": [
-        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s04"
+        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s00"
       ]
     },
     {
@@ -11481,7 +11481,7 @@
       "l6_kind": null,
       "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s23"
+        "XML_Security_Cheat_Sheet#s15"
       ]
     },
     {
@@ -11492,11 +11492,22 @@
       "l6_kind": null,
       "doc_key": "XML_Security_Cheat_Sheet",
       "unit_ids": [
-        "XML_Security_Cheat_Sheet#s43"
+        "XML_Security_Cheat_Sheet#s33"
       ]
     },
     {
       "slot_id": "test-00928",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L7",
+      "l6_kind": null,
+      "doc_key": "XML_Security_Cheat_Sheet",
+      "unit_ids": [
+        "XML_Security_Cheat_Sheet#s43"
+      ]
+    },
+    {
+      "slot_id": "test-00929",
       "split": "test",
       "cluster": "inj",
       "level": "L7",
@@ -11507,17 +11518,6 @@
       ]
     },
     {
-      "slot_id": "test-00929",
-      "split": "test",
-      "cluster": "inj",
-      "level": "L7",
-      "l6_kind": null,
-      "doc_key": "wstg-v4.2",
-      "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-02"
-      ]
-    },
-    {
       "slot_id": "test-00930",
       "split": "test",
       "cluster": "inj",
@@ -11525,7 +11525,7 @@
       "l6_kind": null,
       "doc_key": "wstg-v4.2",
       "unit_ids": [
-        "wstg-v4.2#WSTG-INPV-04"
+        "wstg-v4.2#WSTG-INPV-01"
       ]
     },
     {

@@ -43,3 +43,5 @@ Sau khi sửa `clusters.json`, chạy lại bước 2 và 3.
 **2026-10-19, agent:** Người duyệt giữ nguyên `clusters.json` khởi đầu. Ticket đóng.
 
 Lần chạy lại `plan` của người duyệt làm lộ một lỗi: kế hoạch không tái lập được giữa các tiến trình. Thứ tự duyệt `set` (phụ thuộc `PYTHONHASHSEED`) lọt vào thứ tự khoá trước khi RNG xáo, nên cùng seed vẫn ra hai kế hoạch khác nhau (chênh vài ô ở ai, api, transport). Đã sửa bằng cách sắp khoá trước mỗi lần xáo. Thêm test chạy kế hoạch trong 3 tiến trình với 3 `PYTHONHASHSEED` khác nhau; test này đỏ trên code cũ và xanh trên code mới. `sample-plan.json` đã được sinh lại bằng code mới (vẫn 1.475 slot, WSTG 10,9%, 5 cụm đúng sàn).
+
+**2026-10-19, agent (sau `/code-review`, trục Spec):** Phần WSTG của mỗi cụm trước đây không bị trần ở mức tài liệu (arch 24, inj 23 câu ở test), trái với "có trần mỗi tài liệu" (story 19), vì phần này được tính như một tài liệu. Giờ nó chịu cùng trần 20. Phần dư được chia lại cho các cheat sheet trong cụm. Kế hoạch đã sinh lại: WSTG còn 113 câu (10,3%) trên 75 đơn vị; arch và inj dừng ở 20; vẫn 1.475 slot, 5 cụm đúng sàn. Có test riêng (đỏ trên code cũ).

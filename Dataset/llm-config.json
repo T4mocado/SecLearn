@@ -1,0 +1,17 @@
+{
+  "generator": {
+    "provider": "claude",
+    "model": "claude-opus-5-5"
+  },
+  "judge": {
+    "provider": "gemini",
+    "model": "gemini-2.5-pro"
+  },
+  "embedder": {
+    "provider": "gemini",
+    "model": "gemini-embedding-001"
+  },
+  "oversample": 1.6,
+  "dedup_cosine": 0.9,
+  "l2_max_overlap": 0.6
+}

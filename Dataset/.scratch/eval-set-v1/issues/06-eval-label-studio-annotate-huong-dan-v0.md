@@ -6,7 +6,7 @@
 
 **Blocked by:** 03; 02 (ví dụ trong hướng dẫn lấy từ snapshot thật)
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] Test khứ hồi câu hỏi → task → nhập nhãn về không mất trường nào
 - [x] Thử thật một lần: bôi một span trong Label Studio, export, xác nhận offset ký tự đúng trên markdown của snapshot (ghi kết quả vào ticket)
@@ -57,3 +57,8 @@
 - `annotate import` cho `gold_evidence` = `19089 / 19121` "And then we build it as follows:" và `19397 / 19515` "Build arguments … Run this command:". Chữ trong region khớp nguyên văn markdown, nên offset đúng. 19515 thay vì 19468 chỉ là do span bôi dài hơn.
 - Theo bước 7: **mặc định `--offset-unit` đã đổi sang `codepoint`**. `utf16` vẫn dùng được khi chỉ định rõ (cho bản Label Studio khác). Test sửa theo số đo thật: vùng mẫu giờ xuất theo code point; thêm test cho đường `utf16` tường minh; test "đọc sai đơn vị thì báo lỗi" giờ dùng `utf16` trên export code point; test task thật kỳ vọng 2011 / 2082. Viết test trước và thấy đỏ, rồi mới đổi mặc định. Tổng 108 pytest qua.
 - Chưa có xác nhận bằng mắt cho bước 3a (ẩn cột `llm_*` trong Data Manager) và bước 4 (không thấy đáp án LLM trước khi tích "Đã bôi xong span").
+
+**2026-10-20, người duyệt (agent ghi lại):** Đã kiểm bằng mắt hai bước còn lại, cả hai đều đạt. Ticket đóng.
+- Bước 3a: trong Data Manager đã ẩn 4 cột `llm_level`, `llm_answer`, `llm_quotes`, `question_en`. Bảng task không còn hiện đáp án, mức hay trích dẫn của LLM.
+- Bước 4 (tiêu chí 3): mở task, trước khi tích "Đã bôi xong span" không thấy mức, đáp án hay trích dẫn của LLM.
+- Khi tạo project thật cho gold set, phải lặp lại bước 3a: cách ẩn cột này áp dụng theo từng project, không nằm trong `review.xml`.

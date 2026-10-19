@@ -49,6 +49,8 @@ def test_review_config_reads_only_fields_the_export_writes(snap_dir, tmp_path):
     _, units, questions, guideline, *_ = review_setup(snap_dir, tmp_path)
     tasks = export_review(snap_dir, units, questions, guideline, tmp_path)
     assert variables(config("review.xml")) <= set(tasks[0]["data"])
+    # Every LLM-written field is listed, so the Data Manager checklist (ticket 06) names them all.
+    assert {k for k in tasks[0]["data"] if k.startswith("llm_")} <= set(annotate.LLM_FIELDS) <= set(tasks[0]["data"])
 
 
 def test_llm_answer_shown_only_after_spans_and_reveal():
@@ -60,7 +62,7 @@ def test_llm_answer_shown_only_after_spans_and_reveal():
     assert len(gated) == 1 and gated[0].get("whenChoiceValue") in values(reveal, "Choice")
     hidden = set(gated[0].iter())
 
-    llm = [e for e in order if any("$llm_" in v for v in e.attrib.values())]
+    llm = [e for e in order if any(f"${f}" in v for f in annotate.LLM_FIELDS for v in e.attrib.values())]
     assert llm and all(e in hidden for e in llm)
     assert {"decision", "level", "l6_kind", "answer"} <= {e.get("name") for e in hidden}
     last_span = max(order.index(e) for e in root.iter("Labels"))

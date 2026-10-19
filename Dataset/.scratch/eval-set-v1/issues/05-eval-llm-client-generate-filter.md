@@ -41,3 +41,10 @@ Chạy lại lệnh nào cũng đọc từ `cache/llm/` (đã gitignore); dòng 
 Ngưỡng 0,9 và 0,6 là giá trị khởi đầu, nên chỉnh sau khi xem `filter-report.json` của lần chạy thật.
 
 **Test:** 21 test mới (tổng 58 pytest sau khi merge `eval/tickets-05-06-10`). Gồm: generate đúng số ứng viên mỗi ô, đúng schema, quote theo từng đơn vị của cặp; từng bước lọc loại đúng ca hỏng và đếm đúng; chạy lại không gọi lại client; adapter Claude / Gemini thật nhưng HTTP đi vào mock transport (kiểm header khoá lấy từ env, `output_config` json_schema, JSON mode); chạy `generate` rồi `filter` qua CLI, quét mọi file ghi ra (cả cache) không thấy khoá.
+
+**2026-10-19, agent (sửa sau review):** Các lỗi review đã sửa, mỗi lỗi có test viết trước (đỏ rồi mới xanh):
+- **generate sinh bù**: model trả ít câu hơn yêu cầu thì gọi thêm cho phần còn thiếu, seed kế tiếp (seed kế hoạch + 1, + 2…, để cache coi là request mới), tối đa `MAX_TOP_UPS = 2` lần gọi hụt mỗi slot / ô. Phần vẫn thiếu ghi vào `generate-report.json` (cạnh `--out`, hoặc `--report`): mỗi ô có `wanted`, `got`, `shortfall`, `calls`; lệnh in các ô bị hụt. `generation.seed` của ứng viên là seed của lời gọi sinh ra nó.
+- **L6(a) theo lô**: ô L6(a) hỏi tối đa `OOD_BATCH = 25` câu mỗi lời gọi (mỗi lô một seed), để ô lớn không chạm `max_tokens`.
+- **Quote phải nằm trong đơn vị của ứng viên**: bước quote chỉ nhận vị trí nằm trong khoảng offset của các đơn vị trong `unit_ids` (đúng tài liệu); tìm thấy trong tài liệu nhưng ngoài đơn vị thì loại với lý do mới `quote_outside_units`. Gold span cũng chỉ lấy vị trí trong đơn vị.
+- **Đổi nhãn L1 → L3** chỉ khi đơn vị có ≥ 2 chunk (`plan.L3_MIN_CHUNKS`); không đủ thì loại với lý do `l3_needs_two_chunks` (điểm "chưa kiểm" ở comment trên đã xong).
+- CLI không còn crash trên console Windows cp1252 (stdout / stderr đổi sang UTF-8 trong `main`). Danh sách mức trong `prompts.py` lấy từ `schema.Level`; mọi lệnh đọc `--units` dùng chung một mặc định `<snapshot>/units.jsonl`; file ghi mới đi qua `io.write_*`.

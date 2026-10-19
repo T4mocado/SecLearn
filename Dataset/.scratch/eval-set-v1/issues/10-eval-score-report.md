@@ -39,3 +39,8 @@
 5. **Câu L4 / L5** (hai đơn vị) được xếp vào nhóm của đơn vị đầu tiên. Gộp hai tài liệu thành một nhóm (union-find) sẽ dễ nối cả cụm thành một nhóm.
 6. **Hậu phân tầng** cân theo tỉ lệ chunk của corpus trong từng cụm. Spec không nói rõ trọng số; nếu bạn muốn cân theo cách khác (ví dụ theo mức) thì cần sửa.
 7. **Judged@10** của câu mà run không trả gì được tính là 0.
+
+**2026-10-19, agent (sửa sau review):** Các lỗi review đã sửa, mỗi lỗi có test số tính tay viết trước. Các lựa chọn phương pháp ở mục "Bạn xem lại" giữ nguyên.
+- `stats.combine()` (macro, hậu phân tầng) cắt khoảng tin cậy về [0, 1] như `estimate()`; riêng hiệu ghép cặp macro (có thể âm) không cắt (`bounded=False`).
+- **So sánh cụm với cụm** (user story 65): `score` ghi `cluster_differences` cho mọi cặp cụm × mọi độ đo: hiệu hai trung bình, SE² = SE²_A + SE²_B (hai cụm không chung nhóm sai số), kiểm z hai phía, p hiệu chỉnh Holm trong từng độ đo; cụm không có độ phân tán (SE 0 cả hai) cho p = 1. `report` có bảng "Khác biệt giữa hai cụm có ý nghĩa thống kê", chỉ liệt kê cặp có p (Holm) < 0,05; không có cặp nào thì ghi "(không cặp nào)". Bạn xem lại: dùng Holm cho 45 cặp là lựa chọn của agent (để không kết luận quá mức); bỏ hiệu chỉnh thì đọc cột `p_value`.
+- `score --run` lưu vào `args.run_dir`, mọi lệnh con dùng chung `run` làm handler (bỏ cách `run_cmd`). `report` ghi file qua `io.write_text`; đổi tên hàm `_f` thành `_num`.

@@ -5,10 +5,12 @@ from __future__ import annotations
 import pytest
 
 from seclearn_eval.stats import (
+    cluster_difference,
     clustered_se,
     combine,
     estimate,
     fisher_per_question,
+    holm,
     paired_difference,
     randomization_p,
 )
@@ -73,6 +75,34 @@ def test_macro_is_the_plain_mean_of_cluster_means():
     assert (est.n, est.n_groups, est.method) == (5, 3, "normal")
     assert est.mean == pytest.approx(0.75) and est.se == pytest.approx(0.125**0.5 / 2)
     assert est.ci_low == pytest.approx(0.75 - 1.96 * 0.176777, abs=1e-6)
+
+
+def test_combined_interval_is_cut_to_0_1_like_a_stratum_interval():
+    # Macro .75 ± 1.96 × .176777 = [.403, 1.096]: a score cannot pass 1.
+    est = combine(two_clusters())
+    assert est.ci_high == 1.0
+    # A difference of two runs may be negative: no cut.
+    diff = combine({"x": paired_difference([0, 0], [1, 1], ["A", "B"]), "y": paired_difference([0], [1], ["C"])}, bounded=False)
+    assert diff.mean == -1.0 and diff.ci_low == -1.0
+
+
+def test_two_clusters_differ_by_their_means_with_independent_ses():
+    # x .5 ± √.125, y 1 ± 0: diff −.5, SE √.125 = .353553, z = −√2 → p = erfc(1) = .157299.
+    x, y = two_clusters().values()
+    diff, p = cluster_difference(x, y)
+    assert diff.mean == pytest.approx(-0.5) and diff.se == pytest.approx(0.125**0.5)
+    assert (diff.n, diff.n_groups, diff.method) == (5, 3, "normal")
+    assert diff.ci_low == pytest.approx(-0.5 - 1.96 * 0.353553, abs=1e-6)
+    assert p == pytest.approx(0.157299, abs=1e-6)
+    # No spread at all (two one-question clusters): nothing to test against.
+    assert cluster_difference(estimate([1], ["A"]), estimate([0], ["B"]))[1] == 1.0
+
+
+def test_holm_adjusts_a_family_of_p_values():
+    # Sorted .01, .03, .04 → × 3, × 2, × 1 = .03, .06, .04, kept monotone → .03, .06, .06.
+    assert holm([0.01, 0.04, 0.03]) == pytest.approx([0.03, 0.06, 0.06])
+    assert holm([0.6, 0.9]) == pytest.approx([1.0, 1.0])
+    assert holm([]) == []
 
 
 def test_post_stratified_weighs_clusters_by_corpus_share():

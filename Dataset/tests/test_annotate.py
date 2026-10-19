@@ -9,9 +9,10 @@ from pathlib import Path
 import pytest
 from conftest import CANARY, question, span
 
+from seclearn_eval import annotate
 from seclearn_eval.cli import main
 from seclearn_eval.clusters import build_cluster_map
-from seclearn_eval.io import read_jsonl, read_questions, write_jsonl, write_questions
+from seclearn_eval.io import FormatError, read_jsonl, read_questions, write_jsonl, write_questions
 from seclearn_eval.schema import Label, PoolEntry, QuestionFileHeader
 from seclearn_eval.snapshot import load_snapshot
 from seclearn_eval.units import build_units
@@ -238,6 +239,26 @@ def test_pool_round_trip_grades_blind(snap_dir, tmp_path):
         (f"{SESSION}#1", 2, "2", 12.0, "v0", "pool"),
         (f"{SESSION}#2", 0, "2", 12.0, "v0", "pool"),
     ]
+
+
+def test_annotation_without_a_timestamp_is_a_format_error(snap_dir, tmp_path):
+    _, units, questions, guideline, *_ = review_setup(snap_dir, tmp_path)
+    tasks = export_review(snap_dir, units, questions, guideline, tmp_path)
+    undated = {k: v for k, v in ls_annotation([ls_choice("decision", "Chấp nhận")]).items() if k not in ("created_at", "updated_at")}
+    export = ls_export(tasks, {"q1": [undated]}, tmp_path)
+    with pytest.raises(FormatError, match="q1.*(updated_at|created_at)"):
+        annotate.read_export(export)
+
+
+def test_two_tasks_for_one_question_are_an_error_not_a_silent_pick(snap_dir, tmp_path, capsys):
+    _, units, questions, guideline, *_ = review_setup(snap_dir, tmp_path)
+    tasks = export_review(snap_dir, units, questions, guideline, tmp_path)
+    # The same question imported twice into the project: two tasks, each annotated.
+    annotations = {"q1": [ls_annotation([ls_choice("decision", "Chấp nhận")])]}
+    code, out, labels = import_review(snap_dir, questions, ls_export([tasks[0], tasks[0]], annotations, tmp_path), tmp_path)
+    assert code == 1
+    assert "q1" in capsys.readouterr().err
+    assert not out.exists() and not labels.exists()
 
 
 @pytest.mark.skipif(not REAL.exists(), reason="real snapshot not checked out")

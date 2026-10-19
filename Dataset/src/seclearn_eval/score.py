@@ -11,10 +11,32 @@ import warnings
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
+from itertools import combinations
 
 from .clusters import WSTG_KEY
-from .schema import AnswerLine, Comparison, Estimate, QrelLine, Question, Refusals, RunLine, ScoreReport, Stratum, Unit
-from .stats import SEED, combine, estimate, fisher_per_question, paired_difference, randomization_p
+from .schema import (
+    AnswerLine,
+    ClusterDifference,
+    Comparison,
+    Estimate,
+    QrelLine,
+    Question,
+    Refusals,
+    RunLine,
+    ScoreReport,
+    Stratum,
+    Unit,
+)
+from .stats import (
+    SEED,
+    cluster_difference,
+    combine,
+    estimate,
+    fisher_per_question,
+    holm,
+    paired_difference,
+    randomization_p,
+)
 
 #: Reported metrics. Binary ones (hit, MRR, recall) count a chunk relevant from `min_grade`; nDCG uses the grades.
 METRICS = ["hit@1", "hit@5", "hit@10", "mrr@10", "ndcg@10", "recall@5", "recall@10", "judged@10"]
@@ -157,8 +179,23 @@ def score(inputs: ScoreInputs) -> ScoreReport:
         poststrat_weights=weights,
         strata=strata,
         comparisons=comparisons,
+        cluster_differences=cluster_differences(cluster_est),
         refusals=refusals(inputs.questions, inputs.answers, by_id),
     )
+
+
+def cluster_differences(cluster_est: dict[str, dict[str, Estimate]]) -> list[ClusterDifference]:
+    """Every pair of topic clusters on every metric, p-values Holm-adjusted over the pairs of one metric."""
+    out: list[ClusterDifference] = []
+    for m, by_cluster in cluster_est.items():
+        pairs = list(combinations(sorted(by_cluster), 2))
+        tested = [cluster_difference(by_cluster[a], by_cluster[b]) for a, b in pairs]
+        adjusted = holm([p for _, p in tested])
+        out += [
+            ClusterDifference(metric=m, cluster_a=a, cluster_b=b, diff=diff, p_value=p, p_adjusted=p_adj)
+            for (a, b), (diff, p), p_adj in zip(pairs, tested, adjusted, strict=True)
+        ]
+    return out
 
 
 def _compare(
@@ -195,7 +232,7 @@ def _compare(
             Comparison(
                 metric=m,
                 scope="macro",
-                diff=combine(per_cluster),
+                diff=combine(per_cluster, bounded=False),
                 p_value=randomization_p(diffs(ordered), [groups[i] for i in ordered], weights=w, seed=seed),
             )
         )

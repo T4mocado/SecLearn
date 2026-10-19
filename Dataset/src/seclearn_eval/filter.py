@@ -1,9 +1,10 @@
 """`filter`: six steps in a fixed order (spec, user stories 32-38). Each step counts what came in, what it rejected
 and why, so the thesis can report the rejection rate of every step.
 
-1. quote           every quote is found verbatim (up to whitespace) in the snapshot markdown;
+1. quote           every quote is found verbatim (up to whitespace) in the snapshot markdown, inside the candidate's units;
 2. answerable      the judge answers from the quotes alone (L6 is not asked: it is meant to be unanswerable);
-3. level           the judge re-levels; a level the candidate's units can hold is a relabel, any other is a rejection;
+3. level           the judge re-levels; a level the candidate's units can hold (L3: a unit of 2+ chunks) is a relabel,
+                   any other is a rejection;
 4. self_reference  questions that point at "this document", a figure, a table or a chapter;
 5. dedup           same-meaning questions within one cluster (embedding cosine), the later one goes;
 6. l2_overlap      L2 questions whose content words are mostly the evidence's own words.
@@ -14,8 +15,10 @@ from __future__ import annotations
 import re
 from collections import Counter, defaultdict
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from .llm import LLMClient, cosine
+from .plan import L3_MIN_CHUNKS
 from .prompts import ANSWER_SCHEMA, LEVEL_SCHEMA, SYSTEM_JUDGE, answer_prompt, level_prompt
 from .schema import Candidate, FilterReport, FilterStep, GoldSpan, LLMConfig, Question, Rejection, Review, Strata, Unit
 from .snapshot import Snapshot
@@ -61,22 +64,35 @@ class _Step:
         return FilterStep(step=self.name, n_in=self.n_in, n_rejected=len(self.rejections), n_relabelled=self.relabelled, reasons=dict(sorted(reasons.items())))
 
 
-def locate(c: Candidate, snap: Snapshot, units: dict[str, Unit] | None = None) -> list[GoldSpan] | None:
-    """A gold span per quote, preferring a match inside the candidate's units; None when a quote is not in the snapshot."""
+@dataclass
+class Located:
+    """The gold spans of a candidate's quotes, or why they could not be placed (`problem` is a rejection reason)."""
+
+    spans: list[GoldSpan]
+    problem: str | None = None
+    detail: str = ""
+
+
+def locate(c: Candidate, snap: Snapshot, units: dict[str, Unit]) -> Located:
+    """A gold span per quote, found inside the candidate's own units (the text it was written from).
+
+    A quote not in its document is `quote_not_found`; one found in the document but only outside the candidate's
+    units is `quote_outside_units` (the generator quoted text it was not shown, or a passage that repeats elsewhere).
+    """
     spans: list[GoldSpan] = []
-    ranges = [(u.char_start, u.char_end) for uid in c.unit_ids if units and (u := units.get(uid))]
     for q in c.quotes:
         md = snap.markdown.get(q.doc_key)
         doc = snap.document(q.doc_key)
-        if md is None or doc is None:
-            return None
-        found = find_quote(md, q.quote)
+        found = find_quote(md, q.quote) if md is not None and doc is not None else []
         if not found:
-            return None
+            return Located([], "quote_not_found", q.quote)
+        ranges = [(u.char_start, u.char_end) for uid in c.unit_ids if (u := units.get(uid)) and u.doc_key == q.doc_key]
         inside = [f for f in found if any(s <= f[0] and f[1] <= e for s, e in ranges)]
-        start, end = (inside or found)[0]
+        if not inside:
+            return Located([], "quote_outside_units", q.quote)
+        start, end = inside[0]
         spans.append(GoldSpan(doc_key=q.doc_key, md_sha256=doc.md_sha256, char_start=start, char_end=end, quote=md[start:end]))
-    return spans
+    return Located(spans)
 
 
 def _content_words(text: str) -> set[str]:
@@ -110,15 +126,11 @@ def run_filter(
                 if c.level != "L6":
                     s.reject(c, "no_quote")
                     continue
-            elif locate(c, snap, by_unit) is None:
-                s.reject(c, "quote_not_found", next((q.quote for q in c.quotes if not _found(q.doc_key, q.quote)), ""))
+            elif (located := locate(c, snap, by_unit)).problem:
+                s.reject(c, located.problem, located.detail)
                 continue
             kept.append(c)
         return kept
-
-    def _found(doc_key: str, text: str) -> bool:
-        md = snap.markdown.get(doc_key)
-        return md is not None and bool(find_quote(md, text))
 
     def answerable(s: _Step, cands: list[Candidate]) -> list[Candidate]:
         kept = []
@@ -140,11 +152,14 @@ def run_filter(
                 continue
             n_units = len(c.unit_ids)
             group = next((g for g in RELABEL_GROUPS if c.level in g and got in g), None)
-            if group is not None and n_units == (1 if group == RELABEL_GROUPS[0] else 2):
+            if group is None or n_units != (1 if group == RELABEL_GROUPS[0] else 2):
+                s.reject(c, "level_mismatch", f"asked {c.level}, judged {got}")
+            elif got == "L3" and not all((u := by_unit.get(uid)) and u.chunks >= L3_MIN_CHUNKS for uid in c.unit_ids):
+                # The plan gives L3 only to units of 2+ chunks (spec, user story 20a); a relabel must keep that.
+                s.reject(c, "l3_needs_two_chunks", f"judged L3 on a unit of fewer than {L3_MIN_CHUNKS} chunks")
+            else:
                 kept.append(c.model_copy(update={"level": got, "relabelled_from": c.relabelled_from or c.level}))
                 s.relabelled += 1
-            else:
-                s.reject(c, "level_mismatch", f"asked {c.level}, judged {got}")
         return kept
 
     def self_reference(s: _Step, cands: list[Candidate]) -> list[Candidate]:
@@ -190,12 +205,12 @@ def run_filter(
     return current, report
 
 
-def candidates_to_questions(kept: list[Candidate], snap: Snapshot, units: list[Unit] | None = None) -> list[Question]:
-    """Pending questions for review: gold spans located on the snapshot, each its own seed."""
-    by_unit = {u.unit_id: u for u in units or []}
+def candidates_to_questions(kept: list[Candidate], snap: Snapshot, units: list[Unit]) -> list[Question]:
+    """Pending questions for review: gold spans located on the snapshot, inside each candidate's units; each its own seed."""
+    by_unit = {u.unit_id: u for u in units}
     out = []
     for c in kept:
-        spans = locate(c, snap, by_unit) or []
+        spans = locate(c, snap, by_unit).spans
         wstg = {s.doc_key.startswith("wstg") for s in spans}
         source = None if not spans else "both" if len(wstg) == 2 else "wstg" if True in wstg else "cheat_sheet"
         out.append(

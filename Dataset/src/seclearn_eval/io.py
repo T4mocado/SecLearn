@@ -42,6 +42,17 @@ def write_json(path: Path, record: BaseModel) -> None:
     path.write_text(record.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
+def write_text(path: Path, text: str) -> None:
+    """A UTF-8 text file with LF line ends (reports, plan tables)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8", newline="\n")
+
+
+def write_plain_json(path: Path, data: object) -> None:
+    """JSON that is not one of our records (Label Studio tasks), kept readable: no `\\u` escapes."""
+    write_text(path, json.dumps(data, ensure_ascii=False, indent=1) + "\n")
+
+
 def read_jsonl(path: Path, model: type[M]) -> list[M]:
     out: list[M] = []
     for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):

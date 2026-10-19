@@ -27,6 +27,8 @@ from .schema import ClusterId, Level, PlanCell, PlanSlot, SamplePlan, SplitName,
 K = TypeVar("K", bound=Hashable)
 
 ANSWERABLE_LEVELS: tuple[Level, ...] = ("L1", "L2", "L3", "L4", "L5", "L7")
+#: L3 (multi-passage) goes only to units overlapping at least this many chunks (spec, user story 20a).
+L3_MIN_CHUNKS = 2
 L6_KINDS = ("out_of_domain", "not_in_corpus", "false_premise")
 
 
@@ -213,7 +215,7 @@ def _split_slots(
         pairable = sum(u.weight_chunks > 0 for u in members) >= 2
         for lv in ANSWERABLE_LEVELS:
             if lv == "L3":
-                capacity[(cluster, lv)] = sum(unit_by_id[uid].chunks >= 2 for uid in anchors)
+                capacity[(cluster, lv)] = sum(unit_by_id[uid].chunks >= L3_MIN_CHUNKS for uid in anchors)
             elif lv in ("L4", "L5"):
                 capacity[(cluster, lv)] = len(anchors) if pairable else 0
             else:
@@ -229,7 +231,7 @@ def _split_slots(
         members = sorted(by_cluster[cluster], key=lambda u: u.unit_id)
         anchors = anchors_of[cluster]
         want = {lv: table[(cluster, lv)] for lv in ANSWERABLE_LEVELS}
-        multi = [i for i, uid in enumerate(anchors) if unit_by_id[uid].chunks >= 2]
+        multi = [i for i, uid in enumerate(anchors) if unit_by_id[uid].chunks >= L3_MIN_CHUNKS]
         if len(multi) < want["L3"]:
             raise PlanError(f"{split}/{cluster}: {want['L3']} L3 questions but {len(multi)} slots on units of 2+ chunks")
         levels: list[Level | None] = [None] * len(anchors)

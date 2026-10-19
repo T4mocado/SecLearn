@@ -68,11 +68,12 @@ def estimate(values: Sequence[float], groups: Sequence[Hashable], small: int = S
     return Estimate(n=n, n_groups=len(set(groups)), mean=mean, se=se, ci_low=low, ci_high=high, method=method)
 
 
-def combine(strata: dict[str, Estimate], weights: dict[str, float] | None = None) -> Estimate:
+def combine(strata: dict[str, Estimate], weights: dict[str, float] | None = None, *, bounded: bool = True) -> Estimate:
     """Weighted mean of stratum means: equal weights for macro over topic clusters, corpus shares for post-stratified.
 
     Topic clusters share no error group (groups nest in clusters), so SE² = Σ w_k² SE_k² with weights summing to 1.
-    The interval is normal: the combined stratum is the whole split, well above the Wilson threshold.
+    The interval is normal: the combined stratum is the whole split, well above the Wilson threshold. It is cut to
+    [0, 1] like `estimate`'s, unless `bounded` is False (differences of two runs, which may be negative).
     """
     raw = weights if weights is not None else {k: 1.0 for k in strata}
     if missing := set(strata) - set(raw):
@@ -81,15 +82,49 @@ def combine(strata: dict[str, Estimate], weights: dict[str, float] | None = None
     w = {k: raw[k] / total for k in strata}
     mean = sum(w[k] * e.mean for k, e in strata.items())
     se = math.sqrt(sum((w[k] * e.se) ** 2 for k, e in strata.items()))
+    low, high = mean - Z * se, mean + Z * se
+    if bounded:
+        low, high = max(0.0, low), min(1.0, high)
     return Estimate(
         n=sum(e.n for e in strata.values()),
         n_groups=sum(e.n_groups for e in strata.values()),
         mean=mean,
         se=se,
-        ci_low=mean - Z * se,
-        ci_high=mean + Z * se,
+        ci_low=low,
+        ci_high=high,
         method="normal",
     )
+
+
+#: Significance level for concluding that two topic clusters differ (after the Holm adjustment).
+ALPHA = 0.05
+
+
+def cluster_difference(a: Estimate, b: Estimate) -> tuple[Estimate, float]:
+    """Topic cluster A minus topic cluster B on one metric, and the two-sided p-value of a z test (spec user story 65).
+
+    The two clusters hold different questions and share no error group, so SE² = SE_A² + SE_B² from their clustered SEs.
+    With no spread at all (SE 0, e.g. two one-question clusters) there is nothing to test against: p = 1.
+    """
+    mean = a.mean - b.mean
+    se = math.sqrt(a.se**2 + b.se**2)
+    p = math.erfc(abs(mean / se) / math.sqrt(2)) if se > 0 else 1.0
+    diff = Estimate(
+        n=a.n + b.n, n_groups=a.n_groups + b.n_groups, mean=mean, se=se, ci_low=mean - Z * se, ci_high=mean + Z * se, method="normal"
+    )
+    return diff, p
+
+
+def holm(p_values: Sequence[float]) -> list[float]:
+    """Holm-Bonferroni adjusted p-values, in the input order: for the family of all cluster pairs on one metric."""
+    m = len(p_values)
+    order = sorted(range(m), key=lambda i: p_values[i])
+    out = [0.0] * m
+    running = 0.0
+    for rank, i in enumerate(order):
+        running = max(running, min(1.0, (m - rank) * p_values[i]))
+        out[i] = running
+    return out
 
 
 def paired_difference(a: Sequence[float], b: Sequence[float], groups: Sequence[Hashable]) -> Estimate:

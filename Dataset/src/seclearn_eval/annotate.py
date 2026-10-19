@@ -13,18 +13,33 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, get_args
+
+from pydantic import Field, ValidationError
 
 from .io import FormatError
-from .schema import GoldSpan, Label, PoolEntry, Question, Unit
+from .schema import GoldSpan, Label, Level, PoolEntry, Question, Record, Unit
 from .snapshot import Snapshot, sha256_text
 from .spans import normalize
 
 OffsetUnit = Literal["utf16", "codepoint"]
+LEVELS: tuple[str, ...] = get_args(Level)
+
+
+class TaskSource(Record):
+    """One source shown in a review task (`data.sources[n]`): where `source_n`'s text sits in the snapshot markdown."""
+
+    doc_key: str
+    md_sha256: str
+    title: str
+    char_start: int = Field(ge=0)
+    char_end: int = Field(gt=0)
 
 #: Source slots in `review.xml` (`source_0`, `source_1`): L4 / L5 questions hold a pair of units, no question more.
 SOURCE_SLOTS = 2
 EMPTY_SOURCE = "(không có đoạn nguồn thứ hai)"
+#: Review task fields written by the LLM: shown only after the spans are done, and to hide in the Data Manager.
+LLM_FIELDS = ("llm_level", "llm_answer", "llm_quotes", "question_en")
 
 QUESTION_CHECK = {"Tự đứng được": "ok", "Mơ hồ": "ambiguous", "Cần ngữ cảnh tài liệu": "needs_context", "Hỏi ý kiến": "opinion"}
 DECISION = {"Chấp nhận": "accepted", "Sửa": "edited", "Loại": "rejected"}
@@ -68,7 +83,7 @@ def to_codepoint(text: str, offset: int, unit: OffsetUnit) -> int:
 # --- Export --------------------------------------------------------------------------------------
 
 
-def _sources(q: Question, snap: Snapshot, units: dict[str, Unit]) -> list[dict]:
+def _sources(q: Question, snap: Snapshot, units: dict[str, Unit]) -> list[TaskSource]:
     out = []
     for uid in q.unit_ids:
         unit = units.get(uid)
@@ -77,8 +92,8 @@ def _sources(q: Question, snap: Snapshot, units: dict[str, Unit]) -> list[dict]:
         doc = snap.document(unit.doc_key)
         if doc is None or unit.doc_key not in snap.markdown:
             raise FormatError(f"{q.id}: document {unit.doc_key} not in snapshot {snap.snapshot_id}")
-        out.append({"doc_key": unit.doc_key, "md_sha256": doc.md_sha256, "title": f"{doc.title} › {unit.title}",
-                    "char_start": unit.char_start, "char_end": unit.char_end})
+        out.append(TaskSource(doc_key=unit.doc_key, md_sha256=doc.md_sha256, title=f"{doc.title} › {unit.title}",
+                              char_start=unit.char_start, char_end=unit.char_end))
     if len(out) > SOURCE_SLOTS:
         raise FormatError(f"{q.id}: {len(out)} units, the review project shows at most {SOURCE_SLOTS}")
     return out
@@ -86,7 +101,11 @@ def _sources(q: Question, snap: Snapshot, units: dict[str, Unit]) -> list[dict]:
 
 def review_tasks(questions: list[Question], snap: Snapshot, units: list[Unit], version: str) -> list[dict]:
     """One task per question. The LLM's answer, level and quotes are data the config only shows after the spans are done;
-    the LLM's spans are never sent as predictions, so nothing pre-highlights the sources."""
+    the LLM's spans are never sent as predictions, so nothing pre-highlights the sources.
+
+    Label Studio's Data Manager (the task table) shows every `data` field as a column, outside the labeling config.
+    The `LLM_FIELDS` columns must be hidden there before annotators open the project (ticket 06, setup checklist);
+    nesting them under one key would not help, the Data Manager shows the nested object too."""
     by_id = {u.unit_id: u for u in units}
     tasks = []
     for q in questions:
@@ -102,13 +121,13 @@ def review_tasks(questions: list[Question], snap: Snapshot, units: list[Unit], v
             "question_en": q.question_en,
             "guideline_version": version,
             "snapshot_id": snap.snapshot_id,
-            "sources": sources,
+            "sources": [s.model_dump() for s in sources],
         }
         for n in range(SOURCE_SLOTS):
             if n < len(sources):
                 s = sources[n]
-                data[f"source_{n}"] = snap.markdown[s["doc_key"]][s["char_start"] : s["char_end"]]
-                data[f"source_{n}_title"] = s["title"]
+                data[f"source_{n}"] = snap.markdown[s.doc_key][s.char_start : s.char_end]
+                data[f"source_{n}_title"] = s.title
             else:
                 data[f"source_{n}"] = EMPTY_SOURCE
                 data[f"source_{n}_title"] = ""
@@ -166,22 +185,35 @@ def read_export(path: Path) -> list[Annotation]:
         done = [a for a in task.get("annotations", []) if not a.get("was_cancelled")]
         if not done:
             continue
-        a = max(done, key=lambda a: a.get("updated_at") or a.get("created_at") or "")
-        stamp = a.get("updated_at") or a.get("created_at")
+        qid = task.get("data", {}).get("question_id")
+        stamped = [(_stamp(a, path, qid), a) for a in done]
+        when, a = max(stamped, key=lambda pair: pair[0])
         out.append(
             Annotation(
-                question_id=task["data"]["question_id"],
+                question_id=qid,
                 data=task["data"],
                 result=a.get("result", []),
                 annotator=_annotator(a.get("completed_by")),
-                annotated_at=datetime.fromisoformat(stamp.replace("Z", "+00:00")),
+                annotated_at=when,
                 lead_time=a.get("lead_time"),
             )
         )
     return out
 
 
-def _one(result: list[dict], name: str, kind: str) -> str | None:
+def _stamp(annotation: dict, path: Path, qid: object) -> datetime:
+    """When an annotation was last saved: `updated_at`, else `created_at`; an annotation with neither is a broken export."""
+    stamp = annotation.get("updated_at") or annotation.get("created_at")
+    if not isinstance(stamp, str):
+        raise FormatError(f"{path}: annotation {annotation.get('id')} of {qid} has no updated_at or created_at")
+    try:
+        return datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        raise FormatError(f"{path}: annotation {annotation.get('id')} of {qid}: bad timestamp {stamp!r}") from None
+
+
+def _result_text(result: list[dict], name: str, kind: str) -> str | None:
+    """The text of the first `kind` ("choices" / "textarea") result of control `name`, None when empty or absent."""
     for r in result:
         if r.get("from_name") == name and r.get("type") == kind:
             values = r["value"].get(kind if kind == "choices" else "text") or []
@@ -195,23 +227,33 @@ def _check_snapshot(a: Annotation, snap: Snapshot) -> None:
         raise FormatError(f"{a.question_id}: task made on snapshot {a.data.get('snapshot_id')}, importing onto {snap.snapshot_id}")
 
 
+def _task_sources(a: Annotation) -> list[TaskSource]:
+    raw = a.data.get("sources")
+    if not isinstance(raw, list):
+        raise FormatError(f"{a.question_id}: task has no `sources` list (not made by `annotate export`?)")
+    try:
+        return [TaskSource.model_validate(s) for s in raw]
+    except ValidationError as err:
+        raise FormatError(f"{a.question_id}: task sources: {err.errors()[0]['msg']}") from None
+
+
 def _spans(a: Annotation, snap: Snapshot, unit: OffsetUnit) -> list[GoldSpan]:
     spans = []
     for r in a.result:
         if r.get("type") != "labels":
             continue
         slot = int(r["from_name"].removeprefix("span_"))
-        sources = a.data["sources"]
+        sources = _task_sources(a)
         if slot >= len(sources):
             raise FormatError(f"{a.question_id}: a span on {r['from_name']}, which has no source")
         src = sources[slot]
-        md = snap.markdown.get(src["doc_key"])
-        if md is None or sha256_text(md) != src["md_sha256"]:
-            raise FormatError(f"{a.question_id}: markdown of {src['doc_key']} is not the one the task showed")
-        shown = md[src["char_start"] : src["char_end"]]
+        md = snap.markdown.get(src.doc_key)
+        if md is None or sha256_text(md) != src.md_sha256:
+            raise FormatError(f"{a.question_id}: markdown of {src.doc_key} is not the one the task showed")
+        shown = md[src.char_start : src.char_end]
         v = r["value"]
-        start = src["char_start"] + to_codepoint(shown, v["start"], unit)
-        end = src["char_start"] + to_codepoint(shown, v["end"], unit)
+        start = src.char_start + to_codepoint(shown, v["start"], unit)
+        end = src.char_start + to_codepoint(shown, v["end"], unit)
         if normalize(md[start:end]) != normalize(v["text"]):
             raise FormatError(
                 f"{a.question_id}: region text {v['text']!r} is not the markdown at {start}-{end} ({md[start:end]!r}); "
@@ -222,14 +264,14 @@ def _spans(a: Annotation, snap: Snapshot, unit: OffsetUnit) -> list[GoldSpan]:
         if label not in (SPAN_EVIDENCE, SPAN_REFUTES, *SPAN_CELLS):
             raise FormatError(f"{a.question_id}: unknown span label {label!r}")
         spans.append(
-            GoldSpan(doc_key=src["doc_key"], md_sha256=src["md_sha256"], char_start=start, char_end=end, quote=md[start:end],
+            GoldSpan(doc_key=src.doc_key, md_sha256=src.md_sha256, char_start=start, char_end=end, quote=md[start:end],
                      cell=SPAN_CELLS.get(label), refutes=label == SPAN_REFUTES)
         )
     return sorted(spans, key=lambda s: (s.doc_key, s.char_start, s.char_end))
 
 
 def _mapped(a: Annotation, name: str, table: dict[str, str]) -> str | None:
-    value = _one(a.result, name, "choices")
+    value = _result_text(a.result, name, "choices")
     if value is not None and value not in table:
         raise FormatError(f"{a.question_id}: {name} choice {value!r} is not one of {sorted(table)}")
     return table.get(value) if value else None
@@ -240,9 +282,9 @@ def apply_review(q: Question, a: Annotation, snap: Snapshot, unit: OffsetUnit) -
     _check_snapshot(a, snap)
     spans = _spans(a, snap, unit)
     strata = q.strata
-    level = _one(a.result, "level", "choices")
+    level = _result_text(a.result, "level", "choices")
     if level:
-        if level not in ("L1", "L2", "L3", "L4", "L5", "L6", "L7"):
+        if level not in LEVELS:
             raise FormatError(f"{a.question_id}: level choice {level!r}")
         strata = strata.model_copy(update={"level": level, "answerable": level != "L6", "l6_kind": strata.l6_kind if level == "L6" else None})
     kind = _mapped(a, "l6_kind", L6_KIND)
@@ -255,14 +297,14 @@ def apply_review(q: Question, a: Annotation, snap: Snapshot, unit: OffsetUnit) -
             "guideline_version": a.data["guideline_version"],
             "lead_time": a.lead_time,
             "annotated_at": a.annotated_at,
-            "notes": _one(a.result, "notes", "textarea") or q.review.notes,
+            "notes": _result_text(a.result, "notes", "textarea") or q.review.notes,
             "question_check": _mapped(a, "question_check", QUESTION_CHECK) or q.review.question_check,
         }
     )
     update: dict[str, object] = {"strata": strata, "review": review}
     if spans:
         update["gold_evidence"] = spans
-    answer = _one(a.result, "answer", "textarea")
+    answer = _result_text(a.result, "answer", "textarea")
     if answer:
         update["reference_answer"] = answer
     return q.model_copy(update=update)
@@ -275,7 +317,14 @@ def _label(a: Annotation, task: Literal["review", "pool"], chunk_key: str | None
 
 
 def import_review(questions: list[Question], annotations: list[Annotation], snap: Snapshot, unit: OffsetUnit) -> tuple[list[Question], list[Label]]:
-    by_id = {a.question_id: a for a in annotations}
+    by_id: dict[str, Annotation] = {}
+    for a in annotations:
+        if a.question_id in by_id:
+            raise FormatError(
+                f"export has two annotated tasks for question {a.question_id} (imported twice into Label Studio?): "
+                "delete one task in Label Studio and export again"
+            )
+        by_id[a.question_id] = a
     known = {q.id for q in questions}
     for qid in by_id:
         if qid not in known:
@@ -288,7 +337,7 @@ def import_pool(annotations: list[Annotation], snap: Snapshot) -> list[Label]:
     labels = []
     for a in annotations:
         _check_snapshot(a, snap)
-        grade = _one(a.result, "grade", "choices")
+        grade = _result_text(a.result, "grade", "choices")
         if grade is None:
             continue
         if grade not in POOL_GRADE:

@@ -3,7 +3,9 @@ and the prompt text is part of the cache key, so an edited prompt is a new API c
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, get_args
+
+from .schema import Level
 
 LEVELS = """\
 L1 lookup: one specific fact stated in one passage.
@@ -149,7 +151,7 @@ Question: {question}
 
 LEVEL_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "properties": {"level": {"type": "string", "enum": ["L1", "L2", "L3", "L4", "L5", "L6", "L7"]}},
+    "properties": {"level": {"type": "string", "enum": list(get_args(Level))}},
     "required": ["level"],
     "additionalProperties": False,
 }

@@ -8,6 +8,10 @@
     2. the source markdown (whole units, no chunk boundaries), where the annotator marks spans themself;
     3. a "done" tick that reveals the LLM's level, answer and quotes, then the decision, level, answer edit and notes.
   The LLM's spans are never sent as predictions, so nothing is pre-highlighted.
+
+  This config cannot hide task data from the Data Manager (the task table): it shows every data field as a column.
+  Before annotators open the project, hide the columns llm_level, llm_answer, llm_quotes and question_en there
+  (Data Manager > Columns), and annotate through "Label All Tasks" (annotate.LLM_FIELDS; ticket 06 checklist).
 -->
 <View>
   <Header value="1. Câu hỏi (đánh giá trước khi đọc nguồn)"/>

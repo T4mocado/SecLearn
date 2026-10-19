@@ -364,6 +364,27 @@ class Candidate(Record):
     relabelled_from: Level | None = None
 
 
+class GenerationCell(Record):
+    """What `generate` asked for and got in one cell of the plan; `shortfall` > 0 when the model kept replying short."""
+
+    split: SplitName
+    cluster: ClusterId | None
+    level: Level
+    l6_kind: L6Kind | None = None
+    wanted: int = Field(ge=0)
+    got: int = Field(ge=0)
+    #: wanted − got, after every top-up call.
+    shortfall: int = Field(ge=0)
+    calls: int = Field(ge=0)
+
+
+class GenerationReport(Record):
+    cells: list[GenerationCell]
+    n_candidates: int
+    #: Candidates missing over all cells.
+    n_shortfall: int
+
+
 class Rejection(Record):
     candidate_id: str
     step: str
@@ -426,6 +447,18 @@ class Comparison(Record):
     p_value_per_question: float | None = None
 
 
+class ClusterDifference(Record):
+    """One topic cluster minus another on one metric of one run (spec user story 65): z test on their clustered SEs."""
+
+    metric: str
+    cluster_a: str
+    cluster_b: str
+    diff: Estimate
+    p_value: float
+    #: Holm-adjusted over every pair of clusters on this metric: conclude a difference only when it is under 0.05.
+    p_adjusted: float
+
+
 class Refusals(Record):
     """L6, kept apart from every answerable score: correct refusals on L6, false refusals on answerable questions."""
 
@@ -450,4 +483,6 @@ class ScoreReport(Record):
     poststrat_weights: dict[str, float] = {}
     strata: list[Stratum]
     comparisons: list[Comparison] = []
+    #: Every pair of topic clusters, every metric.
+    cluster_differences: list[ClusterDifference] = []
     refusals: Refusals

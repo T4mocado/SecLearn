@@ -168,6 +168,25 @@ def test_report_writes_markdown_and_latex_from_the_same_scores(files, tmp_path):
     assert md.count("macro") >= 1 and "micro" in md
 
 
+def test_cluster_differences_are_tested_and_the_report_lists_only_significant_ones(files, tmp_path):
+    report = score(files, tmp_path)
+    by_metric = {c.metric: c for c in report.cluster_differences}
+    assert set(by_metric) == set(report.metrics)
+    hit1 = by_metric["hit@1"]
+    assert (hit1.cluster_a, hit1.cluster_b) == ("auth", "inj")
+    # auth ⅓ ± √(2/81), inj 0 ± 0: z = (1/3) / (√2/9) = 3/√2 → p = erfc(1.5) = .033895; one pair, Holm leaves it.
+    assert hit1.diff.mean == pytest.approx(1 / 3) and hit1.diff.se == pytest.approx((2 / 81) ** 0.5)
+    assert hit1.p_value == pytest.approx(0.033895, abs=1e-6) and hit1.p_adjusted == pytest.approx(hit1.p_value)
+    # MRR@10: auth 1, 0, ½ has group sums 0 and 0 → SE 0, inj SE 0: nothing to test, p = 1.
+    assert by_metric["mrr@10"].p_value == 1.0
+
+    out = tmp_path / "scores" / "A.json"
+    assert main(["report", "--scores", str(out), "--out", str(tmp_path / "report" / "A")]) == 0
+    md = (tmp_path / "report" / "A.md").read_text(encoding="utf-8")
+    assert "| hit@1 | auth | inj | 0.333 |" in md
+    assert "| mrr@10 | auth | inj |" not in md
+
+
 def test_paired_comparison_with_a_baseline(files, tmp_path):
     report = score(files, tmp_path, "--baseline", str(files["run_b"]))
     assert report.baseline_id == "B"

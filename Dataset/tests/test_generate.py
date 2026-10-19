@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -10,7 +12,7 @@ from conftest import MINI
 from llm_fakes import generator
 
 from seclearn_eval.clusters import build_cluster_map
-from seclearn_eval.generate import generate
+from seclearn_eval.generate import MAX_TOP_UPS, OOD_BATCH, generate
 from seclearn_eval.llm import CachedClient
 from seclearn_eval.schema import PlanSlot, SamplePlan
 from seclearn_eval.snapshot import load_snapshot
@@ -57,7 +59,7 @@ def plan():
 
 def test_generate_fills_root_level_slots_about_1_6_times(snap, units, plan):
     client = generator(snap, units)
-    candidates = generate(snap, units, plan, client, oversample=1.6)
+    candidates, _ = generate(snap, units, plan, client, oversample=1.6)
 
     per_slot = Counter(c.slot_id for c in candidates)
     # L1 cell (2 slots) → ceil(3.2) = 4 candidates; single-slot cells → 2; L6(a) cell of 3 → ceil(4.8) = 5.
@@ -69,7 +71,7 @@ def test_generate_fills_root_level_slots_about_1_6_times(snap, units, plan):
 
 
 def test_candidates_carry_the_slot_cell_quotes_and_generation(snap, units, plan):
-    candidates = generate(snap, units, plan, generator(snap, units), oversample=1.6)
+    candidates, _ = generate(snap, units, plan, generator(snap, units), oversample=1.6)
     by_slot = {c.slot_id: c for c in candidates}
 
     l1 = by_slot["test-00001"]
@@ -99,14 +101,58 @@ def test_prompts_carry_the_unit_text_and_ood_prompts_carry_none(snap, units, pla
     assert len(ood_calls) == 1
 
 
+def test_a_short_reply_is_topped_up_with_another_call_on_a_new_seed(snap, units, plan):
+    client = None
+
+    def short_first(prompt, schema):
+        # The first call of each slot (the plan's seed) brings one question only.
+        if client.calls[-1].seed == plan.seed and "L1" in prompt:
+            return {"items": [{"claims": [], "question": "Q?", "question_en": "Q?", "answer": "A.", "quotes": []}]}
+        return None
+
+    client = generator(snap, units, short_first)
+    one_l1 = plan.model_copy(update={"slots": [plan.slots[0]]})  # test-00001, L1: wants ceil(1.6) = 2
+    candidates, report = generate(snap, units, one_l1, client, oversample=1.6)
+    assert [c.candidate_id for c in candidates] == ["test-00001-c1", "test-00001-c2"]
+    assert [c.seed for c in client.calls] == [plan.seed, plan.seed + 1]
+    assert "exactly 1 question" in client.calls[1].prompt
+    assert [c.generation.seed for c in candidates] == [plan.seed, plan.seed + 1]
+    [cell] = report.cells
+    assert (cell.level, cell.wanted, cell.got, cell.shortfall, cell.calls) == ("L1", 2, 2, 0, 2)
+
+
+def test_a_cell_the_model_keeps_short_is_reported_after_bounded_retries(snap, units, plan):
+    empty = generator(snap, units, lambda prompt, schema: {"items": []} if "Level L3 (" in prompt else None)
+    candidates, report = generate(snap, units, plan, empty, oversample=1.6)
+    assert not [c for c in candidates if c.level == "L3"]
+    l3_calls = [c for c in empty.calls if "Level L3" in c.prompt]
+    assert len(l3_calls) == 1 + MAX_TOP_UPS
+    [cell] = [c for c in report.cells if c.level == "L3"]
+    assert (cell.wanted, cell.got, cell.shortfall) == (2, 0, 2)
+    assert report.n_shortfall == 2
+    assert all(c.shortfall == 0 for c in report.cells if c.level != "L3")
+
+
+def test_a_large_l6a_cell_is_asked_in_bounded_batches(snap, units):
+    slots = [slot(f"test-{n:05d}", "L6", None, [], l6_kind="out_of_domain") for n in range(1, 61)]
+    big = SamplePlan(snapshot_id="2026-10-18-mini", seed=5, params={}, cells=[], slots=slots)
+    client = generator(snap, units)
+    candidates, report = generate(snap, units, big, client, oversample=1.6)
+    asked = [int(re.search(r"exactly (\d+) question", c.prompt).group(1)) for c in client.calls]
+    assert sum(asked) == 96 and max(asked) <= OOD_BATCH and len(asked) == math.ceil(96 / OOD_BATCH)
+    assert len({c.seed for c in client.calls}) == len(client.calls)  # same prompt, so each batch needs its own seed
+    assert len(candidates) == 96 and len({c.candidate_id for c in candidates}) == 96
+    assert report.cells[0].shortfall == 0
+
+
 def test_rerun_answers_from_the_cache_without_calling_the_api(snap, units, plan, tmp_path):
     fake = generator(snap, units)
-    first = generate(snap, units, plan, CachedClient(fake, tmp_path / "cache"), oversample=1.6)
+    first, _ = generate(snap, units, plan, CachedClient(fake, tmp_path / "cache"), oversample=1.6)
     n_calls = len(fake.calls)
     assert n_calls > 0
 
     cached = CachedClient(fake, tmp_path / "cache")
-    again = generate(snap, units, plan, cached, oversample=1.6)
+    again, _ = generate(snap, units, plan, cached, oversample=1.6)
     assert len(fake.calls) == n_calls and cached.misses == 0 and cached.hits == n_calls
     assert again == first
 

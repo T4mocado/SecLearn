@@ -149,6 +149,30 @@ def test_step_level_relabels_within_the_units_capability_or_rejects(snap, units)
     assert (step.n_rejected, step.n_relabelled) == (3, 2)
 
 
+def test_step_quote_rejects_a_quote_found_only_outside_the_candidates_units(snap, units):
+    # REAL_QUOTE is in the Cookies section (s02); a candidate written from Session ID Properties (s01) cannot cite it.
+    elsewhere = cand("elsewhere", unit_ids=[f"{SESS}#s01"])
+    own = cand("own", unit_ids=[f"{SESS}#s01"], quotes=[Quote(doc_key=SESS, quote="The session ID must be long enough")])
+    kept, report = run([elsewhere, own], snap, units)
+    assert rejected(report) == {"elsewhere": ("quote", "quote_outside_units")}
+    assert [c.candidate_id for c in kept] == ["own"]
+    [q] = candidates_to_questions(kept, snap, units)
+    by_unit = {u.unit_id: u for u in units}
+    s01 = by_unit[f"{SESS}#s01"]
+    assert s01.char_start <= q.gold_evidence[0].char_start < q.gold_evidence[0].char_end <= s01.char_end
+
+
+def test_step_level_relabels_l1_to_l3_only_on_a_unit_of_two_chunks(snap, units):
+    by_unit = {u.unit_id: u for u in units}
+    assert (by_unit[f"{SESS}#s01"].chunks, by_unit[f"{SESS}#s02"].chunks) == (1, 2)
+    one_chunk = cand("one-chunk", "Q one?", unit_ids=[f"{SESS}#s01"], quotes=[Quote(doc_key=SESS, quote="at least 128 bits (16 bytes)")])
+    two_chunks = cand("two-chunks", "Q two?")
+    j = judge([one_chunk, two_chunks], levels={"Q one?": "L3", "Q two?": "L3"})
+    kept, report = run([one_chunk, two_chunks], snap, units, j=j)
+    assert rejected(report) == {"one-chunk": ("level", "l3_needs_two_chunks")}
+    assert [(c.candidate_id, c.level) for c in kept] == [("two-chunks", "L3")]
+
+
 def test_step_self_reference_rejects_questions_that_do_not_stand_alone(snap, units):
     cands = [
         cand("doc", "Theo tài liệu này, thuộc tính Secure làm gì?"),
@@ -188,7 +212,7 @@ def test_step_l2_overlap_rejects_paraphrases_that_copy_the_document(snap, units)
 
 def test_kept_candidates_become_pending_questions_with_located_gold_spans(snap, units):
     kept, _ = run([cand("ok")], snap, units)
-    [q] = candidates_to_questions(kept, snap)
+    [q] = candidates_to_questions(kept, snap, units)
     assert (q.id, q.seed_id, q.review.status, q.strata.level, q.strata.answerable) == ("ok", "ok", "pending", "L1", True)
     assert q.strata.gold_source == "cheat_sheet"
     [span] = q.gold_evidence

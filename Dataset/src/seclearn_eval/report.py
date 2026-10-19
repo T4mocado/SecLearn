@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .schema import Estimate, ScoreReport, Stratum
+from .stats import ALPHA
 
 SCOPE_NAMES = {"macro": "macro (số chính)", "micro": "micro", "poststrat": "hậu phân tầng"}
 
@@ -17,16 +18,16 @@ class Table:
     note: str = ""
 
 
-def _f(x: float) -> str:
+def _num(x: float) -> str:
     return f"{x:.3f}"
 
 
 def _full(e: Estimate) -> str:
-    return f"{_f(e.mean)} ± {_f(e.se)} [{_f(e.ci_low)}, {_f(e.ci_high)}]"
+    return f"{_num(e.mean)} ± {_num(e.se)} [{_num(e.ci_low)}, {_num(e.ci_high)}]"
 
 
 def _short(e: Estimate) -> str:
-    return f"{_f(e.mean)} [{_f(e.ci_low)}, {_f(e.ci_high)}]"
+    return f"{_num(e.mean)} [{_num(e.ci_low)}, {_num(e.ci_high)}]"
 
 
 def tables(r: ScoreReport) -> list[Table]:
@@ -58,11 +59,11 @@ def tables(r: ScoreReport) -> list[Table]:
             [
                 c.metric,
                 c.key or SCOPE_NAMES.get(c.scope, c.scope),
-                _f(c.diff.mean),
-                _f(c.diff.se),
-                f"[{_f(c.diff.ci_low)}, {_f(c.diff.ci_high)}]",
-                _f(c.p_value),
-                _f(c.p_value_per_question) if c.p_value_per_question is not None else "",
+                _num(c.diff.mean),
+                _num(c.diff.se),
+                f"[{_num(c.diff.ci_low)}, {_num(c.diff.ci_high)}]",
+                _num(c.p_value),
+                _num(c.p_value_per_question) if c.p_value_per_question is not None else "",
             ]
             for c in r.comparisons
         ]
@@ -75,18 +76,35 @@ def tables(r: ScoreReport) -> list[Table]:
             )
         )
 
-    f = r.refusals
-    if f.measured:
-        rows = [[f"L6 {k}", str(e.n), _full(e)] for k, e in f.correct_refusal.items()]
-        if f.false_refusal is not None:
-            rows.append(["từ chối sai (câu trả lời được)", str(f.false_refusal.n), _full(f.false_refusal)])
+    if r.cluster_differences:
+        significant = [d for d in r.cluster_differences if d.p_adjusted < ALPHA]
+        n_pairs = len({(d.cluster_a, d.cluster_b) for d in r.cluster_differences})
+        rows = [
+            [d.metric, d.cluster_a, d.cluster_b, _num(d.diff.mean), _num(d.diff.se), _num(d.p_value), _num(d.p_adjusted)]
+            for d in significant
+        ] or [["(không cặp nào)", "", "", "", "", "", ""]]
+        out.append(
+            Table(
+                "Khác biệt giữa hai cụm có ý nghĩa thống kê",
+                ["độ đo", "cụm A", "cụm B", "hiệu A − B", "SE", "p", "p (Holm)"],
+                rows,
+                f"kiểm z trên SE theo cụm của hai cụm; {n_pairs} cặp cụm × {len(r.metrics)} độ đo, p hiệu chỉnh Holm "
+                f"trong từng độ đo; chỉ liệt kê cặp có p (Holm) < {ALPHA}, các cặp khác không kết luận được khác biệt",
+            )
+        )
+
+    refusals = r.refusals
+    if refusals.measured:
+        rows = [[f"L6 {k}", str(e.n), _full(e)] for k, e in refusals.correct_refusal.items()]
+        if refusals.false_refusal is not None:
+            rows.append(["từ chối sai (câu trả lời được)", str(refusals.false_refusal.n), _full(refusals.false_refusal)])
         out.append(Table("L6: từ chối (báo riêng)", ["", "số câu", "tỉ lệ"], rows))
     else:
         out.append(
             Table(
                 "L6: từ chối (báo riêng)",
                 ["", "số câu", "tỉ lệ"],
-                [["L6 từ chối đúng", str(f.l6_questions), "chưa đo"], ["từ chối sai", str(f.answerable_questions), "chưa đo"]],
+                [["L6 từ chối đúng", str(refusals.l6_questions), "chưa đo"], ["từ chối sai", str(refusals.answerable_questions), "chưa đo"]],
                 "cần answers.jsonl của bộ chạy SecLearn",
             )
         )

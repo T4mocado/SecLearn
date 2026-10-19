@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from collections import Counter
 from pathlib import Path
@@ -22,7 +21,9 @@ from .io import (
     read_run,
     write_json,
     write_jsonl,
+    write_plain_json,
     write_questions,
+    write_text,
 )
 from .llm import CachedClient, LLMError, make_clients
 from .plan import PlanParams, build_plan, plan_table
@@ -49,6 +50,15 @@ PLANNED = {
     "qrels": "08",
     "card": "11",
 }
+
+
+#: Where `units` writes by default, inside the snapshot directory; every `--units` defaults to it.
+UNITS_FILE = "units.jsonl"
+
+
+def _units_file(args: argparse.Namespace) -> Path:
+    """`--units`, or the units file `units` writes next to the snapshot."""
+    return args.units or args.snapshot / UNITS_FILE
 
 
 def _snapshot(args: argparse.Namespace) -> int:
@@ -102,12 +112,13 @@ def _score(args: argparse.Namespace) -> int:
     from .score import MIN_GRADE, ScoreError, ScoreInputs, score
 
     _, questions = read_questions(args.questions)
-    answers_file = args.run / "answers.jsonl"
+    run_dir: Path = args.run_dir
+    answers_file = run_dir / "answers.jsonl"
     inputs = ScoreInputs(
-        run_id=args.run.name,
+        run_id=run_dir.name,
         questions=questions,
         qrels=read_qrels(args.qrels),
-        run=read_run(args.run / "run.trec"),
+        run=read_run(run_dir / "run.trec"),
         questions_file=args.questions.as_posix(),
         qrels_file=args.qrels.as_posix(),
         baseline_id=args.baseline.name if args.baseline else None,
@@ -121,7 +132,7 @@ def _score(args: argparse.Namespace) -> int:
     except ScoreError as err:
         print(f"score: {err}", file=sys.stderr)
         return 1
-    out = args.out or args.run / "scores.json"
+    out = args.out or run_dir / "scores.json"
     write_json(out, report)
     micro = next(s for s in report.strata if s.scope == "micro").estimates
     macro = next(s for s in report.strata if s.scope == "macro").estimates
@@ -136,10 +147,9 @@ def _report(args: argparse.Namespace) -> int:
 
     report = read_json(args.scores, ScoreReport)
     stem = args.out or args.scores.with_suffix("")
-    stem.parent.mkdir(parents=True, exist_ok=True)
     md, tex = stem.with_suffix(".md"), stem.with_suffix(".tex")
-    md.write_text(render_markdown(report), encoding="utf-8", newline="\n")
-    tex.write_text(render_latex(report), encoding="utf-8", newline="\n")
+    write_text(md, render_markdown(report))
+    write_text(tex, render_latex(report))
     print(f"{md}, {tex}")
     return 0
 
@@ -161,7 +171,7 @@ def _clusters(args: argparse.Namespace) -> int:
 def _units(args: argparse.Namespace) -> int:
     snap = load_snapshot(args.snapshot)
     units, warnings = build_units(snap, read_json(args.clusters, ClusterMap))
-    out = args.out or args.snapshot / "units.jsonl"
+    out = args.out or args.snapshot / UNITS_FILE
     write_jsonl(out, units)
     for w in warnings:
         print(f"warning: {w}")
@@ -172,7 +182,7 @@ def _units(args: argparse.Namespace) -> int:
 
 def _plan(args: argparse.Namespace) -> int:
     snap = load_snapshot(args.snapshot)
-    units = read_jsonl(args.units or args.snapshot / "units.jsonl", Unit)
+    units = read_jsonl(_units_file(args), Unit)
     params = PlanParams(
         seed=args.seed,
         test_answerable=args.test_answerable,
@@ -184,7 +194,7 @@ def _plan(args: argparse.Namespace) -> int:
     write_json(args.out, plan)
     tables = f"{plan_table(plan, 'test')}\n\n{plan_table(plan, 'dev')}\n"
     header = f"# Sample plan {snap.snapshot_id}, seed {plan.seed}\n\n"
-    args.out.with_suffix(".md").write_text(header + tables, encoding="utf-8", newline="\n")
+    write_text(args.out.with_suffix(".md"), header + tables)
     print(tables)
     print(f"{len(plan.slots)} slots → {args.out} (tables: {args.out.with_suffix('.md')})")
     return 0
@@ -203,21 +213,28 @@ def _cache_line(*clients: object) -> str:
 
 def _generate(args: argparse.Namespace) -> int:
     snap = load_snapshot(args.snapshot)
-    units = read_jsonl(args.units or args.snapshot / "units.jsonl", Unit)
+    units = read_jsonl(_units_file(args), Unit)
     plan = read_json(args.plan, SamplePlan)
     config = read_json(args.config, LLMConfig)
     client = _clients(args, config)["generator"]
-    candidates = generate(snap, units, plan, client, oversample=config.oversample)
+    candidates, report = generate(snap, units, plan, client, oversample=config.oversample)
     write_jsonl(args.out, candidates)
+    report_file = args.report or args.out.with_name("generate-report.json")
+    write_json(report_file, report)
     per_level = Counter(f"{c.split}/{c.level}" for c in candidates)
     print(f"{len(candidates)} candidates → {args.out}: " + ", ".join(f"{k} {n}" for k, n in sorted(per_level.items())))
+    for cell in report.cells:
+        if cell.shortfall:
+            where = f"{cell.split}/{cell.cluster or '-'}/{cell.level}" + (f"({cell.l6_kind})" if cell.l6_kind else "")
+            print(f"  short: {where} got {cell.got} of {cell.wanted} after {cell.calls} call(s)")
+    print(f"shortfall {report.n_shortfall} (report: {report_file})")
     print(_cache_line(client))
     return 0
 
 
 def _filter(args: argparse.Namespace) -> int:
     snap = load_snapshot(args.snapshot)
-    units = read_jsonl(args.units or args.snapshot / "units.jsonl", Unit)
+    units = read_jsonl(_units_file(args), Unit)
     candidates = read_jsonl(args.candidates, Candidate)
     config = read_json(args.config, LLMConfig)
     clients = _clients(args, config)
@@ -247,15 +264,14 @@ def _annotate_export(args: argparse.Namespace) -> int:
     _, questions = read_questions(args.questions)
     version = annotate.guideline_version(args.guideline)
     if args.kind == "review":
-        units = read_jsonl(args.units or args.snapshot / "units.jsonl", Unit)
+        units = read_jsonl(_units_file(args), Unit)
         tasks = annotate.review_tasks(questions, snap, units, version)
     else:
         if args.pool is None:
             print("--pool is required for --kind pool", file=sys.stderr)
             return 1
         tasks = annotate.pool_tasks(read_jsonl(args.pool, PoolEntry), questions, snap, version)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(tasks, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
+    write_plain_json(args.out, tasks)
     print(f"{len(tasks)} {args.kind} tasks (guideline {version}, snapshot {snap.snapshot_id}) → {args.out}")
     print(f"Import into the Label Studio project whose labeling config is annotation/{args.kind}.xml.")
     return 0
@@ -317,6 +333,7 @@ def build_parser() -> argparse.ArgumentParser:
     _llm_args(p)
     p.add_argument("--plan", type=Path, default=Path("questions/v1.0/sample-plan.json"))
     p.add_argument("--out", type=Path, default=Path("questions/v1.0/candidates.jsonl"))
+    p.add_argument("--report", type=Path, help="wanted / got / calls per cell; default: generate-report.json next to --out")
     p.set_defaults(run=_generate)
 
     p = sub.add_parser("filter", help="the 6 filter steps; kept candidates become pending questions")
@@ -343,7 +360,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", type=Path, required=True)
     p.set_defaults(run=_reanchor)
 
-    p = sub.add_parser("annotate", help="questions / pools ↔ Label Studio tasks and exports")
+    p = sub.add_parser("annotate", help="questions / pools <-> Label Studio tasks and exports")
     asub = p.add_subparsers(dest="direction", required=True)
     e = asub.add_parser("export", help="Label Studio tasks to import into a project")
     e.add_argument("--kind", choices=["review", "pool"], default="review")
@@ -367,17 +384,17 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("score", help="retrieval scores of a run on the answerable questions, with cluster-adjusted error bars")
     p.add_argument("--questions", type=Path, required=True, help="question file (test.jsonl)")
     p.add_argument("--qrels", type=Path, required=True, help="qrels for the run's chunker_version")
-    p.add_argument("--run", type=Path, required=True, help="runs/<run_id>/ with run.trec (and answers.jsonl, if any)")
+    p.add_argument("--run", dest="run_dir", metavar="RUN", type=Path, required=True, help="runs/<run_id>/ with run.trec (and answers.jsonl, if any)")
     p.add_argument("--baseline", type=Path, help="runs/<run_id>/ to compare against, paired by question")
     p.add_argument("--units", type=Path, help="units.jsonl: corpus shares for the post-stratified score")
     p.add_argument("--min-grade", type=int, help="grade from which a chunk is relevant for hit / MRR / recall (default 2)")
     p.add_argument("--out", type=Path, help="default: <run>/scores.json")
-    p.set_defaults(run_cmd=_score)
+    p.set_defaults(run=_score)
 
     p = sub.add_parser("report", help="markdown and LaTeX tables from a scores.json")
     p.add_argument("--scores", type=Path, required=True)
     p.add_argument("--out", type=Path, help="output path without suffix (default: next to the scores file)")
-    p.set_defaults(run_cmd=_report)
+    p.set_defaults(run=_report)
 
     for name, ticket in PLANNED.items():
         p = sub.add_parser(name, help=f"not built yet (ticket {ticket})")
@@ -390,12 +407,19 @@ def _planned(name: str, ticket: str) -> int:
     return 2
 
 
+def _utf8_console() -> None:
+    """A Windows console or pipe defaults to cp1252, which cannot print Vietnamese or an arrow: write UTF-8 instead."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="backslashreplace")
+
+
 def main(argv: list[str] | None = None) -> int:
+    _utf8_console()
     args = build_parser().parse_args(argv)
-    # `score --run` is a path, so those subcommands keep their handler in `run_cmd`.
-    handler = getattr(args, "run_cmd", None) or args.run
     try:
-        return handler(args)
+        return args.run(args)
     except FormatError as err:
         print(f"format error: {err}", file=sys.stderr)
         return 1

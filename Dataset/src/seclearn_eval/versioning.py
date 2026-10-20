@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from itertools import pairwise
 from typing import Literal
 
 from .io import FormatError
@@ -44,7 +45,7 @@ def read_changelog(text: str) -> list[Release]:
         end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
         date = (m[2] or "").strip()
         out.append(Release(version=m[1], date=date if _DATE.match(date) else None, body=text[m.end() : end].strip()))
-    for newer, older in zip(out, out[1:]):
+    for newer, older in pairwise(out):
         if _parts(newer.version) <= _parts(older.version):
             raise FormatError(f"CHANGELOG: {newer.version} listed above {older.version}; newest must come first")
     _parts(out[-1].version)

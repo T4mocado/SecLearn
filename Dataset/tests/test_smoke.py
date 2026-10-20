@@ -5,12 +5,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from conftest import CANARY
 
 from seclearn_eval.check import CheckInputs, run_checks
 from seclearn_eval.cli import main
 from seclearn_eval.clusters import build_cluster_map
-from seclearn_eval.io import read_questions, write_jsonl
+from seclearn_eval.io import FormatError, read_questions, write_jsonl
 from seclearn_eval.smoke import Pick, convert_smoke, read_smoke
 from seclearn_eval.snapshot import load_snapshot
 from seclearn_eval.units import build_units
@@ -51,11 +52,11 @@ def setup(snap_dir: Path):
     snap = load_snapshot(snap_dir)
     cmap = build_cluster_map(snap.manifest)
     units, _ = build_units(snap, cmap)
-    return snap, cmap, units
+    return snap, units
 
 
 def test_an_exact_quote_becomes_a_span_on_the_snapshot_markdown(snap_dir):
-    snap, cmap, units = setup(snap_dir)
+    snap, units = setup(snap_dir)
     quote = "The session ID length must be at least 128 bits (16 bytes)."
     [q], unmapped = convert_smoke([raw("seclearn-smoke-a01", "L1", [ev(SESSION, quote)])], snap, units, {})
     assert unmapped == []
@@ -70,7 +71,7 @@ def test_an_exact_quote_becomes_a_span_on_the_snapshot_markdown(snap_dir):
 
 
 def test_pdftotext_quote_marks_and_line_wraps_still_match(snap_dir):
-    snap, cmap, units = setup(snap_dir)
+    snap, units = setup(snap_dir)
     # Curly apostrophe and a line break where the markdown has a straight one and a space.
     quote = "causes a user’s web\nbrowser to perform an unwanted action"
     [q], unmapped = convert_smoke([raw("seclearn-smoke-a02", "L1", [ev(CSRF, quote)])], snap, units, {})
@@ -82,7 +83,7 @@ def test_pdftotext_quote_marks_and_line_wraps_still_match(snap_dir):
 
 
 def test_a_quote_found_several_times_needs_a_pick_or_is_reported(snap_dir):
-    snap, cmap, units = setup(snap_dir)
+    snap, units = setup(snap_dir)
     quote = "The session ID"  # 4 times in the Session ID Properties section
     record = raw("seclearn-smoke-b01", "L1", [ev(SESSION, quote), ev(SESSION, "at least 64 bits of entropy")])
 
@@ -100,7 +101,7 @@ def test_a_quote_found_several_times_needs_a_pick_or_is_reported(snap_dir):
 
 
 def test_a_quote_or_document_not_in_the_snapshot_is_reported(snap_dir):
-    snap, cmap, units = setup(snap_dir)
+    snap, units = setup(snap_dir)
     record = raw("seclearn-smoke-b02", "L1", [ev(SESSION, "not in the cheat sheet"), ev("NIST_CSWP_29", "anything")])
     [q], unmapped = convert_smoke([record], snap, units, {})
     assert q.gold_evidence == []
@@ -111,7 +112,7 @@ def test_a_quote_or_document_not_in_the_snapshot_is_reported(snap_dir):
 
 
 def test_l6_kinds_cells_and_turns_carry_over(snap_dir):
-    snap, cmap, units = setup(snap_dir)
+    snap, units = setup(snap_dir)
     ood = raw("seclearn-smoke-a16", "L6", [], type="unanswerable", unanswerable_reason="out_of_domain", reference_answer="Từ chối.")
     premise = raw(
         "seclearn-smoke-a19",
@@ -140,7 +141,7 @@ def test_l6_kinds_cells_and_turns_carry_over(snap_dir):
 
 
 def test_cli_writes_one_file_per_split_that_passes_check(snap_dir, tmp_path):
-    snap, cmap, units = setup(snap_dir)
+    snap, units = setup(snap_dir)
     source = tmp_path / "source" / "set.jsonl"
     source.parent.mkdir()
     records = [
@@ -170,9 +171,5 @@ def test_cli_writes_one_file_per_split_that_passes_check(snap_dir, tmp_path):
 def test_read_smoke_rejects_an_unknown_field(tmp_path):
     path = tmp_path / "set.jsonl"
     path.write_text(json.dumps(raw("x", "L1", []) | {"surprise": 1}) + "\n", encoding="utf-8")
-    try:
+    with pytest.raises(FormatError, match="surprise"):
         read_smoke(path)
-    except Exception as err:  # noqa: BLE001
-        assert "surprise" in str(err)
-    else:
-        raise AssertionError("an unknown field must not pass")

@@ -176,8 +176,9 @@ theo câu của ranx chỉ là cột phụ (lựa chọn A).
 
 **Số kiểm độ nhạy** (ticket 13, không đổi số chính hay khoảng tin cậy chính): SE tính lại khi (1) gộp nhóm hai tài
 liệu của mỗi câu L4 / L5 (union-find, áp cho micro, macro, từng cụm, từng mức) và (2) nhóm = cụm chủ đề (10 nhóm, chỉ
-cho micro, vì với từng cụm và macro cách này suy biến). Báo kèm số nhóm và tỉ số SE thay thế / SE chính. Ngoài ra báo
-độ nhạy của macro với một cách phân cụm khác.
+cho micro, vì với từng cụm và macro cách này suy biến). Báo kèm số nhóm và tỉ số SE thay thế / SE chính (`se_sensitivity`
+trong `scores.json`, bảng "Kiểm độ nhạy của sai số" của `report`); không tính cho hậu phân tầng và so sánh ghép cặp.
+Ngoài ra báo độ nhạy của macro với một cách phân cụm khác.
 
 **Phần trả lời** (định nghĩa, chạy khi có bộ chạy SecLearn): đúng đáp án 0-2, trung thành với nguồn, trích dẫn đúng,
 từ chối đúng / sai; K = 3 lần chạy mỗi câu.

@@ -48,7 +48,6 @@ PLANNED = {
     "pool": "08",
     "judge": "08",
     "qrels": "08",
-    "card": "11",
 }
 
 
@@ -151,6 +150,37 @@ def _report(args: argparse.Namespace) -> int:
     write_text(md, render_markdown(report))
     write_text(tex, render_latex(report))
     print(f"{md}, {tex}")
+    return 0
+
+
+def _smoke(args: argparse.Namespace) -> int:
+    from .smoke import convert_smoke, read_picks, read_smoke
+
+    snap = load_snapshot(args.snapshot)
+    records = [r for path in args.source for r in read_smoke(path)]
+    default_picks = Path("questions/smoke/anchor-picks.json")
+    picks = read_picks(args.picks) if args.picks else read_picks(default_picks) if default_picks.is_file() else {}
+    questions, unmapped = convert_smoke(records, snap, read_jsonl(_units_file(args), Unit), picks)
+    header = QuestionFileHeader(canary=snap.manifest.canary, eval_version=args.eval_version, snapshot_id=snap.snapshot_id)
+    for split in ("dev", "test"):
+        out = args.out_dir / f"{split}.jsonl"
+        write_questions(out, header, [q for q in questions if q.split == split])
+    spans = sum(len(q.gold_evidence) for q in questions)
+    print(f"{len(questions)} smoke questions, {spans} gold spans → {args.out_dir}/dev.jsonl, test.jsonl")
+    for line in unmapped:
+        print(f"  unmapped: {line}")
+    print(f"{len(unmapped)} quote(s) not mapped" if unmapped else "every quote mapped")
+    return 1 if unmapped else 0
+
+
+def _card(args: argparse.Namespace) -> int:
+    from .card import CardInputs, render_card
+
+    text = render_card(CardInputs(snapshot=args.snapshot, root=args.root, version=args.version))
+    out = args.out or args.root / "CARD.md"
+    write_text(out, text)
+    missing = text.count("chưa có")
+    print(f"card → {out}" + (f" ({missing} part(s) still 'chưa có')" if missing else ""))
     return 0
 
 
@@ -360,6 +390,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", type=Path, required=True)
     p.set_defaults(run=_reanchor)
 
+    p = sub.add_parser("smoke", help="the app's smoke set (data/eval/set-*.jsonl) as gold spans on a snapshot")
+    p.add_argument("--snapshot", type=Path, required=True)
+    p.add_argument("--source", type=Path, nargs="+", default=[Path("questions/smoke/source/set-a.jsonl"), Path("questions/smoke/source/set-b.jsonl")])
+    p.add_argument("--picks", type=Path, help="which match to keep for a quote found several times (default: questions/smoke/anchor-picks.json, if there)")
+    p.add_argument("--units", type=Path, help="default: <snapshot>/units.jsonl")
+    p.add_argument("--out-dir", type=Path, default=Path("questions/smoke"))
+    p.add_argument("--eval-version", required=True, help="current version in CHANGELOG.md")
+    p.set_defaults(run=_smoke)
+
     p = sub.add_parser("annotate", help="questions / pools <-> Label Studio tasks and exports")
     asub = p.add_subparsers(dest="direction", required=True)
     e = asub.add_parser("export", help="Label Studio tasks to import into a project")
@@ -395,6 +434,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--scores", type=Path, required=True)
     p.add_argument("--out", type=Path, help="output path without suffix (default: next to the scores file)")
     p.set_defaults(run=_report)
+
+    p = sub.add_parser("card", help="dataset card (CARD.md) from the eval set's data files, with the pre-registered reporting")
+    p.add_argument("--snapshot", type=Path, required=True)
+    p.add_argument("--root", type=Path, default=Path("."), help="eval-set root holding CHANGELOG.md, questions/, judgments/")
+    p.add_argument("--version", default="v1.0", help="questions/<version>/ of the gold set")
+    p.add_argument("--out", type=Path, help="default: <root>/CARD.md")
+    p.set_defaults(run=_card)
 
     for name, ticket in PLANNED.items():
         p = sub.add_parser(name, help=f"not built yet (ticket {ticket})")

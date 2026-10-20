@@ -1,0 +1,26 @@
+{
+  "seclearn-smoke-a10/0": {
+    "occurrence": 2,
+    "why": "cell 0 = TOTP: the 2nd 'Susceptible to phishing (although short-lived).' is under Software OTP Tokens (after 'Not all users have mobile devices to use with TOTP'); the 1st is under Hardware OTP Tokens"
+  },
+  "seclearn-smoke-a10/1": {
+    "occurrence": 3,
+    "why": "cell 1 = SMS OTP: the 3rd 'Susceptible to phishing.' is in the SMS / phone cons (after 'Susceptible to SIM swapping attacks'); the others are under Passwords, Security Questions and Email"
+  },
+  "seclearn-smoke-b08/2": {
+    "occurrence": 1,
+    "why": "the question asks what must not be logged: the 1st is in the list of data not to record; the 2nd is in 'may need special treatment before recording'"
+  },
+  "seclearn-smoke-b09/0": {
+    "occurrence": "all",
+    "why": "the same instruction is stated in the quick-reference list and again under 'Forgot Password Request', with the same meaning"
+  },
+  "seclearn-smoke-b11/2": {
+    "occurrence": 1,
+    "why": "the 1st is the list of primary defenses (Options 1-4 together); the 2nd is the heading 'Defense Option 3: Allow-list Input Validation'"
+  },
+  "seclearn-smoke-b15/1": {
+    "occurrence": "all",
+    "why": "same as seclearn-smoke-b09/0: one instruction stated twice with the same meaning"
+  }
+}

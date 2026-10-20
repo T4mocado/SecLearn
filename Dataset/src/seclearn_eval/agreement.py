@@ -76,16 +76,16 @@ def _false_negatives(pool: list[PoolEntry], human: dict[tuple[str, str], int]) -
 
 def stability(labels: list[Label], min_days: int = STABILITY_MIN_DAYS) -> Stability:
     graded: dict[tuple[str, str, str], list[Label]] = defaultdict(list)
-    for l in labels:
-        if l.task == "pool" and l.grade is not None and l.chunk_key:
-            graded[(l.question_id, l.chunk_key, l.annotator)].append(l)
+    for lab in labels:
+        if lab.task == "pool" and lab.grade is not None and lab.chunk_key:
+            graded[(lab.question_id, lab.chunk_key, lab.annotator)].append(lab)
     pairs: list[tuple[int, int]] = []
     gaps: list[float] = []
     too_close = 0
     for ls in graded.values():
         if len(ls) < 2:
             continue
-        ls.sort(key=lambda l: l.annotated_at)
+        ls.sort(key=lambda lab: lab.annotated_at)
         first, last = ls[0], ls[-1]
         gap = (last.annotated_at - first.annotated_at).total_seconds() / 86400
         if gap < min_days:
@@ -105,7 +105,7 @@ def stability(labels: list[Label], min_days: int = STABILITY_MIN_DAYS) -> Stabil
 
 
 def agreement_report(pool: list[PoolEntry], labels: list[Label]) -> AgreementReport:
-    human = {k: l.grade for k, l in latest_pool_labels(labels).items()}
+    human = {k: lab.grade for k, lab in latest_pool_labels(labels).items()}
     judged = [(e, human[(e.question_id, e.chunk_key)]) for e in pool if e.llm_grade is not None and (e.question_id, e.chunk_key) in human]
     pairs = [(e.llm_grade, h) for e, h in judged]
     fn = _false_negatives(pool, human)  # type: ignore[arg-type]

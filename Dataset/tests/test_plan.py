@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import os
 import random
 import subprocess
@@ -15,8 +16,8 @@ from conftest import MINI
 from seclearn_eval.clusters import UnmappedDocuments, build_cluster_map
 from seclearn_eval.plan import (
     PlanError,
-    _unit_counts,
     PlanParams,
+    _unit_counts,
     build_plan,
     capped_shares,
     floored_quotas,
@@ -68,7 +69,7 @@ def test_units_of_the_mini_snapshot():
     # Units tile each document: no gap, no overlap.
     for doc in snap.manifest.documents:
         mine = sorted((u for u in units if u.doc_key == doc.doc_key), key=lambda u: u.char_start)
-        assert all(a.char_end == b.char_start for a, b in zip(mine, mine[1:]))
+        assert all(a.char_end == b.char_start for a, b in itertools.pairwise(mine))
 
 
 def test_cheat_sheet_sections_merge_generic_and_empty_headings():

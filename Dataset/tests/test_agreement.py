@@ -11,14 +11,14 @@ Stability, four chunks graded twice (first, again): (3,3) (2,1) (0,0) (1,1).
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from seclearn_eval.agreement import agreement_report, render_agreement, weighted_kappa
 from seclearn_eval.schema import Label, PoolEntry
 
-T0 = datetime(2026, 11, 1, tzinfo=timezone.utc)
+T0 = datetime(2026, 11, 1, tzinfo=UTC)
 PAIRS = [(0, 0), (1, 1), (2, 2), (3, 3), (0, 1), (2, 3)]
 
 

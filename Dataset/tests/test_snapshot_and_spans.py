@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from conftest import question, span
 
-from seclearn_eval.cli import main
+from seclearn_eval.cli import PLANNED, main
 from seclearn_eval.io import FormatError, read_qrels, read_questions, read_run, write_qrels, write_run
 from seclearn_eval.reanchor import reanchor
 from seclearn_eval.schema import Chunk, GoldSpan, QrelLine, RunLine
@@ -32,7 +32,7 @@ def test_mini_snapshot_loads_clean(snap_dir):
 
 
 def _without_headings(text: str) -> str:
-    return normalize(" ".join(l for l in text.splitlines() if not re.match(r"#{1,6}\s", l.strip())))
+    return normalize(" ".join(line for line in text.splitlines() if not re.match(r"#{1,6}\s", line.strip())))
 
 
 def test_chunk_offsets_point_at_their_body(snap_dir):
@@ -100,7 +100,7 @@ def test_trec_round_trip(tmp_path):
     write_run(tmp_path / "a.run", run)
     assert read_run(tmp_path / "a.run") == run
     (tmp_path / "bad.qrels").write_text("q 0 c\n", encoding="utf-8")
-    with pytest.raises(FormatError, match="bad.qrels:1"):
+    with pytest.raises(FormatError, match=r"bad\.qrels:1"):
         read_qrels(tmp_path / "bad.qrels")
 
 
@@ -115,4 +115,5 @@ def test_cli(eval_files, capsys, tmp_path: Path):
     assert len(read_questions(out)[1]) == 2
     (eval_files["snapshot"] / "md" / "wstg-v4.2.md").write_text("changed", encoding="utf-8")
     assert main(args) == 1
-    assert main(["card"]) == 2
+    # Every pipeline step of the spec is built: nothing is left answering "not built yet".
+    assert PLANNED == {}

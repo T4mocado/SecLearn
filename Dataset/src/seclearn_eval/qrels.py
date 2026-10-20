@@ -34,8 +34,8 @@ def gradable(q: Question) -> bool:
 def latest_pool_labels(labels: list[Label]) -> dict[tuple[str, str], Label]:
     """(question_id, chunk_key) → the latest graded pool label."""
     out: dict[tuple[str, str], Label] = {}
-    for l in sorted((l for l in labels if l.task == "pool" and l.grade is not None and l.chunk_key), key=lambda l: l.annotated_at):
-        out[(l.question_id, l.chunk_key)] = l
+    for lab in sorted((lab for lab in labels if lab.task == "pool" and lab.grade is not None and lab.chunk_key), key=lambda lab: lab.annotated_at):
+        out[(lab.question_id, lab.chunk_key)] = lab
     return out
 
 
@@ -58,7 +58,7 @@ def build_qrels(questions: list[Question], snap: Snapshot, pool: list[PoolEntry]
     if other:
         warnings.append(f"pool entries on chunker {', '.join(other)}, not {snap.chunker_version}: their labels are not applied")
     pooled = {(e.question_id, e.chunk_key): e for e in pool if e.chunker_version == snap.chunker_version}
-    human = {k: l for k, l in latest_pool_labels(labels).items() if k in pooled}
+    human = {k: lab for k, lab in latest_pool_labels(labels).items() if k in pooled}
 
     out: list[QrelLine] = []
     from_labels = 0

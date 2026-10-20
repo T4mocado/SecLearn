@@ -8,7 +8,7 @@ Chunks of the mini snapshot used here (body offsets, sentence-v2):
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from conftest import CANARY, MINI, question, span
@@ -20,7 +20,7 @@ from seclearn_eval.schema import GoldSpan, Label, PoolEntry, QrelLine, QuestionF
 from seclearn_eval.snapshot import load_snapshot
 
 SESS = "Session_Management_Cheat_Sheet"
-T0 = datetime(2026, 11, 1, tzinfo=timezone.utc)
+T0 = datetime(2026, 11, 1, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def raw_span(snap, start: int, end: int, grade: int = 2) -> GoldSpan:
 
 
 def lines(result) -> set[tuple[str, str, int]]:
-    return {(l.qid, l.chunk_key, l.grade) for l in result.lines}
+    return {(lab.qid, lab.chunk_key, lab.grade) for lab in result.lines}
 
 
 def pool_label(qid: str, chunk: str, grade: int, at: datetime = T0) -> Label:
@@ -126,7 +126,7 @@ def test_the_command_writes_trec_qrels_and_a_provenance_file_and_is_reproducible
     assert run_qrels(snap_dir, files, out) == 0
     first = out.read_bytes()
     assert first == f"q1 0 {SESS}#1 2\nq1 0 {SESS}#2 3\n".encode()
-    assert [l.grade for l in read_qrels(out)] == [2, 3]
+    assert [lab.grade for lab in read_qrels(out)] == [2, 3]
     meta = out.with_name(out.name + ".meta.json").read_text(encoding="utf-8")
     assert '"chunker_version": "sentence-v2"' in meta and "test.jsonl" in meta
     assert run_qrels(snap_dir, files, out) == 0

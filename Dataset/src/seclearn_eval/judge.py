@@ -66,22 +66,22 @@ def expand_gold(questions: list[Question], labels: list[Label], snap: Snapshot) 
 
     The span is the chunk's body on the markdown, so it outlives the chunker; its grade is the human's."""
     chunks = {c.chunk_key: c for c in snap.chunks}
-    human = [l for l in latest_pool_labels(labels).values() if l.snapshot_id == snap.snapshot_id and (l.grade or 0) >= EXPAND_MIN_GRADE]
+    human = [lab for lab in latest_pool_labels(labels).values() if lab.snapshot_id == snap.snapshot_id and (lab.grade or 0) >= EXPAND_MIN_GRADE]
     out: list[Question] = []
     added = 0
     for q in questions:
         spans = list(q.gold_evidence)
         if gradable(q):
-            for l in sorted((l for l in human if l.question_id == q.id), key=lambda l: l.chunk_key or ""):
-                c = chunks.get(l.chunk_key or "")
+            for lab in sorted((lab for lab in human if lab.question_id == q.id), key=lambda lab: lab.chunk_key or ""):
+                c = chunks.get(lab.chunk_key or "")
                 if c is None:
-                    raise FormatError(f"{q.id}: labelled chunk {l.chunk_key} not in snapshot {snap.snapshot_id}")
+                    raise FormatError(f"{q.id}: labelled chunk {lab.chunk_key} not in snapshot {snap.snapshot_id}")
                 if any(s.doc_key == c.doc_key and overlap(s, c) > 0 for s in spans):
                     continue
                 doc = snap.document(c.doc_key)
                 md = snap.markdown[c.doc_key]
                 spans.append(GoldSpan(doc_key=c.doc_key, md_sha256=doc.md_sha256, char_start=c.char_start,  # type: ignore[union-attr]
-                                      char_end=c.char_end, quote=md[c.char_start : c.char_end], grade=l.grade, source="pool"))
+                                      char_end=c.char_end, quote=md[c.char_start : c.char_end], grade=lab.grade, source="pool"))
                 added += 1
         out.append(q.model_copy(update={"gold_evidence": spans}) if len(spans) != len(q.gold_evidence) else q)
     return out, added

@@ -18,6 +18,7 @@ seclearn-eval = "seclearn_eval.cli:main"
 [dependency-groups]
 dev = [
     "pytest>=8.3",
+    "ruff>=0.17.1",
 ]
 retrieval = [
     "pyvi>=0.1.1",
@@ -33,3 +34,13 @@ packages = ["src/seclearn_eval"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py312"
+
+[tool.ruff.lint]
+# Errors, imports, likely bugs (B023: a closure reading a loop variable), modern syntax, ruff's own checks.
+select = ["E4", "E7", "E9", "F", "I", "B", "UP", "RUF"]
+# Vietnamese text and typographic dashes are intended, not look-alike characters.
+ignore = ["RUF001", "RUF002", "RUF003"]

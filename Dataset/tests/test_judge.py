@@ -4,7 +4,7 @@ reproducibly, and chunks the human graded 2-3 outside the gold become new gold s
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from conftest import CANARY, MINI, question, span
@@ -19,7 +19,7 @@ from seclearn_eval.snapshot import load_snapshot
 from seclearn_eval.spans import quote_at
 
 SESS = "Session_Management_Cheat_Sheet"
-T0 = datetime(2026, 11, 1, tzinfo=timezone.utc)
+T0 = datetime(2026, 11, 1, tzinfo=UTC)
 
 
 @pytest.fixture

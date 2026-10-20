@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import math
 import re
+from typing import ClassVar
 
 import pytest
 from conftest import CANARY, MINI, question, span
 
 from seclearn_eval.cli import main
-from seclearn_eval.io import read_jsonl, read_run, write_jsonl, write_questions
+from seclearn_eval.io import read_jsonl, read_run, write_questions
 from seclearn_eval.pool import build_pool
 from seclearn_eval.retrieval import BM25, DenseRetriever, EmbeddingCache, RerankRetriever, build_systems
 from seclearn_eval.schema import Chunk, PoolConfig, PoolEntry, QuestionFileHeader
@@ -33,7 +34,7 @@ def chunk(key: str, text: str) -> Chunk:
 class BagOfWords:
     """A fake encoder: one dimension per vocabulary word; counts what it was asked to encode."""
 
-    VOCAB = ["session", "cookie", "secure", "httponly", "samesite", "token", "csrf", "bits", "entropy", "phiên", "bảo"]
+    VOCAB: ClassVar[list[str]] = ["session", "cookie", "secure", "httponly", "samesite", "token", "csrf", "bits", "entropy", "phiên", "bảo"]
 
     def __init__(self, model: str = "fake-embed"):
         self.model = model

@@ -571,6 +571,25 @@ class ClusterDifference(Record):
     p_adjusted: float
 
 
+class SeSensitivity(Record):
+    """The clustered SE of one scope recomputed under a more cautious grouping (ticket 13), next to the main one.
+
+    `pair_merged`: an L4 / L5 question joins the groups of both its documents (union-find, chaining within a cluster).
+    `topic_cluster`: every topic cluster is one group; micro only, since per cluster or for macro it leaves one group.
+    The main numbers and intervals keep the main grouping (first unit); this only says how much the SE could move.
+    """
+
+    grouping: Literal["pair_merged", "topic_cluster"]
+    scope: ScopeName
+    key: str | None = None
+    n_groups: int
+    n_groups_main: int
+    #: Metric → SE under this grouping.
+    se: dict[str, float]
+    #: Metric → SE under this grouping / main SE; None when the main SE is 0.
+    ratio: dict[str, float | None]
+
+
 class Refusals(Record):
     """L6, kept apart from every answerable score: correct refusals on L6, false refusals on answerable questions."""
 
@@ -594,6 +613,8 @@ class ScoreReport(Record):
     #: Topic cluster weights used for the post-stratified score (share of the corpus' sampleable chunks).
     poststrat_weights: dict[str, float] = {}
     strata: list[Stratum]
+    #: The SEs of the strata above under the sensitivity groupings (micro, macro, cluster, level).
+    se_sensitivity: list[SeSensitivity] = []
     comparisons: list[Comparison] = []
     #: Every pair of topic clusters, every metric.
     cluster_differences: list[ClusterDifference] = []

@@ -115,4 +115,4 @@ def test_cli(eval_files, capsys, tmp_path: Path):
     assert len(read_questions(out)[1]) == 2
     (eval_files["snapshot"] / "md" / "wstg-v4.2.md").write_text("changed", encoding="utf-8")
     assert main(args) == 1
-    assert main(["card"]) == 2
+    assert main(["pool"]) == 2

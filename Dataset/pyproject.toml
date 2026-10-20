@@ -7,6 +7,7 @@ dependencies = [
     "anthropic>=0.70",
     "google-genai>=1.30",
     "ir-measures>=0.4.3",
+    "numpy>=2.0",
     "pydantic>=2.9,<3",
     "ranx>=0.3.21",
 ]
@@ -17,6 +18,10 @@ seclearn-eval = "seclearn_eval.cli:main"
 [dependency-groups]
 dev = [
     "pytest>=8.3",
+]
+retrieval = [
+    "pyvi>=0.1.1",
+    "sentence-transformers>=3.0",
 ]
 
 [build-system]

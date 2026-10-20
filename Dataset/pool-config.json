@@ -1,0 +1,21 @@
+{
+  "depth": 10,
+  "vi_embedder": {
+    "model": "bkai-foundation-models/vietnamese-bi-encoder",
+    "revision": null,
+    "segment": "pyvi",
+    "max_seq_length": 256
+  },
+  "reranker": {
+    "model": "BAAI/bge-reranker-v2-m3",
+    "revision": null,
+    "max_length": 512,
+    "candidates": 20
+  },
+  "multilingual": {
+    "model": "BAAI/bge-m3",
+    "revision": null,
+    "segment": null,
+    "max_seq_length": 512
+  }
+}

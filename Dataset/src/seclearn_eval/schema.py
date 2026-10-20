@@ -165,6 +165,8 @@ class GoldSpan(Span):
     grade: int = Field(default=2, ge=0, le=3)
     #: L6(c): the span refutes the question's premise instead of answering it.
     refutes: bool = False
+    #: "pool": added by `judge expand` from a chunk the annotator graded 2-3 outside the gold (the span is the chunk's body).
+    source: Literal["review", "pool"] = "review"
 
 
 class Strata(Record):
@@ -251,11 +253,70 @@ class Label(Record):
 
 
 class PoolEntry(Record):
+    """One pooled (question, chunk): which systems ranked it in their top-k, and the LLM judge's grade once `judge grade` ran."""
+
     question_id: str
     chunk_key: str
     systems: list[str]
     covers_gold: bool
     llm_grade: int | None = Field(default=None, ge=0, le=3)
+    #: Chunk keys mean something only for one chunker: labels on this pool apply to qrels of this version alone.
+    chunker_version: str | None = None
+    #: Model and prompt version behind `llm_grade`.
+    llm_model: str | None = None
+    llm_prompt_version: str | None = None
+    #: Picked for the human (`judge grade`): every LLM grade ≥ 1, plus the fixed-seed sample of LLM zeros.
+    for_human: bool = False
+
+
+class FalseNegatives(Record):
+    """Gemini's misses, estimated from the fixed-seed sample of its zeros that the human graded."""
+
+    #: Pool chunks Gemini graded 0.
+    n_llm_zero: int
+    #: Of those, sampled and graded by the human.
+    n_sampled: int
+    #: Sampled zeros the human graded ≥ 2.
+    n_missed: int
+    rate: float | None
+    ci_low: float | None
+    ci_high: float | None
+    #: rate × n_llm_zero: relevant chunks the pool's qrels likely miss.
+    est_missed: float | None
+
+
+class Stability(Record):
+    """Intra-annotator agreement: the first and the latest grade of a chunk graded twice, at least `min_days` apart."""
+
+    min_days: int
+    n_pairs: int
+    #: Chunks graded twice but sooner than `min_days`: left out.
+    n_too_close: int
+    min_gap_days: float | None
+    exact: float | None
+    kappa_linear: float | None
+    kappa_quadratic: float | None
+
+
+class AgreementReport(Record):
+    """Gemini × human on the pool chunks the human graded (spec user story 56), and stability (user story 50)."""
+
+    judge_models: list[str]
+    prompt_versions: list[str]
+    n_judged: int
+    exact: float | None
+    #: Human grade → share of those chunks Gemini graded the same.
+    per_level: dict[str, float]
+    kappa_linear: float | None
+    kappa_quadratic: float | None
+    #: Quadratic κ with each sampled Gemini zero weighted n_llm_zero / n_sampled, as if the whole pool were graded.
+    kappa_quadratic_pool_weighted: float | None
+    #: Rows Gemini 0-3, columns human 0-3.
+    confusion: list[list[int]]
+    #: Rows / columns [not relevant (< 2), relevant (≥ 2)].
+    confusion_binary: list[list[int]]
+    false_negatives: FalseNegatives
+    stability: Stability
 
 
 class QrelLine(Record):
@@ -264,6 +325,26 @@ class QrelLine(Record):
     qid: str
     chunk_key: str
     grade: int = Field(ge=0)
+
+
+class InputFile(Record):
+    path: str
+    sha256: str
+
+
+class QrelsMeta(Record):
+    """`<qrels>.meta.json`: what a qrels file was generated from, and its own hash, so a hand edit is caught."""
+
+    generated_by: str
+    snapshot_id: str
+    chunker_version: str
+    #: "questions", "pool", "labels" → the file read and its sha256.
+    inputs: dict[str, InputFile]
+    qrels_sha256: str
+    n_questions: int
+    n_lines: int
+    #: Lines whose grade came from a human pool label.
+    n_from_labels: int
 
 
 class RunLine(Record):
@@ -337,6 +418,37 @@ class LLMConfig(Record):
     dedup_cosine: float = Field(default=0.9, gt=0, le=1)
     #: An L2 question with at least this share of its content words in its evidence is too close to the document's wording.
     l2_max_overlap: float = Field(default=0.6, gt=0, le=1)
+
+
+class EncoderRef(Record):
+    """A sentence-embedding model from the Hugging Face hub, pinned by id (and by commit, once `revision` is set)."""
+
+    model: str
+    revision: str | None = None
+    #: "pyvi": Vietnamese word segmentation of every text before encoding, as the app's embed server does for BKAI.
+    segment: Literal["pyvi"] | None = None
+    max_seq_length: int = Field(default=512, gt=0)
+
+
+class RerankerRef(Record):
+    model: str
+    revision: str | None = None
+    max_length: int = Field(default=512, gt=0)
+    #: Candidates of the base system the cross-encoder reorders (the app's RAG_CANDIDATES).
+    candidates: int = Field(default=20, gt=0)
+
+
+class PoolConfig(Record):
+    """`pool-config.json`: the five pooling systems' models (spec user story 52) and the pool depth."""
+
+    #: Each system's top-k that enters the pool.
+    depth: int = Field(default=10, gt=0)
+    #: The app's Vietnamese embedding model (its EMBED_MODEL), with the app's preprocessing.
+    vi_embedder: EncoderRef
+    #: The app's cross-encoder (its RERANK_MODEL), over `vi_embedder`'s candidates.
+    reranker: RerankerRef
+    #: bge-m3, dense vectors, run on the Vietnamese question and on question_en.
+    multilingual: EncoderRef
 
 
 class Quote(Record):

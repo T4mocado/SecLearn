@@ -155,3 +155,56 @@ LEVEL_SCHEMA: dict[str, Any] = {
     "required": ["level"],
     "additionalProperties": False,
 }
+
+# --- Pool judge (Gemini), UMBRELA-style ------------------------------------------------------------
+
+#: UMBRELA's 0-3 relevance scale (Upadhyay et al. 2024, after TREC DL), with the steps written out (G-Eval's
+#: `evaluation_steps`) and every grade defined in words. Same scale as the "chấm pool" project (guideline, section 7).
+JUDGE_VERSION = "judge-umbrela-v1"
+
+SYSTEM_POOL_JUDGE = (
+    "You judge passages for the evaluation set of SecLearn, a Vietnamese assistant that answers web application "
+    "security questions from OWASP documents. You grade how well one passage answers one question. Answer strictly "
+    "in the JSON asked for."
+)
+
+
+def pool_judge_prompt(question: str, question_en: str, chunk: str) -> str:
+    return f"""Grade how relevant the passage is to the question, on the integer scale 0-3 below.
+
+Work through these steps in order, and write the first two down before you grade:
+1. Read the question (Vietnamese, with an English translation) and decide what the asker wants to know.
+2. Identify the information a correct answer needs: the facts, values, mechanisms or steps it must state.
+   Write it in "needed".
+3. Compare the passage with that information, judging the passage on its own (not the document it comes from):
+   which of the needed information does it state, and is it stated clearly or buried among other content?
+   Write what you found, or that nothing was found, in "found".
+4. Only then pick the grade whose definition fits best, and write it in "grade".
+
+Grades:
+3 = The passage is dedicated to the question and states the answer directly; it is enough to answer it.
+2 = The passage holds an answer, but it is partial, unclear, or mixed in with a lot of unrelated information.
+1 = The passage is on the question's topic but does not answer it.
+0 = The passage has nothing to do with the question.
+
+Do not reward shared keywords alone: a passage that names the same mechanism without saying what the question asks
+is a 1, not a 2. Use no knowledge of your own about the right answer beyond what the passage states.
+
+Question: {question}
+Question (English): {question_en}
+
+<passage>
+{chunk}
+</passage>"""
+
+
+POOL_JUDGE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "needed": {"type": "string"},
+        "found": {"type": "string"},
+        "grade": {"type": "integer", "minimum": 0, "maximum": 3},
+    },
+    "required": ["needed", "found", "grade"],
+    "additionalProperties": False,
+}

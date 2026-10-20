@@ -10,7 +10,7 @@ Kết quả ghi vào `scores.json` cạnh sai số chính, kèm số nhóm và t
 
 **Blocked by:** 10
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Test trên dữ liệu nhỏ có đáp số tính tay: SE khi nhóm = cụm chủ đề, và tỉ số với SE theo tài liệu
 - [x] Report hiện số kiểm độ nhạy ở cả markdown và LaTeX, sinh từ cùng kết quả

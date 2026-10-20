@@ -6,7 +6,7 @@
 
 **Blocked by:** 02, 10
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Card sinh tự động từ dữ liệu, các số liệu thống kê điền từ file chứ không gõ tay
 - [x] Số chính + phương pháp sai số được commit trước mọi lượt đo

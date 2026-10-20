@@ -6,7 +6,7 @@
 
 **Blocked by:** 05 (LLM client), 06 (project "chấm pool" và annotate)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Test qrels trên fixture: đúng quy tắc 50%, chứa trọn span, nhãn pool ghi đè
 - [x] Test chọn mẫu người chấm tái lập được với seed cố định

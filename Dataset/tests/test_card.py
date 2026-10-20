@@ -136,6 +136,30 @@ def test_labelling_reads_guideline_labels_and_agreement_or_says_not_yet(snap_dir
     assert "weighted_kappa | 0.712" in text and "false_negative_rate | 0.031" in text
 
 
+def test_labelling_shows_the_confusion_matrix_false_negatives_and_stability_written_by_judge_agreement(snap_dir, root, tmp_path):
+    from datetime import UTC, datetime, timedelta
+
+    from seclearn_eval.io import write_jsonl
+    from seclearn_eval.schema import Label, PoolEntry
+
+    pool = tmp_path / "pool.jsonl"
+    labels = tmp_path / "labels.jsonl"
+    t0 = datetime(2026, 11, 1, tzinfo=UTC)
+
+    def lab(chunk, grade, at=t0):
+        return Label(question_id="q1", task="pool", chunk_key=chunk, grade=grade, annotator="me", annotated_at=at,
+                     guideline_version="v1", snapshot_id="s")
+
+    write_jsonl(pool, [PoolEntry(question_id="q1", chunk_key=f"c#{i}", systems=[], covers_gold=False, llm_grade=g, for_human=True)
+                       for i, g in enumerate([3, 0, 0])])
+    write_jsonl(labels, [lab("c#0", 3), lab("c#1", 2), lab("c#2", 0), lab("c#0", 2, t0 + timedelta(days=9))])
+    assert main(["judge", "agreement", "--pool", str(pool), "--labels", str(labels), "--out", str(root / "judgments" / "agreement.json")]) == 0
+    text = section(card(snap_dir, root), "Cách gán nhãn")
+    assert "| Gemini \\ người | 0 | 1 | 2 | 3 |" in text  # the 4 × 4 confusion matrix
+    assert "người chấm ≥ 2: 1" in text  # false negatives among the sampled zeros
+    assert "n_pairs | 1" in text  # stability.json
+
+
 def test_pre_registration_is_fixed_whatever_has_been_measured(snap_dir, root):
     before = section(card(snap_dir, root), "Cách báo chuẩn")
     runs = root / "runs" / "r1"

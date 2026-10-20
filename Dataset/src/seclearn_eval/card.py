@@ -13,10 +13,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import prompts, stats
+from .agreement import render_agreement
 from .annotate import guideline_version
 from .clusters import WSTG_KEY
 from .io import FormatError, read_json, read_jsonl, read_questions
-from .schema import ClusterMap, FilterReport, GenerationReport, Label, LLMConfig, Question, SamplePlan
+from .schema import AgreementReport, ClusterMap, FilterReport, GenerationReport, Label, LLMConfig, Question, SamplePlan
 from .score import METRICS, MIN_GRADE
 from .snapshot import load_snapshot
 from .versioning import BUMP, read_changelog
@@ -81,6 +82,19 @@ def _json_table(path: Path) -> str:
     rows = _flat(json.loads(path.read_text(encoding="utf-8")))
     body = "".join(f"| {k} | {_num(v) if not isinstance(v, (list, dict)) else json.dumps(v, ensure_ascii=False)} |\n" for k, v in rows)
     return f"(từ `{path.name}`)\n\n| Chỉ số | Giá trị |\n|---|---|\n{body}"
+
+
+def _agreement(path: Path) -> str:
+    """`judge agreement`'s report as its own tables (confusion matrices, false negatives); any other JSON as a flat table."""
+    try:
+        report = read_json(path, AgreementReport) if path.is_file() else None
+    except FormatError:
+        report = None
+    if report is None:
+        return _json_table(path)
+    body = render_agreement(report).split("\n## Độ ổn định")[0]
+    body = body.split("\n", 1)[1].replace("\n## ", "\n#### ")  # drop the page title; sections sit under the card's ###
+    return f"(từ `{path.name}`)\n{body}"
 
 
 def _level_table(counts: Counter, clusters: list[str | None], names: dict[str, str]) -> str:
@@ -278,7 +292,7 @@ def _labelling(d: _Data) -> str:
     else:
         out.append(f"- Nhãn: {NOT_YET}.")
     out.append("\n### Gemini × người trên pool (κ có trọng số, đồng ý theo mức, âm tính giả)\n")
-    out.append(_json_table(d.path("judgments", "agreement.json")))
+    out.append(_agreement(d.path("judgments", "agreement.json")))
     out.append("\n### Độ ổn định của người gán\n")
     out.append(_json_table(d.path("judgments", "stability.json")))
     return "\n".join(out) + "\n"

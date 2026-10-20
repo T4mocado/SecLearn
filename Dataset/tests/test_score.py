@@ -198,3 +198,110 @@ def test_paired_comparison_with_a_baseline(files, tmp_path):
     assert c.p_value == pytest.approx(1.0)
     assert c.p_value_per_question is not None
     assert {c.scope for c in report.comparisons} == {"micro", "macro", "cluster"}
+
+
+@pytest.fixture
+def pair_files(tmp_path: Path) -> dict[str, Path]:
+    """Six answerable questions for the error-bar sensitivity check (ticket 13), each relevant to its own chunk.
+
+        qa  auth  L1  A#s01           hit@1 1
+        qb  auth  L4  A#s02 + B#s01   hit@1 1   main group A; pair-merged joins A and B
+        qc  auth  L1  B#s01           hit@1 0
+        qd  auth  L1  C#s01           hit@1 1
+        qe  inj   L1  D#s01           hit@1 1
+        qf  inj   L1  E#s01           hit@1 0
+    """
+
+    def q(qid, cluster, level, units):
+        return question(qid, "test", cluster, level, []).model_copy(update={"unit_ids": units})
+
+    questions = [
+        q("qa", "auth", "L1", ["A#s01"]),
+        q("qb", "auth", "L4", ["A#s02", "B#s01"]),
+        q("qc", "auth", "L1", ["B#s01"]),
+        q("qd", "auth", "L1", ["C#s01"]),
+        q("qe", "inj", "L1", ["D#s01"]),
+        q("qf", "inj", "L1", ["E#s01"]),
+    ]
+    header = QuestionFileHeader(canary=CANARY, eval_version="1.0.0", snapshot_id="2026-10-18-mini")
+    out = {"questions": tmp_path / "questions" / "test.jsonl", "qrels": tmp_path / "qrels" / "sentence-v2.qrels"}
+    write_questions(out["questions"], header, questions)
+    write_qrels(out["qrels"], [QrelLine(qid=x.id, chunk_key=f"{x.id}#0", grade=2) for x in questions])
+    hits = {"qa", "qb", "qd", "qe"}
+    out["run_a"] = tmp_path / "runs" / "A"
+    write_run(out["run_a"] / "run.trec", run_lines({x.id: [f"{x.id}#0" if x.id in hits else "X#9"] for x in questions}, "A"))
+    return out
+
+
+def sensitivity(report: ScoreReport, grouping: str, scope: str, key: str | None = None):
+    [r] = [s for s in report.se_sensitivity if s.grouping == grouping and s.scope == scope and s.key == key]
+    return r
+
+
+def test_error_bar_sensitivity_to_pair_merged_and_topic_cluster_groups(pair_files, tmp_path):
+    report = score(pair_files, tmp_path)
+    # Micro hit@1: mean ⅔, residuals ⅓ ⅓ −⅔ ⅓ ⅓ −⅔.
+    # Main groups (first unit): A {qa, qb} ⅔, B −⅔, C ⅓, D ⅓, E −⅔ → Σ² = 14/9, SE² = 14/324. Unchanged.
+    micro = row(report, "micro")["hit@1"]
+    assert (micro.mean, micro.n_groups) == (pytest.approx(2 / 3), 5)
+    assert micro.se == pytest.approx((14 / 324) ** 0.5)
+    # Pair-merged: AB {qa, qb, qc} 0, C ⅓, D ⅓, E −⅔ → Σ² = 6/9, SE² = 6/324, ratio √(3/7).
+    pm = sensitivity(report, "pair_merged", "micro")
+    assert (pm.n_groups, pm.n_groups_main) == (4, 5)
+    assert pm.se["hit@1"] == pytest.approx((6 / 324) ** 0.5)
+    assert pm.ratio["hit@1"] == pytest.approx((3 / 7) ** 0.5)
+    # Group = topic cluster: auth ⅓, inj −⅓ → Σ² = 2/9, SE² = 2/324, ratio √(1/7).
+    tc = sensitivity(report, "topic_cluster", "micro")
+    assert (tc.n_groups, tc.n_groups_main) == (2, 5)
+    assert tc.se["hit@1"] == pytest.approx((2 / 324) ** 0.5)
+    assert tc.ratio["hit@1"] == pytest.approx((1 / 7) ** 0.5)
+    # Topic cluster grouping is micro only: per cluster and for macro it would leave one group per cluster.
+    assert [s.scope for s in report.se_sensitivity if s.grouping == "topic_cluster"] == ["micro"]
+
+    # Cluster auth: 1 1 0 1, mean ¾. Main A .5, B −.75, C .25 → SE² = .875/16; merged AB −.25, C .25 → .125/16.
+    auth = sensitivity(report, "pair_merged", "cluster", "auth")
+    assert (auth.n_groups, auth.n_groups_main) == (2, 3)
+    assert auth.se["hit@1"] == pytest.approx((0.125 / 16) ** 0.5)
+    assert auth.ratio["hit@1"] == pytest.approx((1 / 7) ** 0.5)
+    assert sensitivity(report, "pair_merged", "cluster", "inj").ratio["hit@1"] == pytest.approx(1.0)
+    # Macro: SE² = ¼ (SE²_auth + SE²_inj), inj .5/4 either way: main 46/1024 (unchanged), merged 34/1024.
+    assert row(report, "macro")["hit@1"].se == pytest.approx((46 / 1024) ** 0.5)
+    macro = sensitivity(report, "pair_merged", "macro")
+    assert (macro.n_groups, macro.n_groups_main) == (4, 5)
+    assert macro.se["hit@1"] == pytest.approx((34 / 1024) ** 0.5)
+    assert macro.ratio["hit@1"] == pytest.approx((17 / 23) ** 0.5)
+    # Level L1 (qa qc qd qe qf: 1 0 1 1 0, mean .6) holds no L4 question, but qa and qc now share a group:
+    # main Σ² = .16 + .36 + .16 + .16 + .36 = 1.2; merged {qa, qc} −.2, C .4, D .4, E −.6 → .72; ratio √.6.
+    assert sensitivity(report, "pair_merged", "level", "L1").ratio["hit@1"] == pytest.approx(0.6**0.5)
+    # L4 alone: one question, SE 0 under both groupings: no ratio.
+    l4 = sensitivity(report, "pair_merged", "level", "L4")
+    assert (l4.se["hit@1"], l4.ratio["hit@1"]) == (0.0, None)
+
+
+def test_report_shows_the_sensitivity_check_in_markdown_and_latex(pair_files, tmp_path):
+    score(pair_files, tmp_path)
+    assert main(["report", "--scores", str(tmp_path / "scores" / "A.json"), "--out", str(tmp_path / "report" / "A")]) == 0
+    md = (tmp_path / "report" / "A.md").read_text(encoding="utf-8")
+    tex = (tmp_path / "report" / "A.tex").read_text(encoding="utf-8")
+    # Micro hit@1: pair-merged SE √(6/324) = .136, ratio √(3/7) = .655; topic cluster SE √(2/324) = .079, ratio .378.
+    # The main micro SE √(14/324) = .208 stays in the main table.
+    for text in (md, tex):
+        assert "Kiểm độ nhạy của sai số" in text
+        assert "0.136 (0.655)" in text and "0.079 (0.378)" in text
+        assert "0.208" in text
+    assert "| gộp nhóm theo cặp | micro | 5 | 4 | 0.136 (0.655) |" in md
+    assert "| nhóm = cụm chủ đề | micro | 5 | 2 | 0.079 (0.378) |" in md
+    # L4 alone has SE 0 under both groupings: no ratio.
+    assert "| gộp nhóm theo cặp | L4 | 1 | 1 | 0.000 (—) |" in md
+    assert "gộp nhóm theo cặp & micro & 5 & 4 & 0.136 (0.655) &" in tex
+
+
+def test_sensitivity_leaves_the_main_numbers_alone(files, tmp_path):
+    report = score(files, tmp_path, "--units", str(files["units"]))
+    # No L4 / L5 question: pair-merged groups are the main groups, so every ratio is 1 (none when the SE is 0).
+    micro = sensitivity(report, "pair_merged", "micro")
+    assert micro.n_groups == micro.n_groups_main == 3
+    assert micro.se["hit@1"] == pytest.approx(row(report, "micro")["hit@1"].se)
+    ratios = [r for s in report.se_sensitivity if s.grouping == "pair_merged" for r in s.ratio.values()]
+    assert ratios and all(r is None or r == pytest.approx(1.0) for r in ratios)
+    assert {s.scope for s in report.se_sensitivity} == {"micro", "macro", "cluster", "level"}

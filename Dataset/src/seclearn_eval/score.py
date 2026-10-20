@@ -7,6 +7,7 @@ is `stats`. L6 questions never enter these numbers: they are scored apart as ref
 
 from __future__ import annotations
 
+import math
 import warnings
 from collections import defaultdict
 from collections.abc import Sequence
@@ -24,12 +25,14 @@ from .schema import (
     Refusals,
     RunLine,
     ScoreReport,
+    SeSensitivity,
     Stratum,
     Unit,
 )
 from .stats import (
     SEED,
     cluster_difference,
+    clustered_se,
     combine,
     estimate,
     fisher_per_question,
@@ -56,12 +59,36 @@ def error_group(q: Question, by_id: dict[str, Question]) -> str:
     """
     seed = by_id.get(q.seed_id, q)
     if seed.unit_ids:
-        unit = seed.unit_ids[0]
-        doc = unit.split("#", 1)[0]
-        return unit if doc == WSTG_KEY else doc
+        return _unit_group(seed.unit_ids[0])
     if seed.gold_evidence:
         return seed.gold_evidence[0].doc_key
     return f"seed:{seed.id}"
+
+
+def _unit_group(unit: str) -> str:
+    doc = unit.split("#", 1)[0]
+    return unit if doc == WSTG_KEY else doc
+
+
+def pair_merged_groups(questions: Sequence[Question], by_id: dict[str, Question]) -> dict[str, str]:
+    """qid → error group when every L4 / L5 question joins the groups of all its units (union-find), so the
+    documents it spans, and every question in them, share one group. Chains stay in a topic cluster."""
+    parent: dict[str, str] = {}
+
+    def find(x: str) -> str:
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    main = {q.id: error_group(q, by_id) for q in questions}
+    for q in questions:
+        for unit in by_id.get(q.seed_id, q).unit_ids[1:]:
+            a, b = find(main[q.id]), find(_unit_group(unit))
+            if a != b:
+                parent[max(a, b)] = min(a, b)
+    return {qid: find(g) for qid, g in main.items()}
 
 
 def per_question(
@@ -164,6 +191,10 @@ def score(inputs: ScoreInputs) -> ScoreReport:
     strata += [Stratum(scope="cluster", key=c, estimates={m: cluster_est[m][c] for m in METRICS}) for c in sorted(by_cluster)]
     strata += [Stratum(scope="level", key=lv, estimates={m: est(m, by_level[lv]) for m in METRICS}) for lv in sorted(by_level)]
 
+    sens = se_sensitivity(
+        scores, strata, by_cluster, by_level, pair_merged_groups(answerable, by_id), {q.id: q.cluster for q in answerable}
+    )
+
     comparisons: list[Comparison] = []
     if inputs.baseline is not None:
         base = per_question(inputs.qrels, inputs.baseline, qids, inputs.min_grade)
@@ -178,10 +209,53 @@ def score(inputs: ScoreInputs) -> ScoreReport:
         metrics=METRICS,
         poststrat_weights=weights,
         strata=strata,
+        se_sensitivity=sens,
         comparisons=comparisons,
         cluster_differences=cluster_differences(cluster_est),
         refusals=refusals(inputs.questions, inputs.answers, by_id),
     )
+
+
+def se_sensitivity(
+    scores: dict[str, dict[str, float]],
+    strata: list[Stratum],
+    by_cluster: dict[str, list[str]],
+    by_level: dict[str, list[str]],
+    merged: dict[str, str],
+    topic: dict[str, str],
+) -> list[SeSensitivity]:
+    """The SEs of the main strata recomputed with pair-merged groups (micro, macro, clusters, levels) and with
+    group = topic cluster (micro only), each beside the main SE it is a check on (ticket 13)."""
+    main = {(s.scope, s.key): s for s in strata}
+
+    def alt(ids: list[str], groups: dict[str, str]) -> tuple[int, dict[str, float]]:
+        g = [groups[i] for i in ids]
+        return len(set(g)), {m: clustered_se([scores[m][i] for i in ids], g) for m in METRICS}
+
+    def row(grouping: str, scope: str, key: str | None, n_groups: int, se: dict[str, float]) -> SeSensitivity:
+        est = main[(scope, key)].estimates
+        return SeSensitivity(
+            grouping=grouping,
+            scope=scope,
+            key=key,
+            n_groups=n_groups,
+            n_groups_main=est[METRICS[0]].n_groups,
+            se=se,
+            ratio={m: se[m] / est[m].se if est[m].se > 0 else None for m in METRICS},
+        )
+
+    qids = [i for ids in by_cluster.values() for i in ids]
+    clusters = {c: alt(ids, merged) for c, ids in by_cluster.items()}
+    k = len(clusters)
+    # Macro, as in `stats.combine`: groups nest in topic clusters, so SE² = Σ (1/K)² SE²_cluster.
+    macro_se = {m: math.sqrt(sum((se[m] / k) ** 2 for _, se in clusters.values())) for m in METRICS}
+    return [
+        row("pair_merged", "micro", None, *alt(qids, merged)),
+        row("topic_cluster", "micro", None, *alt(qids, topic)),
+        row("pair_merged", "macro", None, sum(n for n, _ in clusters.values()), macro_se),
+        *(row("pair_merged", "cluster", c, *clusters[c]) for c in sorted(clusters)),
+        *(row("pair_merged", "level", lv, *alt(by_level[lv], merged)) for lv in sorted(by_level)),
+    ]
 
 
 def cluster_differences(cluster_est: dict[str, dict[str, Estimate]]) -> list[ClusterDifference]:

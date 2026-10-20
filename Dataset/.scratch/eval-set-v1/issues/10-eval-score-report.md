@@ -49,7 +49,7 @@
 - **A. p-value chính** khi so hai cấu hình: kiểm định ngẫu nhiên hoá đổi nhãn theo nhóm (tài liệu / test case WSTG). Fisher theo câu của ranx giữ làm cột phụ. Spec (Implementation Decisions, mục "Chấm điểm") đã sửa theo.
 - **B. So cụm với cụm**: giữ hiệu chỉnh Holm trong từng độ đo (45 cặp); bảng chỉ liệt kê cặp có p (Holm) < 0,05.
 - **C. Ngưỡng liên quan** cho Hit / MRR / Recall: mức ≥ 2 (`--min-grade 2`); nDCG dùng nguyên thang 0-3.
-- **D. Câu L4 / L5** xếp vào nhóm của đơn vị đầu tiên, **kèm số kiểm độ nhạy**: sai số tính lại với nhóm = cụm chủ đề (10 nhóm, cách thận trọng nhất) cho số chính. Phần code làm ở ticket 13.
+- **D. Câu L4 / L5** xếp vào nhóm của đơn vị đầu tiên, **kèm số kiểm độ nhạy**: sai số tính lại khi gộp nhóm hai tài liệu của mỗi câu L4 / L5, và (chỉ cho micro) khi nhóm = cụm chủ đề. Với từng cụm và macro, nhóm = cụm chủ đề suy biến nên không dùng. Phần code làm ở ticket 13.
 - **E. Wilson** ở tầng dưới 300 câu cho độ đo 0/1, cỡ mẫu co theo hệ số thiết kế; độ đo khác dùng khoảng chuẩn.
 - **F. Hậu phân tầng** cân theo tỉ lệ chunk của corpus trong từng cụm; là số phụ, số chính vẫn là macro (ADR 0003).
 - **G.** Phương sai chia n (như Miller) trong phương trình 4; Judged@10 của câu run không trả gì là 0.

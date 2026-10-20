@@ -7,7 +7,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from . import annotate
+from . import annotate, paths
 from .check import CheckInputs, discover, run_checks, skipped
 from .clusters import build_cluster_map
 from .filter import candidates_to_questions, run_filter
@@ -27,7 +27,7 @@ from .io import (
     write_run,
     write_text,
 )
-from .llm import CachedClient, LLMError, make_clients
+from .llm import CachedClient, LLMClient, LLMError, make_clients
 from .plan import PlanParams, build_plan, plan_table
 from .reanchor import reanchor
 from .retrieval import model_factory
@@ -39,6 +39,7 @@ from .schema import (
     LLMConfig,
     PoolConfig,
     PoolEntry,
+    Question,
     QuestionFileHeader,
     SamplePlan,
     ScoreReport,
@@ -189,7 +190,7 @@ def _smoke(args: argparse.Namespace) -> int:
 
     snap = load_snapshot(args.snapshot)
     records = [r for path in args.source for r in read_smoke(path)]
-    default_picks = Path("questions/smoke/anchor-picks.json")
+    default_picks = paths.SMOKE / "anchor-picks.json"
     picks = read_picks(args.picks) if args.picks else read_picks(default_picks) if default_picks.is_file() else {}
     questions, unmapped = convert_smoke(records, snap, read_jsonl(_units_file(args), Unit), picks)
     header = QuestionFileHeader(canary=snap.manifest.canary, eval_version=args.eval_version, snapshot_id=snap.snapshot_id)
@@ -205,13 +206,13 @@ def _smoke(args: argparse.Namespace) -> int:
 
 
 def _card(args: argparse.Namespace) -> int:
-    from .card import CardInputs, render_card
+    from .card import NOT_YET, CardInputs, render_card
 
     text = render_card(CardInputs(snapshot=args.snapshot, root=args.root, version=args.version))
-    out = args.out or args.root / "CARD.md"
+    out = args.out or args.root / paths.CARD
     write_text(out, text)
-    missing = text.count("chưa có")
-    print(f"card → {out}" + (f" ({missing} part(s) still 'chưa có')" if missing else ""))
+    missing = text.count(NOT_YET)
+    print(f"card → {out}" + (f" ({missing} part(s) still '{NOT_YET}')" if missing else ""))
     return 0
 
 
@@ -261,7 +262,7 @@ def _plan(args: argparse.Namespace) -> int:
     return 0
 
 
-def _clients(args: argparse.Namespace, config: LLMConfig) -> dict:
+def _clients(args: argparse.Namespace, config: LLMConfig) -> dict[str, LLMClient]:
     return make_clients(config, None if args.no_cache else args.cache)
 
 
@@ -312,19 +313,26 @@ def _filter(args: argparse.Namespace) -> int:
     return 0
 
 
-def _read_question_files(paths: list[Path]) -> list:
-    return [q for path in paths for q in read_questions(path)[1]]
+def _read_question_files(files: list[Path]) -> list[Question]:
+    return [q for path in files for q in read_questions(path)[1]]
 
 
 def _pool(args: argparse.Namespace) -> int:
     from .pool import build_pool, run_lines, run_systems
-    from .retrieval import EmbeddingCache, build_systems
+    from .retrieval import EmbeddingCache, UnpinnedModelError, build_systems
 
     snap = load_snapshot(args.snapshot)
     questions = _read_question_files(args.questions)
     config = read_json(args.config, PoolConfig)
     cache = EmbeddingCache(args.cache)
-    systems = build_systems(config, cache, model_factory())
+    try:
+        systems = build_systems(config, cache, model_factory(allow_unpinned=args.allow_unpinned), snap)
+    except UnpinnedModelError as err:
+        print(f"pool: {err}", file=sys.stderr)
+        return 1
+    unpinned = [r.model for r in (config.vi_embedder, config.reranker, config.multilingual) if r.revision is None]
+    if unpinned and args.allow_unpinned:
+        print(f"warning: --allow-unpinned: {', '.join(unpinned)} not pinned; their cached embeddings go stale silently if the weights change")
     ranked = run_systems(systems, questions, snap, config.depth)
     previous = read_jsonl(args.out, PoolEntry) if args.out.exists() else []
     pool = build_pool(questions, snap, ranked, config.depth, previous)
@@ -375,31 +383,26 @@ def _judge_expand(args: argparse.Namespace) -> int:
 
 
 def _judge_agreement(args: argparse.Namespace) -> int:
-    from .agreement import agreement_report, render_agreement
+    from .agreement import agreement_report, fmt, render_agreement
 
     report = agreement_report(read_jsonl(args.pool, PoolEntry), read_jsonl(args.labels, Label))
+    # The dataset card reads both the judge agreement and the stability from this file (card._labelling).
     write_json(args.out, report)
     write_text(args.out.with_suffix(".md"), render_agreement(report))
-    # The dataset card reads stability from its own file (card._labelling).
-    stability_file = args.out.with_name("stability.json")
-    write_json(stability_file, report.stability)
     fn, s = report.false_negatives, report.stability
-
-    def f(x: float | None) -> str:
-        return "-" if x is None else f"{x:.3f}"
-
-    print(f"Gemini × human on {report.n_judged} chunks: exact {f(report.exact)}, "
-          f"κ linear {f(report.kappa_linear)}, quadratic {f(report.kappa_quadratic)}")
-    print(f"false negatives: {fn.n_missed} of {fn.n_sampled} sampled zeros, rate {f(fn.rate)} ({f(fn.ci_low)}-{f(fn.ci_high)})")
-    print(f"stability: {s.n_pairs} pairs, exact {f(s.exact)}, κ quadratic {f(s.kappa_quadratic)}")
-    print(f"→ {args.out}, {args.out.with_suffix('.md')}, {stability_file}")
+    print(f"Gemini × human on {report.n_judged} chunks: exact {fmt(report.exact)}, "
+          f"κ linear {fmt(report.kappa_linear)}, quadratic {fmt(report.kappa_quadratic)}")
+    print(f"false negatives: {fn.n_missed} of {fn.n_sampled} sampled zeros, rate {fmt(fn.rate)} ({fmt(fn.ci_low)}-{fmt(fn.ci_high)})")
+    print(f"stability: {s.n_pairs} pairs ({s.n_too_close} too close, {s.n_version_mismatch} across guideline versions dropped), "
+          f"exact {fmt(s.exact)}, κ quadratic {fmt(s.kappa_quadratic)}")
+    print(f"→ {args.out}, {args.out.with_suffix('.md')}")
     return 0
 
 
 def _llm_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--snapshot", type=Path, required=True)
     p.add_argument("--units", type=Path, help="default: <snapshot>/units.jsonl")
-    p.add_argument("--config", type=Path, default=Path("llm-config.json"), help="pinned models and thresholds")
+    p.add_argument("--config", type=Path, default=paths.LLM_CONFIG, help="pinned models and thresholds")
     p.add_argument("--cache", type=Path, default=Path("cache/llm"), help="API responses, keyed by model + prompt + input")
     p.add_argument("--no-cache", action="store_true", help="call the API for every request")
 
@@ -452,20 +455,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("clusters", help="starting cluster file from document names, for you to review")
     p.add_argument("--snapshot", type=Path, required=True)
-    p.add_argument("--out", type=Path, default=Path("clusters.json"))
+    p.add_argument("--out", type=Path, default=paths.CLUSTERS)
     p.add_argument("--force", action="store_true", help="overwrite an existing (maybe reviewed) file")
     p.set_defaults(run=_clusters)
 
     p = sub.add_parser("units", help="sampling units with offsets, clusters and excluded regions")
     p.add_argument("--snapshot", type=Path, required=True)
-    p.add_argument("--clusters", type=Path, default=Path("clusters.json"))
+    p.add_argument("--clusters", type=Path, default=paths.CLUSTERS)
     p.add_argument("--out", type=Path, help="default: <snapshot>/units.jsonl")
     p.set_defaults(run=_units)
 
     p = sub.add_parser("plan", help="sample plan, method R: slots per cluster, unit and level")
     p.add_argument("--snapshot", type=Path, required=True)
     p.add_argument("--units", type=Path, help="default: <snapshot>/units.jsonl")
-    p.add_argument("--out", type=Path, default=Path("questions/v1.0/sample-plan.json"))
+    p.add_argument("--out", type=Path, default=paths.GOLD / "sample-plan.json")
     defaults = PlanParams()
     p.add_argument("--seed", type=int, default=defaults.seed)
     p.add_argument("--test-answerable", type=int, default=defaults.test_answerable)
@@ -476,23 +479,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("generate", help="candidates for the plan's root-level slots (Claude), about 1.6x the plan")
     _llm_args(p)
-    p.add_argument("--plan", type=Path, default=Path("questions/v1.0/sample-plan.json"))
-    p.add_argument("--out", type=Path, default=Path("questions/v1.0/candidates.jsonl"))
+    p.add_argument("--plan", type=Path, default=paths.GOLD / "sample-plan.json")
+    p.add_argument("--out", type=Path, default=paths.GOLD / "candidates.jsonl")
     p.add_argument("--report", type=Path, help="wanted / got / calls per cell; default: generate-report.json next to --out")
     p.set_defaults(run=_generate)
 
     p = sub.add_parser("filter", help="the 6 filter steps; kept candidates become pending questions")
     _llm_args(p)
-    p.add_argument("--candidates", type=Path, default=Path("questions/v1.0/candidates.jsonl"))
-    p.add_argument("--out", type=Path, default=Path("questions/v1.0/filtered.jsonl"))
-    p.add_argument("--report", type=Path, default=Path("questions/v1.0/filter-report.json"))
+    p.add_argument("--candidates", type=Path, default=paths.GOLD / "candidates.jsonl")
+    p.add_argument("--out", type=Path, default=paths.GOLD / "filtered.jsonl")
+    p.add_argument("--report", type=Path, default=paths.GOLD / "filter-report.json")
     p.add_argument("--eval-version", default="1.0.0")
     p.set_defaults(run=_filter)
 
     p = sub.add_parser("check", help="all checks to run before a measurement; exit 1 on any problem")
     p.add_argument("--snapshot", type=Path, required=True)
     p.add_argument("--root", type=Path, default=Path("."), help="eval-set root holding questions/ and runs/")
-    p.add_argument("--version", default="v1.0", help="questions/<version>/ to check")
+    p.add_argument("--version", default=paths.GOLD_VERSION, help="questions/<version>/ to check")
     p.add_argument("--questions", type=Path, nargs="*", help="question files; default questions/<version>/*.jsonl")
     p.add_argument("--units", type=Path, help="default: <snapshot>/units.jsonl")
     p.add_argument("--plan", type=Path, help="default: questions/<version>/sample-plan.json")
@@ -507,10 +510,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("smoke", help="the app's smoke set (data/eval/set-*.jsonl) as gold spans on a snapshot")
     p.add_argument("--snapshot", type=Path, required=True)
-    p.add_argument("--source", type=Path, nargs="+", default=[Path("questions/smoke/source/set-a.jsonl"), Path("questions/smoke/source/set-b.jsonl")])
+    p.add_argument("--source", type=Path, nargs="+", default=[paths.SMOKE / "source" / "set-a.jsonl", paths.SMOKE / "source" / "set-b.jsonl"])
     p.add_argument("--picks", type=Path, help="which match to keep for a quote found several times (default: questions/smoke/anchor-picks.json, if there)")
     p.add_argument("--units", type=Path, help="default: <snapshot>/units.jsonl")
-    p.add_argument("--out-dir", type=Path, default=Path("questions/smoke"))
+    p.add_argument("--out-dir", type=Path, default=paths.SMOKE)
     p.add_argument("--eval-version", required=True, help="current version in CHANGELOG.md")
     p.set_defaults(run=_smoke)
 
@@ -522,7 +525,7 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--questions", type=Path, required=True)
     e.add_argument("--units", type=Path, help="review: default <snapshot>/units.jsonl")
     e.add_argument("--pool", type=Path, help="pool: pool.jsonl")
-    e.add_argument("--guideline", type=Path, default=Path("annotation/guideline-v0.md"), help="its `guideline_version:` line goes on every label")
+    e.add_argument("--guideline", type=Path, default=paths.ANNOTATION / "guideline-v0.md", help="its `guideline_version:` line goes on every label")
     e.add_argument("--out", type=Path, required=True)
     e.set_defaults(run=_annotate_export)
     i = asub.add_parser("import", help="a Label Studio JSON export back into questions and labels")
@@ -531,7 +534,7 @@ def build_parser() -> argparse.ArgumentParser:
     i.add_argument("--export", type=Path, required=True, help="Label Studio JSON export (annotation/exports/raw/)")
     i.add_argument("--questions", type=Path, help="review: the file the tasks were made from")
     i.add_argument("--out", type=Path, help="review: reviewed question file")
-    i.add_argument("--labels", type=Path, default=Path("judgments/labels.jsonl"), help="labels accumulate here")
+    i.add_argument("--labels", type=Path, default=paths.LABELS, help="labels accumulate here")
     i.add_argument("--offset-unit", choices=["utf16", "codepoint"], default="codepoint", help="what Label Studio's region offsets count (1.13.1: code points, measured in ticket 06)")
     i.set_defaults(run=_annotate_import)
 
@@ -540,10 +543,11 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("pool", help="5 retrieval systems over the snapshot's chunks; pool = union of top-k + chunks covering gold")
     p.add_argument("--snapshot", type=Path, required=True)
     p.add_argument("--questions", type=Path, nargs="+", required=True, help="question files (test.jsonl dev.jsonl)")
-    p.add_argument("--config", type=Path, default=Path("pool-config.json"), help="pinned models and pool depth")
+    p.add_argument("--config", type=Path, default=paths.POOL_CONFIG, help="pinned models and pool depth")
     p.add_argument("--cache", type=Path, default=Path("cache/embeddings"), help="chunk embeddings by model + md_sha256")
-    p.add_argument("--out", type=Path, default=Path("judgments/pool.jsonl"), help="grades already in it are kept")
+    p.add_argument("--out", type=Path, default=paths.POOL, help="grades already in it are kept")
     p.add_argument("--runs", type=Path, help="one TREC run per system; default pool-runs/ next to --out")
+    p.add_argument("--allow-unpinned", action="store_true", help="run models whose `revision` is null in --config (not reproducible)")
     p.set_defaults(run=_pool)
 
     p = sub.add_parser("judge", help="Gemini grades the pool, the human's share, gold expansion, agreement")
@@ -551,8 +555,8 @@ def build_parser() -> argparse.ArgumentParser:
     g = jsub.add_parser("grade", help="Gemini grades every pool entry 0-3; picks the human's share")
     g.add_argument("--snapshot", type=Path, required=True)
     g.add_argument("--questions", type=Path, nargs="+", required=True)
-    g.add_argument("--pool", type=Path, default=Path("judgments/pool.jsonl"))
-    g.add_argument("--config", type=Path, default=Path("llm-config.json"), help="its `judge` model grades")
+    g.add_argument("--pool", type=Path, default=paths.POOL)
+    g.add_argument("--config", type=Path, default=paths.LLM_CONFIG, help="its `judge` model grades")
     g.add_argument("--cache", type=Path, default=Path("cache/llm"))
     g.add_argument("--no-cache", action="store_true")
     g.add_argument("--rate", type=float, default=ZERO_SAMPLE_RATE, help="share of Gemini's zeros the human grades")
@@ -563,20 +567,20 @@ def build_parser() -> argparse.ArgumentParser:
     x = jsub.add_parser("expand", help="new gold spans from chunks the human graded 2-3 outside the gold")
     x.add_argument("--snapshot", type=Path, required=True)
     x.add_argument("--questions", type=Path, required=True, help="one question file (run once per split)")
-    x.add_argument("--labels", type=Path, default=Path("judgments/labels.jsonl"))
+    x.add_argument("--labels", type=Path, default=paths.LABELS)
     x.add_argument("--out", type=Path, required=True)
     x.set_defaults(run=_judge_expand)
     a = jsub.add_parser("agreement", help="weighted κ, confusion matrix and false negatives of Gemini × human; annotator stability")
-    a.add_argument("--pool", type=Path, default=Path("judgments/pool.jsonl"))
-    a.add_argument("--labels", type=Path, default=Path("judgments/labels.jsonl"))
-    a.add_argument("--out", type=Path, default=Path("judgments/agreement.json"), help="and .md beside it")
+    a.add_argument("--pool", type=Path, default=paths.POOL)
+    a.add_argument("--labels", type=Path, default=paths.LABELS)
+    a.add_argument("--out", type=Path, default=paths.AGREEMENT, help="and .md beside it")
     a.set_defaults(run=_judge_agreement)
 
     p = sub.add_parser("qrels", help="TREC qrels for the snapshot's chunker_version from gold spans and human pool labels")
     p.add_argument("--snapshot", type=Path, required=True)
     p.add_argument("--questions", type=Path, nargs="+", required=True, help="question files (test.jsonl dev.jsonl)")
     p.add_argument("--pool", type=Path, help="judgments/pool.jsonl: its LLM zeros are written as judged, its labels applied")
-    p.add_argument("--labels", type=Path, default=Path("judgments/labels.jsonl"), help="human pool labels override the spans")
+    p.add_argument("--labels", type=Path, default=paths.LABELS, help="human pool labels override the spans")
     p.add_argument("--out", type=Path, help="default: qrels/<chunker_version>.qrels (and .meta.json beside it)")
     p.set_defaults(run=_qrels)
 
@@ -598,7 +602,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("card", help="dataset card (CARD.md) from the eval set's data files, with the pre-registered reporting")
     p.add_argument("--snapshot", type=Path, required=True)
     p.add_argument("--root", type=Path, default=Path("."), help="eval-set root holding CHANGELOG.md, questions/, judgments/")
-    p.add_argument("--version", default="v1.0", help="questions/<version>/ of the gold set")
+    p.add_argument("--version", default=paths.GOLD_VERSION, help="questions/<version>/ of the gold set")
     p.add_argument("--out", type=Path, help="default: <root>/CARD.md")
     p.set_defaults(run=_card)
 

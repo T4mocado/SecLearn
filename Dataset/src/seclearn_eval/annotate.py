@@ -349,6 +349,8 @@ def import_pool(annotations: list[Annotation], snap: Snapshot) -> list[Label]:
 
 def merge_labels(old: list[Label], new: list[Label]) -> list[Label]:
     """Labels accumulate across imports; importing the same export twice adds nothing."""
-    key = lambda lab: (lab.question_id, lab.task, lab.chunk_key, lab.annotator, lab.annotated_at)  # noqa: E731
+    def key(lab: Label) -> tuple[object, ...]:
+        return lab.question_id, lab.task, lab.chunk_key, lab.annotator, lab.annotated_at
+
     seen = {key(lab) for lab in old}
     return [*old, *(lab for lab in new if key(lab) not in seen)]

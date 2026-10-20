@@ -70,10 +70,22 @@ def _unit_group(unit: str) -> str:
     return unit if doc == WSTG_KEY else doc
 
 
+#: Levels whose questions span two units (of one topic cluster): the only ones `pair_merged_groups` merges for.
+PAIR_LEVELS = ("L4", "L5")
+
+
 def pair_merged_groups(questions: Sequence[Question], by_id: dict[str, Question]) -> dict[str, str]:
     """qid → error group when every L4 / L5 question joins the groups of all its units (union-find), so the
-    documents it spans, and every question in them, share one group. Chains stay in a topic cluster."""
+    documents it spans, and every question in them, share one group.
+
+    A merge never crosses topic clusters: a unit's group joins only when every question already in the two groups
+    is in the L4 / L5 question's own cluster (a group's cluster is that of the questions whose main group it is).
+    Questions of other levels never merge, whatever their `unit_ids`."""
     parent: dict[str, str] = {}
+    main = {q.id: error_group(q, by_id) for q in questions}
+    clusters: dict[str, set[str | None]] = defaultdict(set)
+    for q in questions:
+        clusters[main[q.id]].add(q.cluster)
 
     def find(x: str) -> str:
         parent.setdefault(x, x)
@@ -82,12 +94,16 @@ def pair_merged_groups(questions: Sequence[Question], by_id: dict[str, Question]
             x = parent[x]
         return x
 
-    main = {q.id: error_group(q, by_id) for q in questions}
     for q in questions:
+        if q.strata.level not in PAIR_LEVELS:
+            continue
         for unit in by_id.get(q.seed_id, q).unit_ids[1:]:
             a, b = find(main[q.id]), find(_unit_group(unit))
-            if a != b:
-                parent[max(a, b)] = min(a, b)
+            if a == b or not (clusters[a] | clusters[b]) <= {q.cluster}:
+                continue
+            root, child = min(a, b), max(a, b)
+            parent[child] = root
+            clusters[root] |= clusters.pop(child, set())
     return {qid: find(g) for qid, g in main.items()}
 
 
@@ -228,11 +244,12 @@ def se_sensitivity(
     group = topic cluster (micro only), each beside the main SE it is a check on (ticket 13)."""
     main = {(s.scope, s.key): s for s in strata}
 
-    def alt(ids: list[str], groups: dict[str, str]) -> tuple[int, dict[str, float]]:
+    def regrouped_se(ids: list[str], groups: dict[str, str]) -> tuple[int, dict[str, float]]:
+        """(number of groups, metric → clustered SE) of the questions `ids` under the grouping `groups`."""
         g = [groups[i] for i in ids]
         return len(set(g)), {m: clustered_se([scores[m][i] for i in ids], g) for m in METRICS}
 
-    def row(grouping: str, scope: str, key: str | None, n_groups: int, se: dict[str, float]) -> SeSensitivity:
+    def beside_main(grouping: str, scope: str, key: str | None, n_groups: int, se: dict[str, float]) -> SeSensitivity:
         est = main[(scope, key)].estimates
         return SeSensitivity(
             grouping=grouping,
@@ -245,16 +262,16 @@ def se_sensitivity(
         )
 
     qids = [i for ids in by_cluster.values() for i in ids]
-    clusters = {c: alt(ids, merged) for c, ids in by_cluster.items()}
+    clusters = {c: regrouped_se(ids, merged) for c, ids in by_cluster.items()}
     k = len(clusters)
-    # Macro, as in `stats.combine`: groups nest in topic clusters, so SE² = Σ (1/K)² SE²_cluster.
+    # Macro, as in `stats.combine`: groups nest in topic clusters (merges never cross them), so SE² = Σ (1/K)² SE²_cluster.
     macro_se = {m: math.sqrt(sum((se[m] / k) ** 2 for _, se in clusters.values())) for m in METRICS}
     return [
-        row("pair_merged", "micro", None, *alt(qids, merged)),
-        row("topic_cluster", "micro", None, *alt(qids, topic)),
-        row("pair_merged", "macro", None, sum(n for n, _ in clusters.values()), macro_se),
-        *(row("pair_merged", "cluster", c, *clusters[c]) for c in sorted(clusters)),
-        *(row("pair_merged", "level", lv, *alt(by_level[lv], merged)) for lv in sorted(by_level)),
+        beside_main("pair_merged", "micro", None, *regrouped_se(qids, merged)),
+        beside_main("topic_cluster", "micro", None, *regrouped_se(qids, topic)),
+        beside_main("pair_merged", "macro", None, sum(n for n, _ in clusters.values()), macro_se),
+        *(beside_main("pair_merged", "cluster", c, *clusters[c]) for c in sorted(clusters)),
+        *(beside_main("pair_merged", "level", lv, *regrouped_se(by_level[lv], merged)) for lv in sorted(by_level)),
     ]
 
 

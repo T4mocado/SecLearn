@@ -208,3 +208,8 @@ POOL_JUDGE_SCHEMA: dict[str, Any] = {
     "required": ["needed", "found", "grade"],
     "additionalProperties": False,
 }
+
+
+def question_prompt_versions() -> list[str]:
+    """The prompt versions a question can be made and filtered with: generation per level, L6(a), the two filter checks."""
+    return [version for version, _ in _TASKS.values()] + [OOD_VERSION, ANSWER_VERSION, LEVEL_VERSION]

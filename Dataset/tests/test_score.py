@@ -278,6 +278,25 @@ def test_error_bar_sensitivity_to_pair_merged_and_topic_cluster_groups(pair_file
     assert (l4.se["hit@1"], l4.ratio["hit@1"]) == (0.0, None)
 
 
+def test_pair_merging_joins_only_l4_l5_units_and_never_across_topic_clusters():
+    from seclearn_eval.score import pair_merged_groups
+
+    def q(qid, cluster, level, units):
+        return question(qid, "test", cluster, level, []).model_copy(update={"unit_ids": units})
+
+    questions = [
+        q("qa", "auth", "L1", ["A#s01"]),
+        q("qb", "auth", "L4", ["A#s02", "D#s01"]),  # D is a document of inj: not merged
+        q("qc", "auth", "L1", ["A#s03", "B#s01"]),  # two units but not L4 / L5: not merged
+        q("qd", "auth", "L1", ["B#s02"]),
+        q("qe", "inj", "L1", ["D#s01"]),
+        q("qg", "auth", "L5", ["A#s04", "C#s01"]),  # same cluster: A and C merge
+        q("qh", "auth", "L1", ["C#s01"]),
+    ]
+    groups = pair_merged_groups(questions, {x.id: x for x in questions})
+    assert groups == {"qa": "A", "qb": "A", "qc": "A", "qd": "B", "qe": "D", "qg": "A", "qh": "A"}
+
+
 def test_report_shows_the_sensitivity_check_in_markdown_and_latex(pair_files, tmp_path):
     score(pair_files, tmp_path)
     assert main(["report", "--scores", str(tmp_path / "scores" / "A.json"), "--out", str(tmp_path / "report" / "A")]) == 0

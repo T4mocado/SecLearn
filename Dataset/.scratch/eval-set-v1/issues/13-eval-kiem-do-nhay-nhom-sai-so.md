@@ -32,3 +32,5 @@ Kết quả ghi vào `scores.json` cạnh sai số chính, kèm số nhóm và t
 **Bạn xem lại:**
 1. Không tính cho hậu phân tầng và cho so sánh ghép cặp (ticket chỉ nêu micro, macro, cụm, mức). Nếu cần, thêm theo cùng cách.
 2. Bảng report liệt kê mọi cụm và mọi mức (khoảng 20 dòng × 8 độ đo); nếu dài quá cho luận văn thì có thể chỉ giữ micro và macro.
+
+**2026-10-20, agent (sửa sau review, nhánh `eval/review-fixes-2`):** `pair_merged_groups` từng gộp cho **mọi** câu có nhiều `unit_ids` và có thể nối nhóm của hai cụm chủ đề khác nhau (khi đó công thức macro SE² = Σ (1/K)² SE²_cụm cũng sai, vì nó cần nhóm lồng trong cụm). Giờ chỉ câu **L4 / L5** được gộp (`score.PAIR_LEVELS`), và một lần gộp chỉ xảy ra khi mọi câu trong hai nhóm đều thuộc cụm của câu đó (cụm của một nhóm là cụm của các câu có nhóm chính là nó), đúng như ticket viết "chuỗi nằm trong một cụm". Test mới tính tay: câu L4 của auth nối sang tài liệu của inj không gộp, câu L1 có hai đơn vị không gộp, câu L5 cùng cụm vẫn gộp. Docstring, card và chú thích bảng report ghi "chỉ trong cùng cụm chủ đề". Các số của bộ 6 câu cũ không đổi. Đổi tên hàm phụ trong `se_sensitivity` (`regrouped_se`, `beside_main`).

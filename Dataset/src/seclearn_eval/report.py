@@ -72,7 +72,7 @@ def tables(r: ScoreReport) -> list[Table]:
                 ["cách nhóm", "phạm vi", "số nhóm chính", "số nhóm thay thế", *r.metrics],
                 rows,
                 "SE thay thế (tỉ số SE thay thế / SE chính); số chính và khoảng tin cậy chính vẫn dùng nhóm theo đơn vị "
-                "đầu tiên. Gộp nhóm theo cặp: câu L4 / L5 nối nhóm của hai tài liệu; nhóm = cụm chủ đề chỉ cho micro",
+                "đầu tiên. Gộp nhóm theo cặp: câu L4 / L5 nối nhóm của hai tài liệu trong cùng cụm chủ đề; nhóm = cụm chủ đề chỉ cho micro",
             )
         )
 

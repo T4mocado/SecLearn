@@ -23,7 +23,9 @@ class ReanchorReport:
         return self.kept + self.reanchored + self.dropped
 
     def summary(self) -> str:
-        share = lambda n: f"{n / self.total:.1%}" if self.total else "-"  # noqa: E731
+        def share(n: int) -> str:
+            return f"{n / self.total:.1%}" if self.total else "-"
+
         return (
             f"{self.total} spans: {self.kept} unchanged, {self.reanchored} re-anchored ({share(self.reanchored)}), "
             f"{self.dropped} dropped ({share(self.dropped)})"

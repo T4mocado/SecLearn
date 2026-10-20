@@ -10,22 +10,43 @@ import json
 import statistics
 from collections import Counter
 from dataclasses import dataclass
+from math import comb
 from pathlib import Path
+from typing import get_args
 
-from . import prompts, stats
-from .agreement import render_agreement
+from . import paths, prompts, stats
+from .agreement import STABILITY_MIN_DAYS, render_judge_agreement, render_stability
 from .annotate import guideline_version
 from .clusters import WSTG_KEY
 from .io import FormatError, read_json, read_jsonl, read_questions
-from .schema import AgreementReport, ClusterMap, FilterReport, GenerationReport, Label, LLMConfig, Question, SamplePlan
+from .judge import ZERO_SAMPLE_RATE
+from .schema import (
+    ANSWER_RUNS,
+    AgreementReport,
+    ClusterId,
+    ClusterMap,
+    FilterReport,
+    GenerationReport,
+    Label,
+    Level,
+    LLMConfig,
+    Question,
+    SamplePlan,
+)
 from .score import METRICS, MIN_GRADE
-from .snapshot import load_snapshot
-from .versioning import BUMP, read_changelog
+from .snapshot import Snapshot, load_snapshot
+from .spans import COVER_RATIO
+from .versioning import BUMP, Release, read_changelog
 
 NOT_YET = "chưa có"
-#: The pre-registered headline metric: what the answer model sees is the app's top RAG_TOP_K = 5 chunks.
-PRIMARY_METRIC = "recall@5"
-LEVELS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7")
+#: The app's RAG_TOP_K: chunks the answer model is given (in `src/`, which the eval set never reads: ADR 0004).
+RAG_TOP_K = 5
+#: The pre-registered headline metric: the share of relevant chunks among the RAG_TOP_K the answer model sees.
+PRIMARY_METRIC = f"recall@{RAG_TOP_K}"
+LEVELS: tuple[str, ...] = get_args(Level)
+#: Topic clusters of the macro score, and the cluster pairs the Holm correction runs over.
+N_CLUSTERS = len(get_args(ClusterId))
+N_CLUSTER_PAIRS = comb(N_CLUSTERS, 2)
 PRETTY_NAME = "SecLearn Vietnamese RAG Eval (OWASP)"
 
 
@@ -35,18 +56,20 @@ class CardInputs:
     #: Eval-set root holding CHANGELOG.md, clusters.json, llm-config.json, questions/, annotation/, judgments/.
     root: Path
     #: `questions/<version>/` of the gold set.
-    version: str = "v1.0"
+    version: str = paths.GOLD_VERSION
 
 
 @dataclass
-class _Data:
+class _EvalSetFiles:
+    """Paths of the eval set's data files under `inputs.root`."""
+
     inputs: CardInputs
 
-    def path(self, *parts: str) -> Path:
+    def path(self, *parts: str | Path) -> Path:
         return self.inputs.root.joinpath(*parts)
 
     def qdir(self, *parts: str) -> Path:
-        return self.path("questions", self.inputs.version, *parts)
+        return self.path(paths.QUESTIONS, self.inputs.version, *parts)
 
 
 def _questions(files: list[Path]) -> list[Question]:
@@ -56,6 +79,11 @@ def _questions(files: list[Path]) -> list[Question]:
         if f.is_file():
             out += [q for q in read_questions(f)[1] if q.review.status != "rejected"]
     return out
+
+
+def _gold_questions(files: _EvalSetFiles) -> list[Question]:
+    """Kept questions of the gold set's test and dev files."""
+    return _questions([files.qdir(name) for name in paths.SPLIT_FILES])
 
 
 def _pct(n: int, d: int) -> str:
@@ -84,20 +112,15 @@ def _json_table(path: Path) -> str:
     return f"(từ `{path.name}`)\n\n| Chỉ số | Giá trị |\n|---|---|\n{body}"
 
 
-def _agreement(path: Path) -> str:
-    """`judge agreement`'s report as its own tables (confusion matrices, false negatives); any other JSON as a flat table."""
+def _agreement_report(path: Path) -> AgreementReport | None:
+    """`judge agreement`'s report, or None when the file is missing or is not one."""
     try:
-        report = read_json(path, AgreementReport) if path.is_file() else None
+        return read_json(path, AgreementReport) if path.is_file() else None
     except FormatError:
-        report = None
-    if report is None:
-        return _json_table(path)
-    body = render_agreement(report).split("\n## Độ ổn định")[0]
-    body = body.split("\n", 1)[1].replace("\n## ", "\n#### ")  # drop the page title; sections sit under the card's ###
-    return f"(từ `{path.name}`)\n{body}"
+        return None
 
 
-def _level_table(counts: Counter, clusters: list[str | None], names: dict[str, str]) -> str:
+def _level_table(counts: Counter[tuple[str | None, str]], clusters: list[str | None], names: dict[str, str]) -> str:
     head = "| Cụm | Tên | " + " | ".join(LEVELS) + " | Tổng |\n|---|---|" + "---|" * (len(LEVELS) + 1) + "\n"
     rows = []
     for c in clusters:
@@ -109,7 +132,7 @@ def _level_table(counts: Counter, clusters: list[str | None], names: dict[str, s
     return head + "".join(rows)
 
 
-def _cluster_order(cmap: ClusterMap | None, seen: set) -> list[str | None]:
+def _cluster_order(cmap: ClusterMap | None, seen: set[str | None]) -> list[str | None]:
     order: list[str | None] = [c for c in (cmap.clusters if cmap else []) if c in seen] or sorted(c for c in seen if c)
     return order + ([None] if None in seen else [])
 
@@ -143,8 +166,7 @@ riêng, chỉ đọc snapshot corpus (ADR 0004).
 """
 
 
-def _composition(d: _Data, cmap: ClusterMap | None) -> str:
-    snap = load_snapshot(d.inputs.snapshot)
+def _composition(files: _EvalSetFiles, snap: Snapshot, cmap: ClusterMap | None) -> str:
     m = snap.manifest
     wstg = sum(1 for c in snap.chunks if c.doc_key == WSTG_KEY)
     out = [
@@ -172,12 +194,12 @@ def _composition(d: _Data, cmap: ClusterMap | None) -> str:
         out.append("")
 
     out.append("### Hạn mức (phương án R, ADR 0003)\n")
-    plan_file = d.qdir("sample-plan.json")
+    plan_file = files.qdir("sample-plan.json")
     if plan_file.is_file():
         plan = read_json(plan_file, SamplePlan)
         params = ", ".join(f"{k} {v}" for k, v in plan.params.items() if k != "seed")
         out.append(
-            f"Kế hoạch `{plan_file.relative_to(d.inputs.root).as_posix()}`, seed {plan.seed}"
+            f"Kế hoạch `{plan_file.relative_to(files.inputs.root).as_posix()}`, seed {plan.seed}"
             + (f" ({params})" if params else "")
             + ". Cụm theo √ số chunk của cụm, trong cụm theo √ số chunk của tài liệu (WSTG của cụm là một tài liệu, chia "
             "tiếp theo test case), trần mỗi tài liệu; sàn 100 câu trả lời được mỗi cụm trên test.\n"
@@ -186,7 +208,7 @@ def _composition(d: _Data, cmap: ClusterMap | None) -> str:
             cells = [c for c in plan.cells if c.split == split]
             if not cells:
                 continue
-            counts = Counter()
+            counts: Counter[tuple[str | None, str]] = Counter()
             for c in cells:
                 counts[(c.cluster, c.level)] += c.target
             out.append(f"**{split}: {sum(c.target for c in cells)} câu**\n")
@@ -195,7 +217,7 @@ def _composition(d: _Data, cmap: ClusterMap | None) -> str:
         out.append(f"Kế hoạch lấy mẫu: {NOT_YET}.\n")
 
     out.append("### Phân bố thực tế\n")
-    questions = _questions([d.qdir("test.jsonl"), d.qdir("dev.jsonl")])
+    questions = _gold_questions(files)
     if questions:
         out.append("Câu giữ lại sau duyệt (câu bị loại khi duyệt không tính).\n")
         for split in ("test", "dev"):
@@ -208,10 +230,10 @@ def _composition(d: _Data, cmap: ClusterMap | None) -> str:
         if kinds:
             out.append("L6 theo loại: " + ", ".join(f"{k}: {n}" for k, n in sorted(kinds.items(), key=str)) + ".\n")
     else:
-        out.append(f"Gold set (`questions/{d.inputs.version}/test.jsonl`, `dev.jsonl`): {NOT_YET}.\n")
+        out.append(f"Gold set (`questions/{files.inputs.version}/test.jsonl`, `dev.jsonl`): {NOT_YET}.\n")
 
     out.append("### Bộ smoke\n")
-    smoke = _questions([d.path("questions", "smoke", "dev.jsonl"), d.path("questions", "smoke", "test.jsonl")])
+    smoke = _questions([files.path(paths.SMOKE, name) for name in reversed(paths.SPLIT_FILES)])
     if smoke:
         spans = sum(len(q.gold_evidence) for q in smoke)
         levels = Counter(q.strata.level for q in smoke)
@@ -229,9 +251,9 @@ def _composition(d: _Data, cmap: ClusterMap | None) -> str:
     return "\n".join(out)
 
 
-def _collection(d: _Data) -> str:
+def _collection(files: _EvalSetFiles) -> str:
     out = ["## Cách thu thập\n"]
-    config_file = d.path("llm-config.json")
+    config_file = files.path(paths.LLM_CONFIG)
     if config_file.is_file():
         c = read_json(config_file, LLMConfig)
         out.append(
@@ -243,35 +265,35 @@ def _collection(d: _Data) -> str:
         )
     else:
         out.append(f"- Model: {NOT_YET}.")
-    versions = [v for v, _ in prompts._TASKS.values()] + [prompts.OOD_VERSION, prompts.ANSWER_VERSION, prompts.LEVEL_VERSION]
-    out.append("- Phiên bản prompt: " + ", ".join(f"`{v}`" for v in versions) + ".\n")
+    out.append("- Phiên bản prompt: " + ", ".join(f"`{v}`" for v in prompts.question_prompt_versions()) + ".\n")
 
-    gen_file = d.qdir("generate-report.json")
+    gen_file = files.qdir("generate-report.json")
     if gen_file.is_file():
         g = read_json(gen_file, GenerationReport)
         out.append(f"Sinh: {g.n_candidates} ứng viên, thiếu {g.n_shortfall} so với yêu cầu.\n")
-    filt_file = d.qdir("filter-report.json")
+    filter_file = files.qdir("filter-report.json")
     out.append("Tỉ lệ loại ở từng bước lọc:\n")
-    if filt_file.is_file():
-        f = read_json(filt_file, FilterReport)
+    if filter_file.is_file():
+        report = read_json(filter_file, FilterReport)
         out.append("| Bước | Vào | Loại | Tỉ lệ loại | Đổi mức |\n|---|---|---|---|---|")
-        for s in f.steps:
-            out.append(f"| {s.step} | {s.n_in} | {s.n_rejected} | {_pct(s.n_rejected, s.n_in)} | {s.n_relabelled} |")
-        out.append(f"\nGiữ lại sau lọc: {f.n_kept}.\n")
+        for step in report.steps:
+            out.append(f"| {step.step} | {step.n_in} | {step.n_rejected} | {_pct(step.n_rejected, step.n_in)} | {step.n_relabelled} |")
+        out.append(f"\nGiữ lại sau lọc: {report.n_kept}.\n")
     else:
         out.append(f"{NOT_YET}.\n")
     return "\n".join(out)
 
 
-def _labelling(d: _Data) -> str:
+def _labelling(files: _EvalSetFiles) -> str:
     out = [
         "## Cách gán nhãn\n",
         "Toàn bộ do **một người** (tác giả luận văn) gán trong Label Studio cục bộ (ADR 0002): không có độ đồng ý giữa "
-        "nhiều người; thay vào đó báo độ ổn định của người gán (gán lại khoảng 100 mẫu sau ít nhất một tuần, không "
-        "nhìn nhãn cũ). Người gán duyệt từng câu (chấp nhận / sửa / loại), bôi gold span trên markdown liên tục, rồi "
-        "chấm 0-3 các chunk trong pool mà Gemini cho ≥ 1 cộng 10% mẫu chunk Gemini cho 0.\n",
+        f"nhiều người; thay vào đó báo độ ổn định của người gán (gán lại khoảng 100 mẫu sau ít nhất {STABILITY_MIN_DAYS} "
+        "ngày, không nhìn nhãn cũ). Người gán duyệt từng câu (chấp nhận / sửa / loại), bôi gold span trên markdown liên "
+        f"tục, rồi chấm 0-3 các chunk trong pool mà Gemini cho ≥ 1 cộng {ZERO_SAMPLE_RATE:.0%} mẫu chunk Gemini cho 0.\n",
     ]
-    guides = sorted(d.path("annotation").glob("guideline-*.md")) if d.path("annotation").is_dir() else []
+    annotation = files.path(paths.ANNOTATION)
+    guides = sorted(annotation.glob("guideline-*.md")) if annotation.is_dir() else []
     versions = []
     for g in guides:
         try:
@@ -279,7 +301,7 @@ def _labelling(d: _Data) -> str:
         except FormatError:
             continue
     out.append("- Hướng dẫn gán nhãn: " + (", ".join(versions) if versions else NOT_YET) + ".")
-    labels_file = d.path("judgments", "labels.jsonl")
+    labels_file = files.path(paths.LABELS)
     if labels_file.is_file():
         labels = read_jsonl(labels_file, Label)
         tasks = Counter(lb.task for lb in labels)
@@ -291,15 +313,19 @@ def _labelling(d: _Data) -> str:
         )
     else:
         out.append(f"- Nhãn: {NOT_YET}.")
+    agreement_file = files.path(paths.AGREEMENT)
+    report = _agreement_report(agreement_file)
+    source = f"(từ `{agreement_file.name}`)\n"
     out.append("\n### Gemini × người trên pool (κ có trọng số, đồng ý theo mức, âm tính giả)\n")
-    out.append(_agreement(d.path("judgments", "agreement.json")))
+    # Sections sit under the card's ###; any other JSON in the file is shown as a flat table.
+    out.append(source + render_judge_agreement(report, "####") if report else _json_table(agreement_file))
     out.append("\n### Độ ổn định của người gán\n")
-    out.append(_json_table(d.path("judgments", "stability.json")))
+    out.append(source + "\n" + render_stability(report.stability) if report else NOT_YET)
     return "\n".join(out) + "\n"
 
 
-def _language(d: _Data) -> str:
-    questions = _questions([d.qdir("test.jsonl"), d.qdir("dev.jsonl")])
+def _language(files: _EvalSetFiles) -> str:
+    questions = _gold_questions(files)
     styles = Counter(q.strata.question_style or "không ghi" for q in questions)
     counts = ", ".join(f"{k}: {n}" for k, n in sorted(styles.items())) if questions else NOT_YET
     return (
@@ -336,17 +362,19 @@ def _reporting() -> str:
 Phần này cố định trước mọi lượt đo (spec user story 69; lựa chọn A-G ở ticket 10, ngày 2026-10-20). Đổi nó sau khi
 đã có số đo phải ghi lý do vào CHANGELOG và báo cả cách cũ lẫn cách mới.
 
-**Số chính.** {PRIMARY_METRIC} **macro** trên 10 cụm chủ đề (trung bình đều các cụm), chỉ trên câu trả lời được
-(L1-L5, L7) của split test. Lý do chọn {PRIMARY_METRIC}: app đưa top RAG_TOP_K = 5 chunk cho model trả lời, nên tỉ lệ
-chunk liên quan lọt vào 5 chunk đó là thứ phần trả lời phụ thuộc. Đi kèm số chính, luôn báo riêng L6: tỉ lệ từ chối
+**Số chính.** {PRIMARY_METRIC} **macro** trên {N_CLUSTERS} cụm chủ đề (trung bình đều các cụm), chỉ trên câu trả lời được
+(L1-L5, L7) của split test. Lý do chọn {PRIMARY_METRIC}: app đưa top RAG_TOP_K = {RAG_TOP_K} chunk cho model trả lời, nên tỉ lệ
+chunk liên quan lọt vào {RAG_TOP_K} chunk đó là thứ phần trả lời phụ thuộc. Đi kèm số chính, luôn báo riêng L6: tỉ lệ từ chối
 đúng trên L6 (chung và theo loại a / b / c) và tỉ lệ từ chối sai trên câu trả lời được (mỗi câu là tỉ lệ từ chối trên
-K = 3 lần trả lời); L6 không vào bất kỳ số nào của phần truy xuất.
+K = {ANSWER_RUNS} lần trả lời); L6 không vào bất kỳ số nào của phần truy xuất.
 
-**Số phụ** (không dùng để kết luận chính): {others}; micro (mọi câu); hậu phân tầng (trọng số = tỉ lệ chunk lấy mẫu
-được của corpus trong từng cụm, lựa chọn F); từng cụm (kèm số câu, số tài liệu / test case); từng mức.
+**Số phụ** (không dùng để kết luận chính): {others}; micro (mọi câu); hậu phân tầng (lựa chọn F: trọng số =
+tỉ lệ chunk của corpus trong từng cụm, đếm chunk của các đơn vị lấy mẫu được, tức không tính vùng loại trừ như mục lục,
+phụ lục payload, danh mục tham khảo, rồi chuẩn hoá trên các cụm có câu); từng cụm (kèm số câu, số tài liệu / test
+case); từng mức.
 
 **Liên quan.** Hit / MRR / Recall coi chunk là liên quan từ mức ≥ {MIN_GRADE} (thang 0-3); nDCG@10 dùng nguyên thang
-0-3 (gain tuyến tính của ranx) (lựa chọn C). Chunk liên quan khi giao gold span ≥ 50% độ dài span hoặc chứa trọn span;
+0-3 (gain tuyến tính của ranx) (lựa chọn C). Chunk liên quan khi giao gold span ≥ {COVER_RATIO:.0%} độ dài span hoặc chứa trọn span;
 nhãn pool của người ghi đè. Judged@10 (ir-measures) báo cạnh mọi cấu hình; câu mà run không trả gì được 0 ở mọi độ
 đo, kể cả Judged@10 (lựa chọn G).
 
@@ -364,16 +392,17 @@ G ≤ {stats.EXACT_GROUPS} nhóm, ngoài ra {stats.PERMUTATIONS} lần lấy m�
 theo câu của ranx chỉ là cột phụ (lựa chọn A).
 
 **So cụm với cụm.** Hiệu hai trung bình, SE² = SE²_A + SE²_B, kiểm z hai phía, p hiệu chỉnh Holm trong từng độ đo trên
-45 cặp; chỉ kết luận khác biệt khi p (Holm) < {stats.ALPHA} (lựa chọn B).
+{N_CLUSTER_PAIRS} cặp; chỉ kết luận khác biệt khi p (Holm) < {stats.ALPHA} (lựa chọn B).
 
 **Số kiểm độ nhạy** (ticket 13, không đổi số chính hay khoảng tin cậy chính): SE tính lại khi (1) gộp nhóm hai tài
-liệu của mỗi câu L4 / L5 (union-find, áp cho micro, macro, từng cụm, từng mức) và (2) nhóm = cụm chủ đề (10 nhóm, chỉ
-cho micro, vì với từng cụm và macro cách này suy biến). Báo kèm số nhóm và tỉ số SE thay thế / SE chính (`se_sensitivity`
-trong `scores.json`, bảng "Kiểm độ nhạy của sai số" của `report`); không tính cho hậu phân tầng và so sánh ghép cặp.
-Ngoài ra báo độ nhạy của macro với một cách phân cụm khác.
+liệu của mỗi câu L4 / L5, chỉ trong cùng cụm chủ đề của câu (union-find, áp cho micro, macro, từng cụm, từng mức) và
+(2) nhóm = cụm chủ đề ({N_CLUSTERS} nhóm, chỉ cho micro, vì với từng cụm và macro cách này suy biến). Báo kèm số nhóm và
+tỉ số SE thay thế / SE chính (`se_sensitivity` trong `scores.json`, bảng "Kiểm độ nhạy của sai số" của `report`); không
+tính cho hậu phân tầng và so sánh ghép cặp. Không đăng ký số độ nhạy của macro với một bảng phân cụm chủ đề thay thế:
+chưa có bảng thay thế nào được định nghĩa trước; thêm số đó sau là đổi phần này.
 
 **Phần trả lời** (định nghĩa, chạy khi có bộ chạy SecLearn): đúng đáp án 0-2, trung thành với nguồn, trích dẫn đúng,
-từ chối đúng / sai; K = 3 lần chạy mỗi câu.
+từ chối đúng / sai; K = {ANSWER_RUNS} lần chạy mỗi câu.
 """
 
 
@@ -390,8 +419,8 @@ def _distribution(canary: str) -> str:
 """
 
 
-def _maintenance(d: _Data, releases: list) -> str:
-    rules = {"major": [], "minor": [], "patch": []}
+def _maintenance(releases: list[Release]) -> str:
+    rules: dict[str, list[str]] = {"major": [], "minor": [], "patch": []}
     for change, part in BUMP.items():
         rules[part].append(change)
     lines = [
@@ -440,25 +469,25 @@ def _limitations(n_documents: int) -> str:
 
 
 def render_card(inputs: CardInputs) -> str:
-    d = _Data(inputs)
+    files = _EvalSetFiles(inputs)
     snap = load_snapshot(inputs.snapshot)
-    releases = read_changelog(d.path("CHANGELOG.md").read_text(encoding="utf-8"))
-    cmap_file = d.path("clusters.json")
+    releases = read_changelog(files.path(paths.CHANGELOG).read_text(encoding="utf-8"))
+    cmap_file = files.path(paths.CLUSTERS)
     cmap = read_json(cmap_file, ClusterMap) if cmap_file.is_file() else None
-    n = len(_questions([d.qdir("test.jsonl"), d.qdir("dev.jsonl")]))
+    n = len(_gold_questions(files))
     parts = [
         _front_matter(releases[0].version, snap.snapshot_id, snap.manifest.canary, n),
         f"# {PRETTY_NAME}, phiên bản {releases[0].version}\n",
         "Card sinh bằng `seclearn-eval card` từ các file dữ liệu; đừng sửa tay, sửa dữ liệu rồi sinh lại.\n",
         MOTIVATION,
-        _composition(d, cmap),
-        _collection(d),
-        _labelling(d),
-        _language(d),
+        _composition(files, snap, cmap),
+        _collection(files),
+        _labelling(files),
+        _language(files),
         USES,
         _reporting(),
         _distribution(snap.manifest.canary),
-        _maintenance(d, releases),
+        _maintenance(releases),
         _limitations(len(snap.manifest.documents)),
     ]
     return "\n".join(p.rstrip("\n") + "\n" for p in parts)

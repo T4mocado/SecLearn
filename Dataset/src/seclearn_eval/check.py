@@ -115,7 +115,9 @@ def _check_spans(snap: Snapshot, q: Question, span: GoldSpan, units: list[Unit],
 
 
 def _check_plan(plan: SamplePlan, questions: list[Question], out: list[Problem]) -> None:
-    key = lambda split, cluster, level, kind: (split, cluster, level, kind)  # noqa: E731
+    def key(split: str, cluster: str | None, level: str, kind: str | None) -> tuple[str, str | None, str, str | None]:
+        return split, cluster, level, kind
+
     actual = Counter(key(q.split, q.cluster, q.strata.level, q.strata.l6_kind) for q in questions if _kept(q))
     targets = {key(c.split, c.cluster, c.level, c.l6_kind): c.target for c in plan.cells}
     for cell, target in sorted(targets.items(), key=str):

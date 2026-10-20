@@ -4,6 +4,7 @@ reproducibly, and chunks the human graded 2-3 outside the gold become new gold s
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -71,6 +72,17 @@ def test_grading_again_is_answered_from_the_cache(snap, tmp_path):
     assert (again.hits, again.misses, len(inner.calls)) == (2, 0, 2)
 
 
+def test_only_pool_entries_without_a_grade_go_to_the_judge(snap):
+    """A grown pool keeps its old grades (`pool`): grading it again sends only the new entries to Gemini."""
+    q = question("q1", "test", "auth", "L1", [])
+    old = entry("q1", f"{SESS}#1", 2).model_copy(update={"llm_model": "gemini-old", "llm_prompt_version": "judge-old-v0", "for_human": True})
+    client = gemini({"at least 128 bits": 3})
+    graded = grade_pool([old, entry("q1", f"{SESS}#2")], [q], snap, client)
+    assert graded[0] == old
+    assert (graded[1].llm_grade, graded[1].llm_model) == (0, "gemini-fake")
+    assert len(client.calls) == 1
+
+
 def test_a_grade_outside_0_to_3_is_an_error(snap):
     q = question("q1", "test", "auth", "L1", [])
     bad = FakeClient(model="gemini-fake", reply=lambda p, s: {"needed": "", "found": "", "grade": 5})
@@ -127,6 +139,16 @@ def test_a_chunk_graded_2_or_3_outside_the_gold_becomes_a_new_gold_span(snap):
     assert all(quote_at(snap.markdown[s.doc_key], s, s.quote) for s in new)
     # Expanding again adds nothing.
     assert expand_gold([out], labels, snap)[1] == 0
+
+
+def test_a_labelled_chunk_whose_document_is_not_in_the_snapshot_is_a_format_error(snap):
+    from seclearn_eval.io import FormatError
+
+    q = question("q1", "test", "auth", "L1", [])
+    docs = [d for d in snap.manifest.documents if d.doc_key != SESS]
+    broken = replace(snap, manifest=snap.manifest.model_copy(update={"documents": docs}))
+    with pytest.raises(FormatError, match=SESS):
+        expand_gold([q], [label(f"{SESS}#1", 3)], broken)
 
 
 def test_the_commands_grade_pick_and_expand_through_files(snap_dir, tmp_path, monkeypatch):

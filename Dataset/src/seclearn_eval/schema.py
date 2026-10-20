@@ -286,12 +286,15 @@ class FalseNegatives(Record):
 
 
 class Stability(Record):
-    """Intra-annotator agreement: the first and the latest grade of a chunk graded twice, at least `min_days` apart."""
+    """Intra-annotator agreement: the latest grade of a chunk graded twice and the first one under the same guideline
+    version, at least `min_days` apart."""
 
     min_days: int
     n_pairs: int
     #: Chunks graded twice but sooner than `min_days`: left out.
     n_too_close: int
+    #: Chunks graded twice, but never twice under the guideline version of their latest grade: left out.
+    n_version_mismatch: int = 0
     min_gap_days: float | None
     exact: float | None
     kappa_linear: float | None
@@ -357,8 +360,12 @@ class RunLine(Record):
     tag: str
 
 
+#: K: answers of the measured system to each question in one run (spec, "Chấm điểm").
+ANSWER_RUNS = 3
+
+
 class AnswerLine(Record):
-    """One answer of the measured system to one question, in `runs/<run_id>/answers.jsonl` (K = 3 runs per question).
+    """One answer of the measured system to one question, in `runs/<run_id>/answers.jsonl` (K = `ANSWER_RUNS` per question).
 
     Defined now, filled when the SecLearn runner exists. `refused` comes from the system; the graded fields are
     filled by the judge / annotator afterwards and stay None until then.
@@ -574,7 +581,7 @@ class ClusterDifference(Record):
 class SeSensitivity(Record):
     """The clustered SE of one scope recomputed under a more cautious grouping (ticket 13), next to the main one.
 
-    `pair_merged`: an L4 / L5 question joins the groups of both its documents (union-find, chaining within a cluster).
+    `pair_merged`: an L4 / L5 question joins the groups of both its documents (union-find), never across topic clusters.
     `topic_cluster`: every topic cluster is one group; micro only, since per cluster or for macro it leaves one group.
     The main numbers and intervals keep the main grouping (first unit); this only says how much the SE could move.
     """

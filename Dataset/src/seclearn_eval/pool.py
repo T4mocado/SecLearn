@@ -15,7 +15,7 @@ from .spans import covers
 
 def run_systems(systems: list[Retriever], questions: list[Question], snap: Snapshot, depth: int) -> dict[str, Ranked]:
     pooled = [q for q in questions if gradable(q)]
-    return {s.name: s.retrieve(pooled, snap.chunks, depth, snap) for s in systems}
+    return {s.name: s.retrieve(pooled, snap.chunks, depth) for s in systems}
 
 
 def build_pool(questions: list[Question], snap: Snapshot, ranked: dict[str, Ranked], depth: int,

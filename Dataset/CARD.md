@@ -107,7 +107,7 @@ chưa có.
 
 ## Cách gán nhãn
 
-Toàn bộ do **một người** (tác giả luận văn) gán trong Label Studio cục bộ (ADR 0002): không có độ đồng ý giữa nhiều người; thay vào đó báo độ ổn định của người gán (gán lại khoảng 100 mẫu sau ít nhất một tuần, không nhìn nhãn cũ). Người gán duyệt từng câu (chấp nhận / sửa / loại), bôi gold span trên markdown liên tục, rồi chấm 0-3 các chunk trong pool mà Gemini cho ≥ 1 cộng 10% mẫu chunk Gemini cho 0.
+Toàn bộ do **một người** (tác giả luận văn) gán trong Label Studio cục bộ (ADR 0002): không có độ đồng ý giữa nhiều người; thay vào đó báo độ ổn định của người gán (gán lại khoảng 100 mẫu sau ít nhất 7 ngày, không nhìn nhãn cũ). Người gán duyệt từng câu (chấp nhận / sửa / loại), bôi gold span trên markdown liên tục, rồi chấm 0-3 các chunk trong pool mà Gemini cho ≥ 1 cộng 10% mẫu chunk Gemini cho 0.
 
 - Hướng dẫn gán nhãn: `v0` (guideline-v0.md).
 - Nhãn: chưa có.
@@ -150,8 +150,10 @@ chunk liên quan lọt vào 5 chunk đó là thứ phần trả lời phụ thu�
 đúng trên L6 (chung và theo loại a / b / c) và tỉ lệ từ chối sai trên câu trả lời được (mỗi câu là tỉ lệ từ chối trên
 K = 3 lần trả lời); L6 không vào bất kỳ số nào của phần truy xuất.
 
-**Số phụ** (không dùng để kết luận chính): hit@1, hit@5, hit@10, mrr@10, ndcg@10, recall@10, judged@10; micro (mọi câu); hậu phân tầng (trọng số = tỉ lệ chunk lấy mẫu
-được của corpus trong từng cụm, lựa chọn F); từng cụm (kèm số câu, số tài liệu / test case); từng mức.
+**Số phụ** (không dùng để kết luận chính): hit@1, hit@5, hit@10, mrr@10, ndcg@10, recall@10, judged@10; micro (mọi câu); hậu phân tầng (lựa chọn F: trọng số =
+tỉ lệ chunk của corpus trong từng cụm, đếm chunk của các đơn vị lấy mẫu được, tức không tính vùng loại trừ như mục lục,
+phụ lục payload, danh mục tham khảo, rồi chuẩn hoá trên các cụm có câu); từng cụm (kèm số câu, số tài liệu / test
+case); từng mức.
 
 **Liên quan.** Hit / MRR / Recall coi chunk là liên quan từ mức ≥ 2 (thang 0-3); nDCG@10 dùng nguyên thang
 0-3 (gain tuyến tính của ranx) (lựa chọn C). Chunk liên quan khi giao gold span ≥ 50% độ dài span hoặc chứa trọn span;
@@ -175,10 +177,11 @@ theo câu của ranx chỉ là cột phụ (lựa chọn A).
 45 cặp; chỉ kết luận khác biệt khi p (Holm) < 0.05 (lựa chọn B).
 
 **Số kiểm độ nhạy** (ticket 13, không đổi số chính hay khoảng tin cậy chính): SE tính lại khi (1) gộp nhóm hai tài
-liệu của mỗi câu L4 / L5 (union-find, áp cho micro, macro, từng cụm, từng mức) và (2) nhóm = cụm chủ đề (10 nhóm, chỉ
-cho micro, vì với từng cụm và macro cách này suy biến). Báo kèm số nhóm và tỉ số SE thay thế / SE chính (`se_sensitivity`
-trong `scores.json`, bảng "Kiểm độ nhạy của sai số" của `report`); không tính cho hậu phân tầng và so sánh ghép cặp.
-Ngoài ra báo độ nhạy của macro với một cách phân cụm khác.
+liệu của mỗi câu L4 / L5, chỉ trong cùng cụm chủ đề của câu (union-find, áp cho micro, macro, từng cụm, từng mức) và
+(2) nhóm = cụm chủ đề (10 nhóm, chỉ cho micro, vì với từng cụm và macro cách này suy biến). Báo kèm số nhóm và
+tỉ số SE thay thế / SE chính (`se_sensitivity` trong `scores.json`, bảng "Kiểm độ nhạy của sai số" của `report`); không
+tính cho hậu phân tầng và so sánh ghép cặp. Không đăng ký số độ nhạy của macro với một bảng phân cụm chủ đề thay thế:
+chưa có bảng thay thế nào được định nghĩa trước; thêm số đó sau là đổi phần này.
 
 **Phần trả lời** (định nghĩa, chạy khi có bộ chạy SecLearn): đúng đáp án 0-2, trung thành với nguồn, trích dẫn đúng,
 từ chối đúng / sai; K = 3 lần chạy mỗi câu.

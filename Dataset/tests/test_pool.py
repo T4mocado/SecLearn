@@ -69,18 +69,22 @@ def test_bm25_prefers_the_chunk_saying_the_term_more_often_at_equal_length():
 def test_chunk_embeddings_are_cached_by_markdown_hash_and_model(snap, tmp_path):
     q = question("q1", "test", "auth", "L1", []).model_copy(update={"question": "cookie secure httponly"})
     encoder = BagOfWords()
-    first = DenseRetriever("vi-embed", encoder, EmbeddingCache(tmp_path), field="question").retrieve([q], snap.chunks, k=3, snap=snap)
+    first = DenseRetriever("vi-embed", encoder, EmbeddingCache(tmp_path), snap, field="question").retrieve([q], snap.chunks, k=3)
     assert len(encoder.encoded) == len(snap.chunks)
     assert first["q1"][0][0] == f"{SESS}#2"
     sha = snap.document(SESS).md_sha256
     assert (tmp_path / "fake-embed" / f"{sha}.json").is_file()
 
     again = BagOfWords()
-    second = DenseRetriever("vi-embed", again, EmbeddingCache(tmp_path), field="question").retrieve([q], snap.chunks, k=3, snap=snap)
+    second = DenseRetriever("vi-embed", again, EmbeddingCache(tmp_path), snap, field="question").retrieve([q], snap.chunks, k=3)
     assert again.encoded == [] and second == first
     other = BagOfWords("other-model")
-    DenseRetriever("x", other, EmbeddingCache(tmp_path), field="question").retrieve([q], snap.chunks, k=3, snap=snap)
+    DenseRetriever("x", other, EmbeddingCache(tmp_path), snap, field="question").retrieve([q], snap.chunks, k=3)
     assert len(other.encoded) == len(snap.chunks)
+
+
+def test_a_dense_system_with_no_questions_returns_nothing(snap, tmp_path):
+    assert DenseRetriever("vi-embed", BagOfWords(), EmbeddingCache(tmp_path), snap, field="question").retrieve([], snap.chunks, k=3) == {}
 
 
 class FakeCrossEncoder:
@@ -97,14 +101,14 @@ class FakeCrossEncoder:
 
 def test_the_reranker_reorders_the_base_candidates_by_its_best_score_over_the_vietnamese_and_english_question(snap, tmp_path):
     q = question("q1", "test", "auth", "L1", []).model_copy(update={"question": "cookie secure httponly", "question_en": "samesite"})
-    base = DenseRetriever("vi-embed", BagOfWords(), EmbeddingCache(tmp_path), field="question")
+    base = DenseRetriever("vi-embed", BagOfWords(), EmbeddingCache(tmp_path), snap, field="question")
     scorer = FakeCrossEncoder({"samesite": 0.9})
-    ranked = RerankRetriever("vi-embed+rerank", base, scorer, candidates=4).retrieve([q], snap.chunks, k=2, snap=snap)
+    ranked = RerankRetriever("vi-embed+rerank", base, scorer, candidates=4).retrieve([q], snap.chunks, k=2)
     top = [c for c, _ in ranked["q1"]]
     text = {c.chunk_key: c.text for c in snap.chunks}
     # Only the English question names SameSite: the chunks saying it come first, wherever the embedding put them.
     assert len(top) == 2 and all("samesite" in text[c].lower() for c in top)
-    assert top != [c for c, _ in base.retrieve([q], snap.chunks, k=2, snap=snap)["q1"]]
+    assert top != [c for c, _ in base.retrieve([q], snap.chunks, k=2)["q1"]]
     assert len(scorer.pairs) == 8  # 4 candidates × (question, question_en)
 
 
@@ -148,10 +152,32 @@ def test_the_five_systems_come_from_the_pinned_config():
         made.append(f"{kind}:{ref.model}")
         return FakeCrossEncoder({}) if kind == "cross-encoder" else BagOfWords(ref.model)
 
-    systems = build_systems(config, EmbeddingCache(MINI / "unused"), factory)
+    systems = build_systems(config, EmbeddingCache(MINI / "unused"), factory, load_snapshot(MINI))
     assert [s.name for s in systems] == SYSTEMS
     # One model loaded once even when two systems share it.
     assert sorted(made) == ["cross-encoder:BAAI/bge-reranker-v2-m3", "encoder:BAAI/bge-m3", "encoder:bkai-foundation-models/vietnamese-bi-encoder"]
+
+
+def test_the_real_models_refuse_a_null_revision_unless_allowed():
+    """An unpinned model's cache key has no commit: new weights upstream would silently reuse old vectors."""
+    from seclearn_eval.retrieval import UnpinnedModelError, model_factory
+    from seclearn_eval.schema import EncoderRef, RerankerRef
+
+    for kind, ref in [("encoder", EncoderRef(model="BAAI/bge-m3")), ("cross-encoder", RerankerRef(model="BAAI/bge-reranker-v2-m3"))]:
+        with pytest.raises(UnpinnedModelError, match="--allow-unpinned"):
+            model_factory()(kind, ref)
+
+
+def test_the_command_stops_before_loading_any_model_when_a_revision_is_null(snap_dir, tmp_path, capsys):
+    questions = tmp_path / "test.jsonl"
+    write_questions(questions, QuestionFileHeader(canary=CANARY, eval_version="1.0.0", snapshot_id="2026-10-18-mini"),
+                    [question("q1", "test", "auth", "L1", [])])
+    argv = ["pool", "--snapshot", str(snap_dir), "--questions", str(questions), "--config", str(MINI.parents[2] / "pool-config.json"),
+            "--cache", str(tmp_path / "cache"), "--out", str(tmp_path / "pool.jsonl")]
+    assert main(argv) == 1
+    err = capsys.readouterr().err
+    assert "revision" in err and "--allow-unpinned" in err
+    assert not (tmp_path / "pool.jsonl").exists()
 
 
 def test_the_command_runs_the_systems_and_writes_the_pool_and_one_trec_run_per_system(snap_dir, tmp_path, monkeypatch):
@@ -161,7 +187,7 @@ def test_the_command_runs_the_systems_and_writes_the_pool_and_one_trec_run_per_s
     q = question("q1", "test", "auth", "L1", [span(snap_dir, SESS, "at least 128 bits (16 bytes)")])
     q = q.model_copy(update={"question": "session cookie secure", "question_en": "session cookie secure"})
     write_questions(questions, QuestionFileHeader(canary=CANARY, eval_version="1.0.0", snapshot_id="2026-10-18-mini"), [q])
-    monkeypatch.setattr(cli, "model_factory", lambda: (lambda kind, ref: FakeCrossEncoder({"secure": 1.0}) if kind == "cross-encoder" else BagOfWords(ref.model)))
+    monkeypatch.setattr(cli, "model_factory", lambda **_: (lambda kind, ref: FakeCrossEncoder({"secure": 1.0}) if kind == "cross-encoder" else BagOfWords(ref.model)))
     out = tmp_path / "judgments" / "pool.jsonl"
     argv = ["pool", "--snapshot", str(snap_dir), "--questions", str(questions), "--config", str(MINI.parents[2] / "pool-config.json"),
             "--cache", str(tmp_path / "cache"), "--out", str(out)]

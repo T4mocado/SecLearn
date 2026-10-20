@@ -28,10 +28,14 @@ EXPAND_MIN_GRADE = 2
 
 
 def grade_pool(pool: list[PoolEntry], questions: list[Question], snap: Snapshot, client: LLMClient) -> list[PoolEntry]:
+    """`pool` with an LLM grade on every entry: only entries without one go to the judge (`pool` keeps old grades)."""
     by_q = {q.id: q for q in questions}
     chunks = {c.chunk_key: c for c in snap.chunks}
-    out = []
+    out: list[PoolEntry] = []
     for e in pool:
+        if e.llm_grade is not None:
+            out.append(e)
+            continue
         q, c = by_q.get(e.question_id), chunks.get(e.chunk_key)
         if q is None:
             raise FormatError(f"pool: question {e.question_id} not in the questions file")
@@ -50,7 +54,9 @@ def select_for_human(pool: list[PoolEntry], rate: float = ZERO_SAMPLE_RATE, seed
     """`pool` with `for_human` set: every LLM grade ≥ 1, and ceil(rate × zeros) zeros drawn with `seed`."""
     if any(e.llm_grade is None for e in pool):
         raise FormatError("pool has entries the LLM judge has not graded: run `judge grade` on the whole pool")
-    key = lambda e: (e.question_id, e.chunk_key)  # noqa: E731
+    def key(e: PoolEntry) -> tuple[str, str]:
+        return e.question_id, e.chunk_key
+
     zeros = sorted((e for e in pool if e.llm_grade == 0), key=key)
     kept = {key(e) for e in zeros if e.for_human}
     want = math.ceil(rate * len(zeros))
@@ -66,7 +72,7 @@ def expand_gold(questions: list[Question], labels: list[Label], snap: Snapshot) 
 
     The span is the chunk's body on the markdown, so it outlives the chunker; its grade is the human's."""
     chunks = {c.chunk_key: c for c in snap.chunks}
-    human = [lab for lab in latest_pool_labels(labels).values() if lab.snapshot_id == snap.snapshot_id and (lab.grade or 0) >= EXPAND_MIN_GRADE]
+    human = [lab for lab in latest_pool_labels(labels, snap.snapshot_id).values() if (lab.grade or 0) >= EXPAND_MIN_GRADE]
     out: list[Question] = []
     added = 0
     for q in questions:
@@ -78,9 +84,10 @@ def expand_gold(questions: list[Question], labels: list[Label], snap: Snapshot) 
                     raise FormatError(f"{q.id}: labelled chunk {lab.chunk_key} not in snapshot {snap.snapshot_id}")
                 if any(s.doc_key == c.doc_key and overlap(s, c) > 0 for s in spans):
                     continue
-                doc = snap.document(c.doc_key)
-                md = snap.markdown[c.doc_key]
-                spans.append(GoldSpan(doc_key=c.doc_key, md_sha256=doc.md_sha256, char_start=c.char_start,  # type: ignore[union-attr]
+                doc, md = snap.document(c.doc_key), snap.markdown.get(c.doc_key)
+                if doc is None or md is None:
+                    raise FormatError(f"{q.id}: chunk {c.chunk_key}'s document {c.doc_key} is not in snapshot {snap.snapshot_id}")
+                spans.append(GoldSpan(doc_key=c.doc_key, md_sha256=doc.md_sha256, char_start=c.char_start,
                                       char_end=c.char_end, quote=md[c.char_start : c.char_end], grade=lab.grade, source="pool"))
                 added += 1
         out.append(q.model_copy(update={"gold_evidence": spans}) if len(spans) != len(q.gold_evidence) else q)

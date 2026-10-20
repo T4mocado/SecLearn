@@ -157,7 +157,9 @@ def test_labelling_shows_the_confusion_matrix_false_negatives_and_stability_writ
     text = section(card(snap_dir, root), "Cách gán nhãn")
     assert "| Gemini \\ người | 0 | 1 | 2 | 3 |" in text  # the 4 × 4 confusion matrix
     assert "người chấm ≥ 2: 1" in text  # false negatives among the sampled zeros
-    assert "n_pairs | 1" in text  # stability.json
+    # Stability comes from the same agreement.json: no other file is written or read.
+    assert not (root / "judgments" / "stability.json").exists()
+    assert "1 chunk chấm lại cách ít nhất 7 ngày" in text
 
 
 def test_pre_registration_is_fixed_whatever_has_been_measured(snap_dir, root):
@@ -186,8 +188,17 @@ def test_pre_registration_is_fixed_whatever_has_been_measured(snap_dir, root):
         "chia n",
         "Judged@10",
         "kiểm độ nhạy",
+        "45 cặp",
+        "K = 3",
+        "RAG_TOP_K = 5",
+        "≥ 50% độ dài span",
+        "tỉ lệ chunk của corpus trong từng cụm",
     ]:
         assert phrase in before, phrase
+    # Only what `score` computes is pre-registered: L4 / L5 merges stay in their topic cluster, and no alternative
+    # clustering is promised (the spec does not define one).
+    assert "trong cùng cụm chủ đề" in before
+    assert "Không đăng ký số độ nhạy của macro với một bảng phân cụm chủ đề thay thế" in before
 
 
 def test_distribution_and_maintenance(snap_dir, root):

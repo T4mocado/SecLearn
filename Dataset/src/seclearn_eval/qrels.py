@@ -2,7 +2,7 @@
 
 A chunk is relevant to a gold span when it holds at least half of the span, or all of it (`spans.covers`); its grade is
 the span's (the highest, when it covers several). Then the pool, if it was built on this chunker: a human pool label
-replaces that grade (the latest label, when a chunk was graded twice), and an LLM-only 0 is written as judged,
+replaces that grade (the latest label made on this snapshot, when a chunk was graded twice), and an LLM-only 0 is written as judged,
 not relevant. qrels are a product: never edit them, change the spans or the labels and generate again.
 """
 
@@ -31,10 +31,12 @@ def gradable(q: Question) -> bool:
     return q.strata.answerable and q.review.status != "rejected"
 
 
-def latest_pool_labels(labels: list[Label]) -> dict[tuple[str, str], Label]:
-    """(question_id, chunk_key) → the latest graded pool label."""
+def latest_pool_labels(labels: list[Label], snapshot_id: str | None) -> dict[tuple[str, str], Label]:
+    """(question_id, chunk_key) → the latest graded pool label made on snapshot `snapshot_id` (on any, when None)."""
     out: dict[tuple[str, str], Label] = {}
-    for lab in sorted((lab for lab in labels if lab.task == "pool" and lab.grade is not None and lab.chunk_key), key=lambda lab: lab.annotated_at):
+    graded = [lab for lab in labels if lab.task == "pool" and lab.grade is not None and lab.chunk_key
+              and (snapshot_id is None or lab.snapshot_id == snapshot_id)]
+    for lab in sorted(graded, key=lambda lab: lab.annotated_at):
         out[(lab.question_id, lab.chunk_key)] = lab
     return out
 
@@ -58,7 +60,7 @@ def build_qrels(questions: list[Question], snap: Snapshot, pool: list[PoolEntry]
     if other:
         warnings.append(f"pool entries on chunker {', '.join(other)}, not {snap.chunker_version}: their labels are not applied")
     pooled = {(e.question_id, e.chunk_key): e for e in pool if e.chunker_version == snap.chunker_version}
-    human = {k: lab for k, lab in latest_pool_labels(labels).items() if k in pooled}
+    human = {k: lab for k, lab in latest_pool_labels(labels, snap.snapshot_id).items() if k in pooled}
 
     out: list[QrelLine] = []
     from_labels = 0

@@ -81,6 +81,14 @@ def test_human_pool_labels_override_and_add_and_the_latest_label_wins(snap):
     }
 
 
+def test_labels_made_on_another_snapshot_are_not_applied_even_when_later(snap):
+    q = question("q1", "test", "auth", "L1", [span(MINI, SESS, "at least 128 bits (16 bytes)")])
+    pool = [entry("q1", f"{SESS}#2", 2)]
+    other = pool_label("q1", f"{SESS}#2", 0, T0 + timedelta(days=8)).model_copy(update={"snapshot_id": "2026-09-01-old"})
+    labels = [pool_label("q1", f"{SESS}#2", 3), other]
+    assert lines(build_qrels([q], snap, pool, labels)) == {("q1", f"{SESS}#1", 2), ("q1", f"{SESS}#2", 3)}
+
+
 def test_labels_from_a_pool_on_another_chunker_are_not_applied(snap):
     q = question("q1", "test", "auth", "L1", [span(MINI, SESS, "at least 128 bits (16 bytes)")])
     pool = [entry("q1", f"{SESS}#2", 2, chunker="sentence-v1")]

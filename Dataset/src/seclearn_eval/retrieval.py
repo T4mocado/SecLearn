@@ -53,7 +53,7 @@ class Scorer(Protocol):
 class Retriever(Protocol):
     name: str
 
-    def retrieve(self, questions: list[Question], chunks: list[Chunk], k: int, snap: Snapshot | None = None) -> Ranked: ...
+    def retrieve(self, questions: list[Question], chunks: list[Chunk], k: int) -> Ranked: ...
 
 
 def _top(scores: Sequence[float], chunks: Sequence[Chunk], k: int, positive_only: bool = False) -> list[tuple[str, float]]:
@@ -79,7 +79,7 @@ class BM25:
     k1: float = 1.2
     b: float = 0.75
 
-    def retrieve(self, questions: list[Question], chunks: list[Chunk], k: int, snap: Snapshot | None = None) -> Ranked:
+    def retrieve(self, questions: list[Question], chunks: list[Chunk], k: int) -> Ranked:
         docs = [Counter(tokenize(c.text)) for c in chunks]
         lengths = [sum(d.values()) for d in docs]
         avgdl = sum(lengths) / len(lengths) if lengths else 0.0
@@ -154,12 +154,14 @@ class DenseRetriever:
     name: str
     encoder: Encoder
     cache: EmbeddingCache
+    #: The snapshot the chunks come from: the md_sha256 of each document keys the embedding cache.
+    snap: Snapshot
     field: QuestionField
 
-    def retrieve(self, questions: list[Question], chunks: list[Chunk], k: int, snap: Snapshot | None = None) -> Ranked:
-        if snap is None:
-            raise ValueError(f"{self.name}: needs the snapshot (md_sha256 of each document) for its embedding cache")
-        hashes = {d.doc_key: d.md_sha256 for d in snap.manifest.documents}
+    def retrieve(self, questions: list[Question], chunks: list[Chunk], k: int) -> Ranked:
+        if not questions:
+            return {}
+        hashes = {d.doc_key: d.md_sha256 for d in self.snap.manifest.documents}
         docs = _normalized(self.cache.vectors(self.encoder, chunks, hashes))
         queries = _normalized(self.encoder.encode([getattr(q, self.field) for q in questions], query=True))
         scores = queries @ docs.T
@@ -175,9 +177,9 @@ class RerankRetriever:
     scorer: Scorer
     candidates: int = 20
 
-    def retrieve(self, questions: list[Question], chunks: list[Chunk], k: int, snap: Snapshot | None = None) -> Ranked:
+    def retrieve(self, questions: list[Question], chunks: list[Chunk], k: int) -> Ranked:
         text = {c.chunk_key: c.text for c in chunks}
-        base = self.base.retrieve(questions, chunks, self.candidates, snap)
+        base = self.base.retrieve(questions, chunks, self.candidates)
         out: Ranked = {}
         for q in questions:
             keys = [c for c, _ in base.get(q.id, [])]
@@ -195,7 +197,7 @@ class RerankRetriever:
 ModelFactory = Callable[[str, Any], Any]
 
 
-def build_systems(config: PoolConfig, cache: EmbeddingCache, factory: ModelFactory) -> list[Retriever]:
+def build_systems(config: PoolConfig, cache: EmbeddingCache, factory: ModelFactory, snap: Snapshot) -> list[Retriever]:
     loaded: dict[tuple[str, str], Any] = {}
 
     def get(kind: str, ref: EncoderRef | RerankerRef) -> Any:
@@ -204,14 +206,14 @@ def build_systems(config: PoolConfig, cache: EmbeddingCache, factory: ModelFacto
             loaded[key] = factory(kind, ref)
         return loaded[key]
 
-    vi = DenseRetriever("vi-embed", get("encoder", config.vi_embedder), cache, field="question")
+    vi = DenseRetriever("vi-embed", get("encoder", config.vi_embedder), cache, snap, field="question")
     m3 = get("encoder", config.multilingual)
     return [
         BM25(),
         vi,
         RerankRetriever("vi-embed+rerank", vi, get("cross-encoder", config.reranker), candidates=config.reranker.candidates),
-        DenseRetriever("bge-m3-vi", m3, cache, field="question"),
-        DenseRetriever("bge-m3-en", m3, cache, field="question_en"),
+        DenseRetriever("bge-m3-vi", m3, cache, snap, field="question"),
+        DenseRetriever("bge-m3-en", m3, cache, snap, field="question_en"),
     ]
 
 
@@ -271,8 +273,21 @@ class CrossEncoderScorer:
         return [float(s) for s in self._ce.predict(pairs, batch_size=32)]
 
 
-def model_factory() -> ModelFactory:
+class UnpinnedModelError(ValueError):
+    """A real model without a `revision`: its cache key would not change when the weights upstream do."""
+
+
+def model_factory(allow_unpinned: bool = False) -> ModelFactory:
+    """The real adapters. A model whose `revision` is null is refused before anything loads, unless `allow_unpinned`:
+    the embedding cache is keyed by model id + revision, so unpinned weights that change upstream would silently be
+    scored against stale vectors."""
+
     def make(kind: str, ref: Any) -> Any:
+        if ref.revision is None and not allow_unpinned:
+            raise UnpinnedModelError(
+                f"{ref.model}: `revision` is null in the pool config. Pin it to the Hugging Face commit you downloaded, "
+                "or pass --allow-unpinned (the embedding cache key then has no commit)"
+            )
         return CrossEncoderScorer(ref) if kind == "cross-encoder" else SentenceTransformerEncoder(ref)
 
     return make

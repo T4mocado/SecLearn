@@ -83,3 +83,17 @@ def test_stability_pairs_the_first_and_the_latest_grade_at_least_a_week_apart():
     assert s.kappa_linear == pytest.approx(0.8)
     assert s.kappa_quadratic == pytest.approx(0.9)
     assert s.min_gap_days == pytest.approx(8.0)
+
+
+def test_stability_pairs_only_grades_made_under_the_same_guideline_version():
+    later = T0 + timedelta(days=8)
+    labels = [label("q1", "c#0", 3), label("q1", "c#0", 1, later).model_copy(update={"guideline_version": "v2"})]
+    # c#1: v1, v2, then v2 again: the pair is the two v2 grades.
+    labels += [label("q1", "c#1", 0), label("q1", "c#1", 2, T0 + timedelta(days=1)).model_copy(update={"guideline_version": "v2"}),
+               label("q1", "c#1", 2, later).model_copy(update={"guideline_version": "v2"})]
+    labels += [label("q1", "c#2", 2), label("q1", "c#2", 2, later)]
+    s = agreement_report([], labels).stability
+    assert (s.n_pairs, s.n_version_mismatch, s.n_too_close) == (2, 1, 0)
+    assert s.exact == pytest.approx(1.0)
+    assert s.min_gap_days == pytest.approx(7.0)
+    assert "1 cặp khác phiên bản hướng dẫn" in render_agreement(agreement_report([], labels))

@@ -76,7 +76,7 @@ def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMCli
             first = slots[0]
             pool, calls_cell = _collect(
                 client, ood_prompt, sum(counts), plan.seed, OOD_BATCH,
-                lambda item, version, seed, j: _candidate(first, j, item, [], client.model, version, seed),
+                lambda item, version, seed, j, first=first: _candidate(first, j, item, [], client.model, version, seed),
             )
             # Hand the cell's questions out to its slots in order.
             at = 0
@@ -91,7 +91,7 @@ def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMCli
                 texts = [snap.markdown[u.doc_key][u.char_start : u.char_end] for u in pair]
                 doc_keys = [u.doc_key for u in pair]
                 found, calls = _collect(
-                    client, lambda n, texts=texts: generation_prompt(level, texts, n), k, plan.seed, k,
+                    client, lambda n, texts=texts, level=level: generation_prompt(level, texts, n), k, plan.seed, k,
                     lambda item, version, seed, j, s=s, doc_keys=doc_keys: _candidate(s, j, item, doc_keys, client.model, version, seed),
                 )
                 out += found

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -90,7 +90,7 @@ def eval_files(snap_dir: Path, tmp_path: Path) -> dict[str, Path]:
             eval_version="1.0.0",
             git_commit="abc1234",
             git_dirty=False,
-            created_at=datetime(2026, 10, 20, tzinfo=timezone.utc),
+            created_at=datetime(2026, 10, 20, tzinfo=UTC),
             params={"RAG_TOP_K": 5},
         ),
     )

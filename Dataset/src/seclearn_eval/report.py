@@ -8,6 +8,7 @@ from .schema import Estimate, ScoreReport, Stratum
 from .stats import ALPHA
 
 SCOPE_NAMES = {"macro": "macro (số chính)", "micro": "micro", "poststrat": "hậu phân tầng"}
+GROUPING_NAMES = {"pair_merged": "gộp nhóm theo cặp", "topic_cluster": "nhóm = cụm chủ đề"}
 
 
 @dataclass
@@ -53,6 +54,27 @@ def tables(r: ScoreReport) -> list[Table]:
 
     out.append(strata_table("Theo cụm chủ đề", "cụm", [s for s in r.strata if s.scope == "cluster"]))
     out.append(strata_table("Theo mức", "mức", [s for s in r.strata if s.scope == "level"]))
+
+    if r.se_sensitivity:
+        rows = [
+            [
+                GROUPING_NAMES[s.grouping],
+                s.key or SCOPE_NAMES.get(s.scope, s.scope),
+                str(s.n_groups_main),
+                str(s.n_groups),
+                *(f"{_num(s.se[m])} ({_num(s.ratio[m]) if s.ratio[m] is not None else '—'})" for m in r.metrics),
+            ]
+            for s in r.se_sensitivity
+        ]
+        out.append(
+            Table(
+                "Kiểm độ nhạy của sai số",
+                ["cách nhóm", "phạm vi", "số nhóm chính", "số nhóm thay thế", *r.metrics],
+                rows,
+                "SE thay thế (tỉ số SE thay thế / SE chính); số chính và khoảng tin cậy chính vẫn dùng nhóm theo đơn vị "
+                "đầu tiên. Gộp nhóm theo cặp: câu L4 / L5 nối nhóm của hai tài liệu; nhóm = cụm chủ đề chỉ cho micro",
+            )
+        )
 
     if r.comparisons:
         rows = [

@@ -27,7 +27,7 @@ def clustered_se(values: Sequence[float], groups: Sequence[Hashable]) -> float:
         raise ValueError("no values")
     mean = sum(values) / n
     sums: dict[Hashable, float] = defaultdict(float)
-    for v, g in zip(values, groups):
+    for v, g in zip(values, groups, strict=True):
         sums[g] += v - mean
     return math.sqrt(sum(s * s for s in sums.values())) / n
 
@@ -135,7 +135,7 @@ def paired_difference(a: Sequence[float], b: Sequence[float], groups: Sequence[H
     """
     if len(a) != len(b):
         raise ValueError(f"{len(a)} scores against {len(b)}: a paired comparison needs the same questions")
-    d = [x - y for x, y in zip(a, b)]
+    d = [x - y for x, y in zip(a, b, strict=True)]
     mean = sum(d) / len(d)
     se = clustered_se(d, groups)
     return Estimate(
@@ -167,7 +167,7 @@ def randomization_p(
     n = len(diffs)
     w = list(weights) if weights is not None else [1.0 / n] * n
     terms: dict[Hashable, float] = defaultdict(float)
-    for d, g, wi in zip(diffs, groups, w):
+    for d, g, wi in zip(diffs, groups, w, strict=True):
         terms[g] += wi * d
     s = np.array([terms[g] for g in sorted(terms, key=str)])
     observed = abs(s.sum()) - 1e-12

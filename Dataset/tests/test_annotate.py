@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -121,7 +121,7 @@ def test_round_trip_keeps_every_field_and_code_point_offsets(snap_dir, tmp_path)
     got_header, (got1, got2) = read_questions(out)
     assert got_header == header
     assert got2 == q2
-    when = datetime(2026, 10, 20, 8, 1, 35, 500000, tzinfo=timezone.utc)
+    when = datetime(2026, 10, 20, 8, 1, 35, 500000, tzinfo=UTC)
     expected_span = span(snap_dir, SESSION, AFTER_EMOJI)
     assert expected_span.char_start == snap.markdown[SESSION].index(AFTER_EMOJI)
     assert got1 == q1.model_copy(
@@ -192,7 +192,7 @@ def test_skipped_task_stays_pending_and_reimport_adds_no_labels(snap_dir, tmp_pa
     _, (got1, got2) = read_questions(out)
     assert got1.review.status == "accepted" and got1.gold_evidence == q1.gold_evidence
     assert got2 == q2
-    assert [l.question_id for l in read_jsonl(labels, Label)] == ["q1"]
+    assert [lab.question_id for lab in read_jsonl(labels, Label)] == ["q1"]
 
 
 def test_l4_pair_cells_and_l6c_refuting_span(snap_dir, tmp_path):
@@ -244,12 +244,12 @@ def test_pool_round_trip_grades_blind(snap_dir, tmp_path):
 
     choices = ["2 - Có đáp án nhưng lẫn / không rõ", "0 - Không liên quan"]
     export = tmp_path / "pool-export.json"
-    export.write_text(json.dumps([graded(t, n, c) for n, (t, c) in enumerate(zip(tasks, choices))], ensure_ascii=False), encoding="utf-8")
+    export.write_text(json.dumps([graded(t, n, c) for n, (t, c) in enumerate(zip(tasks, choices, strict=True))], ensure_ascii=False), encoding="utf-8")
     labels = tmp_path / "labels.jsonl"
     argv = ["annotate", "import", "--kind", "pool", "--snapshot", str(snap_dir), "--export", str(export)]
     assert main([*argv, "--labels", str(labels)]) == 0
     got = read_jsonl(labels, Label)
-    assert [(l.chunk_key, l.grade, l.annotator, l.lead_time, l.guideline_version, l.task) for l in got] == [
+    assert [(lab.chunk_key, lab.grade, lab.annotator, lab.lead_time, lab.guideline_version, lab.task) for lab in got] == [
         (f"{SESSION}#1", 2, "2", 12.0, "v0", "pool"),
         (f"{SESSION}#2", 0, "2", 12.0, "v0", "pool"),
     ]
@@ -260,7 +260,7 @@ def test_annotation_without_a_timestamp_is_a_format_error(snap_dir, tmp_path):
     tasks = export_review(snap_dir, units, questions, guideline, tmp_path)
     undated = {k: v for k, v in ls_annotation([ls_choice("decision", "Chấp nhận")]).items() if k not in ("created_at", "updated_at")}
     export = ls_export(tasks, {"q1": [undated]}, tmp_path)
-    with pytest.raises(FormatError, match="q1.*(updated_at|created_at)"):
+    with pytest.raises(FormatError, match=r"q1.*(updated_at|created_at)"):
         annotate.read_export(export)
 
 

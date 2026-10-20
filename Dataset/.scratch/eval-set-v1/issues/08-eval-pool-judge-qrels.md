@@ -13,3 +13,11 @@
 - [ ] Test κ có trọng số và độ ổn định trên dữ liệu nhỏ có đáp số tính tay
 - [ ] Judge chạy qua client giả trong test; embedding được cache
 - [ ] Qrels là sản phẩm sinh ra, không sửa tay
+- [ ] Prompt chấm 0-3 của Gemini có các bước đánh giá tường minh, đánh số (đọc câu, xác định thông tin cần, đối chiếu chunk, rồi mới cho điểm) và định nghĩa từng mức 0-3 bằng lời, không chỉ một câu tiêu chí chung; có số phiên bản prompt
+- [ ] Báo ma trận nhầm lẫn Gemini × người (4 × 4 mức, và gộp liên quan ≥ 2 / không liên quan), tách riêng tỉ lệ âm tính giả: chunk Gemini cho 0 mà người chấm ≥ 2, ước từ mẫu 10%
+
+## Comments
+
+**2026-10-20, agent:** Thêm hai tiêu chí cuối theo yêu cầu của bạn, lấy ý từ bài DeepEval về LLM-as-a-judge (https://deepeval.com/blog/llm-as-a-judge):
+- Các bước đánh giá tường minh (`evaluation_steps` của G-Eval) làm judge ổn định hơn một câu tiêu chí chung. Giữ khung UMBRELA, chỉ viết rõ các bước và định nghĩa mức.
+- Với pool, lỗi nguy hiểm là âm tính giả: Gemini cho 0 một chunk thật ra liên quan thì chunk đó vắng khỏi qrels và hệ truy xuất bị chấm thấp oan. Mẫu 10% chunk Gemini cho 0 đo đúng lỗi này, nên báo riêng con số đó (để ticket 11 ghi vào card), cạnh κ có trọng số.

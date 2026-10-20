@@ -44,3 +44,12 @@
 - `stats.combine()` (macro, hậu phân tầng) cắt khoảng tin cậy về [0, 1] như `estimate()`; riêng hiệu ghép cặp macro (có thể âm) không cắt (`bounded=False`).
 - **So sánh cụm với cụm** (user story 65): `score` ghi `cluster_differences` cho mọi cặp cụm × mọi độ đo: hiệu hai trung bình, SE² = SE²_A + SE²_B (hai cụm không chung nhóm sai số), kiểm z hai phía, p hiệu chỉnh Holm trong từng độ đo; cụm không có độ phân tán (SE 0 cả hai) cho p = 1. `report` có bảng "Khác biệt giữa hai cụm có ý nghĩa thống kê", chỉ liệt kê cặp có p (Holm) < 0,05; không có cặp nào thì ghi "(không cặp nào)". Bạn xem lại: dùng Holm cho 45 cặp là lựa chọn của agent (để không kết luận quá mức); bỏ hiệu chỉnh thì đọc cột `p_value`.
 - `score --run` lưu vào `args.run_dir`, mọi lệnh con dùng chung `run` làm handler (bỏ cách `run_cmd`). `report` ghi file qua `io.write_text`; đổi tên hàm `_f` thành `_num`.
+
+**2026-10-20, người duyệt (agent ghi lại): chốt các lựa chọn phương pháp.** Giữ nguyên toàn bộ cách đang cài; ticket 11 ghi các lựa chọn này vào card trước lần đo đầu tiên.
+- **A. p-value chính** khi so hai cấu hình: kiểm định ngẫu nhiên hoá đổi nhãn theo nhóm (tài liệu / test case WSTG). Fisher theo câu của ranx giữ làm cột phụ. Spec (Implementation Decisions, mục "Chấm điểm") đã sửa theo.
+- **B. So cụm với cụm**: giữ hiệu chỉnh Holm trong từng độ đo (45 cặp); bảng chỉ liệt kê cặp có p (Holm) < 0,05.
+- **C. Ngưỡng liên quan** cho Hit / MRR / Recall: mức ≥ 2 (`--min-grade 2`); nDCG dùng nguyên thang 0-3.
+- **D. Câu L4 / L5** xếp vào nhóm của đơn vị đầu tiên, **kèm số kiểm độ nhạy**: sai số tính lại với nhóm = cụm chủ đề (10 nhóm, cách thận trọng nhất) cho số chính. Phần code làm ở ticket 13.
+- **E. Wilson** ở tầng dưới 300 câu cho độ đo 0/1, cỡ mẫu co theo hệ số thiết kế; độ đo khác dùng khoảng chuẩn.
+- **F. Hậu phân tầng** cân theo tỉ lệ chunk của corpus trong từng cụm; là số phụ, số chính vẫn là macro (ADR 0003).
+- **G.** Phương sai chia n (như Miller) trong phương trình 4; Judged@10 của câu run không trả gì là 0.

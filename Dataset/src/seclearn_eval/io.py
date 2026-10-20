@@ -9,7 +9,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from .schema import Question, QuestionFileHeader, QrelLine, RunLine
+from .schema import QrelLine, Question, QuestionFileHeader, RunLine
 
 M = TypeVar("M", bound=BaseModel)
 
@@ -18,7 +18,7 @@ class FormatError(Exception):
     """A file that does not match the schema."""
 
 
-def _validate(model: type[M], data: object, where: str) -> M:
+def _validate[M: BaseModel](model: type[M], data: object, where: str) -> M:
     try:
         return model.model_validate(data)
     except ValidationError as err:
@@ -33,7 +33,7 @@ def _loads(text: str, where: str) -> object:
         raise FormatError(f"{where}: invalid JSON ({err.msg})") from None
 
 
-def read_json(path: Path, model: type[M]) -> M:
+def read_json[M: BaseModel](path: Path, model: type[M]) -> M:
     return _validate(model, _loads(path.read_text(encoding="utf-8"), str(path)), str(path))
 
 
@@ -53,7 +53,7 @@ def write_plain_json(path: Path, data: object) -> None:
     write_text(path, json.dumps(data, ensure_ascii=False, indent=1) + "\n")
 
 
-def read_jsonl(path: Path, model: type[M]) -> list[M]:
+def read_jsonl[M: BaseModel](path: Path, model: type[M]) -> list[M]:
     out: list[M] = []
     for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if line.strip():
@@ -70,14 +70,14 @@ def write_jsonl(path: Path, records: Iterable[BaseModel]) -> None:
 
 def read_questions(path: Path) -> tuple[QuestionFileHeader, list[Question]]:
     """A question file: a `{"_meta": {...}}` header line with the canary, then one question per line."""
-    lines = [(n, l) for n, l in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1) if l.strip()]
+    lines = [(n, line) for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1) if line.strip()]
     if not lines:
         raise FormatError(f"{path}: empty question file")
     first = _loads(lines[0][1], f"{path}:{lines[0][0]}")
     if not isinstance(first, dict) or "_meta" not in first:
         raise FormatError(f"{path}:{lines[0][0]}: first line must be the {{\"_meta\": ...}} header with the canary")
     header = _validate(QuestionFileHeader, first["_meta"], f"{path}:{lines[0][0]}")
-    questions = [_validate(Question, _loads(l, f"{path}:{n}"), f"{path}:{n}") for n, l in lines[1:]]
+    questions = [_validate(Question, _loads(line, f"{path}:{n}"), f"{path}:{n}") for n, line in lines[1:]]
     return header, questions
 
 

@@ -32,7 +32,7 @@ def test_mini_snapshot_loads_clean(snap_dir):
 
 
 def _without_headings(text: str) -> str:
-    return normalize(" ".join(l for l in text.splitlines() if not re.match(r"#{1,6}\s", l.strip())))
+    return normalize(" ".join(line for line in text.splitlines() if not re.match(r"#{1,6}\s", line.strip())))
 
 
 def test_chunk_offsets_point_at_their_body(snap_dir):
@@ -100,7 +100,7 @@ def test_trec_round_trip(tmp_path):
     write_run(tmp_path / "a.run", run)
     assert read_run(tmp_path / "a.run") == run
     (tmp_path / "bad.qrels").write_text("q 0 c\n", encoding="utf-8")
-    with pytest.raises(FormatError, match="bad.qrels:1"):
+    with pytest.raises(FormatError, match=r"bad\.qrels:1"):
         read_qrels(tmp_path / "bad.qrels")
 
 

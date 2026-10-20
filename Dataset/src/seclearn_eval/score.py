@@ -209,10 +209,10 @@ def _compare(
     out: list[Comparison] = []
     k = len(by_cluster)
     for m in METRICS:
-        def paired(ids: list[str]) -> Estimate:
+        def paired(ids: list[str], m: str = m) -> Estimate:
             return paired_difference([a[m][i] for i in ids], [b[m][i] for i in ids], [groups[i] for i in ids])
 
-        def diffs(ids: list[str]) -> list[float]:
+        def diffs(ids: list[str], m: str = m) -> list[float]:
             return [a[m][i] - b[m][i] for i in ids]
 
         g = [groups[i] for i in qids]

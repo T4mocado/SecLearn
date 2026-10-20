@@ -54,7 +54,7 @@ class PlanParams:
 # --- Allocation -----------------------------------------------------------------------------------
 
 
-def largest_remainder(weights: dict[K, float], total: int, rng: random.Random) -> dict[K, int]:
+def largest_remainder[K: Hashable](weights: dict[K, float], total: int, rng: random.Random) -> dict[K, int]:
     """`total` split in proportion to `weights`: floors first, then one more to the largest remainders (ties: seeded order)."""
     out = {k: 0 for k in weights}
     mass = sum(weights.values())
@@ -72,7 +72,7 @@ def largest_remainder(weights: dict[K, float], total: int, rng: random.Random) -
     return out
 
 
-def capped_shares(weights: dict[K, float], total: float, caps: dict[K, float]) -> dict[K, float]:
+def capped_shares[K: Hashable](weights: dict[K, float], total: float, caps: dict[K, float]) -> dict[K, float]:
     """Real shares in proportion to `weights`, none above its cap; what a capped key cannot take goes to the others."""
     fixed: dict[K, float] = {}
     while True:
@@ -91,7 +91,7 @@ def capped_shares(weights: dict[K, float], total: float, caps: dict[K, float]) -
             fixed[k] = caps[k]
 
 
-def floored_quotas(weights: dict[K, float], total: int, floor: int, rng: random.Random) -> dict[K, int]:
+def floored_quotas[K: Hashable](weights: dict[K, float], total: int, floor: int, rng: random.Random) -> dict[K, int]:
     """Integer quotas ∝ weights, none below `floor`: a key under it is raised to it and the rest is shared again."""
     if floor * len(weights) > total:
         raise PlanError(f"floor {floor} × {len(weights)} clusters is more than {total}")
@@ -108,7 +108,7 @@ def floored_quotas(weights: dict[K, float], total: int, floor: int, rng: random.
             fixed[k] = floor
 
 
-def match_margins(rows: dict[K, int], cols: dict[Level, int], rng: random.Random) -> dict[tuple[K, Level], int]:
+def match_margins[K: Hashable](rows: dict[K, int], cols: dict[Level, int], rng: random.Random) -> dict[tuple[K, Level], int]:
     """An integer table whose row and column sums are exactly `rows` and `cols` (equal totals), close to rows × cols / total."""
     total = sum(rows.values())
     if total != sum(cols.values()):
@@ -134,7 +134,7 @@ def match_margins(rows: dict[K, int], cols: dict[Level, int], rng: random.Random
     return table
 
 
-def respect_capacity(
+def respect_capacity[K: Hashable](
     table: dict[tuple[K, Level], int], capacity: dict[tuple[K, Level], int], split: str
 ) -> dict[tuple[K, Level], int]:
     """Moves questions out of cells over capacity (L3 in a cluster without units of 2+ chunks, L4 / L5 in a

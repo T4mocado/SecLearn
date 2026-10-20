@@ -13,6 +13,13 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "prisma/migrations/**",
+    // Untracked local material (git-ignored): uploads, experiment scratch, Python environments, agents' worktrees.
+    // Linted, they kept `npm run lint` red, so it could not gate anything.
+    "data/**",
+    "scratch-*/**",
+    "**/.venv/**",
+    "**/.uv-python/**",
+    ".claude/**",
   ]),
   {
     rules: {

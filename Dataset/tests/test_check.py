@@ -78,7 +78,7 @@ def test_quote_moved_or_missing(eval_files):
 
 def test_coverage_no_chunk_covers_half_the_span(eval_files):
     chunks_path = eval_files["snapshot"] / "chunks.sentence-v2.jsonl"
-    rows = [json.loads(l) for l in chunks_path.read_text(encoding="utf-8").splitlines()]
+    rows = [json.loads(line) for line in chunks_path.read_text(encoding="utf-8").splitlines()]
     _, questions = read_questions(eval_files["questions"])
     gold = questions[0].gold_evidence[0]
     # Every chunk of the document shrinks to the span's last 3 characters: none holds half of it.

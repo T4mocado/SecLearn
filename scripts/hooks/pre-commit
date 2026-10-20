@@ -1,0 +1,23 @@
+#!/bin/sh
+# Runs the checks for what is staged: the app's `npm run check` (lint, typecheck, tests) when app files are staged,
+# the eval set's ruff + pytest when Dataset/ files are. Enabled per clone with `git config core.hooksPath scripts/hooks`.
+# Commit without it once with `git commit --no-verify`.
+set -e
+root=$(git rev-parse --show-toplevel)
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if echo "$staged" | grep -qE '^(src/|scripts/|prisma/|package(-lock)?\.json$|tsconfig\.json$|eslint\.config\.mjs$|Dataset/tests/fixtures/[^/]*\.ts$)'; then
+  echo "pre-commit: app checks (npm run check)"
+  (cd "$root" && npm run --silent check)
+fi
+
+if echo "$staged" | grep -q '^Dataset/'; then
+  py="$root/Dataset/.venv/Scripts/python.exe"
+  [ -x "$py" ] || py="$root/Dataset/.venv/bin/python"
+  if [ ! -x "$py" ]; then
+    echo "pre-commit: no Dataset/.venv in this checkout; set it up as docs/agents/eval-project.md says" >&2
+    exit 1
+  fi
+  echo "pre-commit: eval-set checks (ruff, pytest)"
+  (cd "$root/Dataset" && "$py" -m ruff check . && "$py" -m pytest -q -p no:warnings)
+fi

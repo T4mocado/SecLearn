@@ -5,7 +5,7 @@
   },
   "judge": {
     "provider": "gemini",
-    "model": "gemini-3.1-pro-preview"
+    "model": "gemini-3.8-flash"
   },
   "embedder": {
     "provider": "gemini",

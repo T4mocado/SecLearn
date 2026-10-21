@@ -495,17 +495,30 @@ class GenerationCell(Record):
     #: wanted − got, after every top-up call.
     shortfall: int = Field(ge=0)
     calls: int = Field(ge=0)
-    #: Slots the model refused (no further call for them); their missing questions are part of the shortfall.
+    #: Slots still short after the model refused them and every substitute unit; their missing questions are part of the shortfall.
     refused: int = Field(default=0, ge=0)
+    #: Slots written (in part) from substitute units after a refusal.
+    substituted: int = Field(default=0, ge=0)
 
 
 class RefusedSlot(Record):
-    """A slot whose request the model declined: which units it was written from, to review or re-plan."""
+    """A slot the model declined, on its own units and on every substitute tried: to review or re-plan."""
 
     slot_id: str
     level: Level
     l6_kind: L6Kind | None = None
     unit_ids: list[str]
+    #: Substitute unit lists asked after the refusal, in order; all refused too.
+    tried_unit_ids: list[list[str]] = []
+
+
+class SubstitutedSlot(Record):
+    """A slot the model refused on its plan units and that was written from other units of its cluster instead."""
+
+    slot_id: str
+    level: Level
+    from_unit_ids: list[str]
+    to_unit_ids: list[str]
 
 
 class GenerationReport(Record):
@@ -515,6 +528,8 @@ class GenerationReport(Record):
     n_shortfall: int
     n_refused: int = 0
     refused: list[RefusedSlot] = []
+    n_substituted: int = 0
+    substituted: list[SubstitutedSlot] = []
 
 
 class Rejection(Record):

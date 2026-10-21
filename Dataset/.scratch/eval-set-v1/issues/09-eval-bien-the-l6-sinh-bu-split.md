@@ -12,3 +12,11 @@
 - [ ] L6(b) có bằng chứng grep + top-20 hiển thị được cho người duyệt
 - [ ] Test bằng client giả: ô thiếu chỉ sinh bù ô đó; ô thừa cắt tái lập được theo seed
 - [ ] Không `seed_id` nào ở cả dev và test; `check` qua trên kết quả
+
+## Comments
+
+**2026-10-21, agent (luật chọn đơn vị khi sinh bù, theo quyết định của bạn):** Khi sinh bù một ô thiếu, `generate` đang chọn đơn vị thay thế cho slot bị từ chối theo thứ tự: cùng tài liệu với đơn vị bị thay trước, rồi đơn vị kế hoạch dùng ít nhất (xem ticket 05, comment 2026-10-21). Ở lần chạy thật, thứ tự này làm 10 slot bị từ chối liên tiếp, vì đơn vị cùng tài liệu cũng đầy payload (WSTG-INPV, XSS Filter Evasion, WSTG-CLNT). Khi làm ticket này:
+- Sau **một lần bị từ chối**, ưu tiên đơn vị của **tài liệu khác** trong cùng cụm chủ đề. Chỉ quay lại cùng tài liệu khi không còn tài liệu khác hợp lệ. Vẫn giữ luật của mức (L3 ≥ 2 chunk), trần mỗi tài liệu, và với cặp L4 / L5 thì đổi một đơn vị, giữ đơn vị kia.
+- Một đơn vị đã bị từ chối ở bất kỳ slot nào thì không được chọn làm đơn vị thay thế cho slot khác.
+- Có test: slot bị từ chối ở đơn vị A thì đơn vị thay thế đầu tiên thuộc tài liệu khác A; và đơn vị đã bị từ chối không bao giờ được chọn lại.
+- Đổi luật này làm thay đổi request của các slot đang dùng đơn vị thay thế, nên chúng sẽ được gọi lại khi chạy `generate`. Chỉ áp luật mới cho slot còn bị từ chối hoặc ô cần sinh bù, để không tốn lại tiền cho 24 slot đã viết được (`generate-report.json`, mục `substituted`).

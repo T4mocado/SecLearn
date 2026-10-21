@@ -6,21 +6,38 @@ cluster, and L6(a) out of domain. L2, L7, L6(b) and L6(c) are built later from a
 A reply with fewer questions than asked is topped up: another call for the missing ones, on the next seed (so the
 cache sees a new request), at most MAX_TOP_UPS times. What is still missing is the cell's shortfall in the report.
 
-A request the model refuses (Claude declined WSTG-INPV-11's code-injection payloads) ends that slot, or that L6(a)
-cell, keeping what came before; the run goes on and the report lists every refused slot with its units.
+A request the model refuses (Claude declined WSTG-INPV-11's code-injection payloads) keeps what came before. A
+grounded slot is then written from other units of its cluster: up to MAX_SUBSTITUTES unit lists, under the same level
+rule (L3: >= 2 chunks) and the plan's per-document cap, the replaced unit's own document first, then the units the plan
+uses least; an L4 / L5 pair swaps one unit and keeps the other. A slot still short after that, or a refused L6(a) cell,
+is reported as refused, and the run goes on. The report lists every substitution, and every refused slot with the
+units tried.
 """
 
 from __future__ import annotations
 
+import hashlib
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Callable
 
 from pydantic import ValidationError
 
 from .llm import LLMClient, ModelRefusal
+from .plan import L3_MIN_CHUNKS
 from .prompts import GENERATION_SCHEMA, SYSTEM_GENERATE, generation_prompt, ood_prompt
-from .schema import Candidate, Generation, GenerationCell, GenerationReport, PlanSlot, Quote, RefusedSlot, SamplePlan, Unit
+from .schema import (
+    Candidate,
+    Generation,
+    GenerationCell,
+    GenerationReport,
+    PlanSlot,
+    Quote,
+    RefusedSlot,
+    SamplePlan,
+    SubstitutedSlot,
+    Unit,
+)
 from .snapshot import Snapshot
 
 GROUNDED = ("L1", "L3", "L4", "L5")
@@ -28,6 +45,10 @@ GROUNDED = ("L1", "L3", "L4", "L5")
 MAX_TOP_UPS = 2
 #: L6(a) questions asked per call, so a large cell stays well under the generator's `max_tokens`.
 OOD_BATCH = 25
+#: Substitute unit lists asked for a refused grounded slot before it counts as refused.
+MAX_SUBSTITUTES = 3
+#: The plan's per-document cap when its params do not record one (plan.PlanParams.cap).
+DEFAULT_CAP = 20
 
 
 def is_root(slot: PlanSlot) -> bool:
@@ -79,9 +100,11 @@ def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMCli
     out: list[Candidate] = []
     report: list[GenerationCell] = []
     refused: list[RefusedSlot] = []
+    substituted: list[SubstitutedSlot] = []
+    substitutes = _Substitutes(units, plan)
     for (split, cluster, level, kind), slots in sorted(cells.items(), key=lambda kv: kv[1][0].slot_id):
         counts = oversampled(len(slots), oversample)
-        got_cell, calls_cell, refused_cell = 0, 0, 0
+        got_cell, calls_cell, refused_cell, substituted_cell = 0, 0, 0, 0
         if level == "L6":
             first = slots[0]
             pool, calls_cell, was_refused = _collect(
@@ -101,31 +124,105 @@ def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMCli
             got_cell = len(pool)
         else:
             for s, k in zip(slots, counts, strict=True):
-                pair = [by_id[uid] for uid in s.unit_ids]
-                texts = [snap.markdown[u.doc_key][u.char_start : u.char_end] for u in pair]
-                doc_keys = [u.doc_key for u in pair]
-                found, calls, was_refused = _collect(
-                    client, lambda n, texts=texts, level=level: generation_prompt(level, texts, n), k, plan.seed, k,
-                    lambda item, version, seed, j, s=s, doc_keys=doc_keys: _candidate(s, j, item, doc_keys, client.model, version, seed),
-                )
+                found, calls, was_refused = _ask_slot(client, snap, by_id, s, k, 0, plan.seed)
+                tried: list[list[str]] = []
+                for option in substitutes.options(s, by_id) if was_refused else []:
+                    alt = s.model_copy(update={"unit_ids": option})
+                    more, more_calls, was_refused = _ask_slot(client, snap, by_id, alt, k - len(found), len(found), plan.seed)
+                    found += more
+                    calls += more_calls
+                    if more:
+                        substitutes.take(s, alt, by_id)
+                        substituted.append(
+                            SubstitutedSlot(slot_id=s.slot_id, level=s.level, from_unit_ids=list(s.unit_ids), to_unit_ids=option)
+                        )
+                        substituted_cell += 1
+                    else:
+                        tried.append(option)
+                    if not was_refused:
+                        break
                 out += found
                 got_cell += len(found)
                 calls_cell += calls
                 if was_refused:
-                    refused.append(_refused(s))
+                    refused.append(_refused(s, tried))
                     refused_cell += 1
         wanted = sum(counts)
         report.append(
             GenerationCell(split=split, cluster=cluster, level=level, l6_kind=kind, wanted=wanted, got=got_cell,
-                           shortfall=wanted - got_cell, calls=calls_cell, refused=refused_cell)
+                           shortfall=wanted - got_cell, calls=calls_cell, refused=refused_cell, substituted=substituted_cell)
         )
     return out, GenerationReport(
-        cells=report, n_candidates=len(out), n_shortfall=sum(c.shortfall for c in report), n_refused=len(refused), refused=refused
+        cells=report, n_candidates=len(out), n_shortfall=sum(c.shortfall for c in report), n_refused=len(refused),
+        refused=refused, n_substituted=len(substituted), substituted=substituted,
     )
 
 
-def _refused(s: PlanSlot) -> RefusedSlot:
-    return RefusedSlot(slot_id=s.slot_id, level=s.level, l6_kind=s.l6_kind, unit_ids=list(s.unit_ids))
+def _ask_slot(
+    client: LLMClient, snap: Snapshot, by_id: dict[str, Unit], s: PlanSlot, want: int, offset: int, seed: int
+) -> tuple[list[Candidate], int, bool]:
+    """Up to `want` candidates for a grounded slot from its `unit_ids`, numbered from `offset` within the slot."""
+    pair = [by_id[uid] for uid in s.unit_ids]
+    texts = [snap.markdown[u.doc_key][u.char_start : u.char_end] for u in pair]
+    doc_keys = [u.doc_key for u in pair]
+    return _collect(
+        client, lambda n: generation_prompt(s.level, texts, n), want, seed, want,
+        lambda item, version, call_seed, j: _candidate(s, offset + j, item, doc_keys, client.model, version, call_seed),
+    )
+
+
+class _Substitutes:
+    """Other units of a slot's cluster to write a refused slot from. Keeps the plan's level rule (L3: >= 2 chunks) and
+    its per-document cap, per split and counted like the plan (one per slot of the document). Order: the replaced
+    unit's own document first, then the units the plan uses least, then a hash of seed, slot and unit (no set order)."""
+
+    def __init__(self, units: list[Unit], plan: SamplePlan) -> None:
+        self.units = sorted((u for u in units if u.sampleable and u.cluster), key=lambda u: u.unit_id)
+        self.seed = plan.seed
+        self.cap = int(plan.params.get("cap", DEFAULT_CAP))
+        self.load = Counter((s.split, s.doc_key, s.cluster) for s in plan.slots)
+        self.uses = Counter(uid for s in plan.slots for uid in s.unit_ids)
+
+    def options(self, s: PlanSlot, by_id: dict[str, Unit]) -> list[list[str]]:
+        """Unit lists to ask, in order, each with one unit swapped. A pair swaps its second unit first, then its first."""
+        if len(s.unit_ids) == 1:
+            return [[uid] for uid in self._ranked(s, 0, by_id)][:MAX_SUBSTITUTES]
+        first, second = s.unit_ids
+        swap_second = [[first, uid] for uid in self._ranked(s, 1, by_id)]
+        swap_first = [[uid, second] for uid in self._ranked(s, 0, by_id)]
+        interleaved = [o for pair in zip(swap_second, swap_first, strict=False) for o in pair]
+        rest = swap_second[len(swap_first) :] + swap_first[len(swap_second) :]
+        return (interleaved + rest)[:MAX_SUBSTITUTES]
+
+    def take(self, s: PlanSlot, alt: PlanSlot, by_id: dict[str, Unit]) -> None:
+        """Counts the substitute's new unit, and its document when it differs from the replaced unit's."""
+        for old, new in zip(s.unit_ids, alt.unit_ids, strict=True):
+            if old != new:
+                self.uses[new] += 1
+                if by_id[new].doc_key != by_id[old].doc_key:
+                    self.load[(s.split, by_id[new].doc_key, s.cluster)] += 1
+
+    def _ranked(self, s: PlanSlot, i: int, by_id: dict[str, Unit]) -> list[str]:
+        old = by_id[s.unit_ids[i]]
+
+        def fits(u: Unit) -> bool:
+            if u.cluster != s.cluster or u.unit_id in s.unit_ids:
+                return False
+            if s.level == "L3" and u.chunks < L3_MIN_CHUNKS:
+                return False
+            return u.doc_key == old.doc_key or self.load[(s.split, u.doc_key, s.cluster)] < self.cap
+
+        def order(u: Unit) -> tuple[bool, int, str]:
+            tie = hashlib.sha256(f"{self.seed}:{s.slot_id}:{u.unit_id}".encode()).hexdigest()
+            return (u.doc_key != old.doc_key, self.uses[u.unit_id], tie)
+
+        return [u.unit_id for u in sorted(filter(fits, self.units), key=order)]
+
+
+def _refused(s: PlanSlot, tried: list[list[str]] | None = None) -> RefusedSlot:
+    return RefusedSlot(
+        slot_id=s.slot_id, level=s.level, l6_kind=s.l6_kind, unit_ids=list(s.unit_ids), tried_unit_ids=tried or []
+    )
 
 
 def _items(reply: dict) -> list[dict]:

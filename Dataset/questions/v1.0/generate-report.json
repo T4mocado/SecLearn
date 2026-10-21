@@ -1,0 +1,1488 @@
+{
+  "cells": [
+    {
+      "split": "dev",
+      "cluster": "ai",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "ai",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "ai",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "api",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "api",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 2,
+      "got": 2,
+      "shortfall": 0,
+      "calls": 1,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "api",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "arch",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 7,
+      "got": 7,
+      "shortfall": 0,
+      "calls": 4,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "arch",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 7,
+      "got": 7,
+      "shortfall": 0,
+      "calls": 4,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "arch",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 7,
+      "got": 7,
+      "shortfall": 0,
+      "calls": 4,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "auth",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "auth",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "auth",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "authz",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "authz",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "authz",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 2,
+      "got": 2,
+      "shortfall": 0,
+      "calls": 1,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "browser",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "browser",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "browser",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "framework",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "framework",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "framework",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 4,
+      "refused": 0,
+      "substituted": 1
+    },
+    {
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 3,
+      "shortfall": 2,
+      "calls": 6,
+      "refused": 1,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "supply",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "supply",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "supply",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "supply",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "transport",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "transport",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "transport",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "transport",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": null,
+      "level": "L6",
+      "l6_kind": "out_of_domain",
+      "wanted": 10,
+      "got": 10,
+      "shortfall": 0,
+      "calls": 1,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "ai",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 26,
+      "got": 26,
+      "shortfall": 0,
+      "calls": 16,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "ai",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "ai",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 26,
+      "got": 26,
+      "shortfall": 0,
+      "calls": 16,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "api",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "api",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 18,
+      "refused": 0,
+      "substituted": 1
+    },
+    {
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 26,
+      "got": 26,
+      "shortfall": 0,
+      "calls": 16,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "api",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 26,
+      "got": 26,
+      "shortfall": 0,
+      "calls": 16,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "arch",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 39,
+      "got": 39,
+      "shortfall": 0,
+      "calls": 24,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "arch",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 39,
+      "got": 39,
+      "shortfall": 0,
+      "calls": 24,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 39,
+      "got": 39,
+      "shortfall": 0,
+      "calls": 24,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "arch",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 39,
+      "got": 39,
+      "shortfall": 0,
+      "calls": 26,
+      "refused": 0,
+      "substituted": 1
+    },
+    {
+      "split": "test",
+      "cluster": "auth",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 32,
+      "got": 32,
+      "shortfall": 0,
+      "calls": 20,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "auth",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 32,
+      "got": 32,
+      "shortfall": 0,
+      "calls": 20,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 32,
+      "got": 32,
+      "shortfall": 0,
+      "calls": 20,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "auth",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 32,
+      "got": 32,
+      "shortfall": 0,
+      "calls": 20,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "authz",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 26,
+      "got": 26,
+      "shortfall": 0,
+      "calls": 16,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "authz",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 23,
+      "refused": 0,
+      "substituted": 4
+    },
+    {
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "authz",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 24,
+      "refused": 0,
+      "substituted": 3
+    },
+    {
+      "split": "test",
+      "cluster": "browser",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 29,
+      "got": 29,
+      "shortfall": 0,
+      "calls": 18,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "browser",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 19,
+      "refused": 0,
+      "substituted": 1
+    },
+    {
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 29,
+      "got": 28,
+      "shortfall": 1,
+      "calls": 21,
+      "refused": 1,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "browser",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 29,
+      "got": 26,
+      "shortfall": 3,
+      "calls": 26,
+      "refused": 2,
+      "substituted": 2
+    },
+    {
+      "split": "test",
+      "cluster": "framework",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "framework",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 26,
+      "got": 26,
+      "shortfall": 0,
+      "calls": 16,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "framework",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "inj",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 31,
+      "got": 31,
+      "shortfall": 0,
+      "calls": 23,
+      "refused": 0,
+      "substituted": 3
+    },
+    {
+      "split": "test",
+      "cluster": "inj",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 32,
+      "got": 30,
+      "shortfall": 2,
+      "calls": 24,
+      "refused": 1,
+      "substituted": 1
+    },
+    {
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 32,
+      "got": 30,
+      "shortfall": 2,
+      "calls": 28,
+      "refused": 1,
+      "substituted": 5
+    },
+    {
+      "split": "test",
+      "cluster": "inj",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 32,
+      "got": 25,
+      "shortfall": 7,
+      "calls": 36,
+      "refused": 4,
+      "substituted": 2
+    },
+    {
+      "split": "test",
+      "cluster": "supply",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 31,
+      "got": 31,
+      "shortfall": 0,
+      "calls": 19,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "supply",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 29,
+      "got": 29,
+      "shortfall": 0,
+      "calls": 18,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "supply",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 29,
+      "got": 29,
+      "shortfall": 0,
+      "calls": 18,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "supply",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 29,
+      "got": 29,
+      "shortfall": 0,
+      "calls": 18,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "transport",
+      "level": "L1",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "transport",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "transport",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "transport",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": null,
+      "level": "L6",
+      "l6_kind": "out_of_domain",
+      "wanted": 80,
+      "got": 80,
+      "shortfall": 0,
+      "calls": 4,
+      "refused": 0,
+      "substituted": 0
+    }
+  ],
+  "n_candidates": 1446,
+  "n_shortfall": 17,
+  "n_refused": 10,
+  "refused": [
+    {
+      "slot_id": "dev-00118",
+      "level": "L4",
+      "l6_kind": null,
+      "unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s26",
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "tried_unit_ids": [
+        [
+          "Injection_Prevention_Cheat_Sheet#s26",
+          "wstg-v4.2#WSTG-INPV-17"
+        ],
+        [
+          "Injection_Prevention_Cheat_Sheet#s21",
+          "wstg-v4.2#WSTG-INPV-05"
+        ],
+        [
+          "Injection_Prevention_Cheat_Sheet#s26",
+          "wstg-v4.2#WSTG-INPV-07"
+        ]
+      ]
+    },
+    {
+      "slot_id": "test-00658",
+      "level": "L4",
+      "l6_kind": null,
+      "unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s20",
+        "XSS_Filter_Evasion_Cheat_Sheet#s91"
+      ],
+      "tried_unit_ids": [
+        [
+          "XSS_Filter_Evasion_Cheat_Sheet#s20",
+          "XSS_Filter_Evasion_Cheat_Sheet#s07"
+        ],
+        [
+          "XSS_Filter_Evasion_Cheat_Sheet#s07",
+          "XSS_Filter_Evasion_Cheat_Sheet#s91"
+        ],
+        [
+          "XSS_Filter_Evasion_Cheat_Sheet#s20",
+          "XSS_Filter_Evasion_Cheat_Sheet#s01"
+        ]
+      ]
+    },
+    {
+      "slot_id": "test-00662",
+      "level": "L5",
+      "l6_kind": null,
+      "unit_ids": [
+        "Clickjacking_Defense_Cheat_Sheet#s18",
+        "wstg-v4.2#WSTG-CLNT-09"
+      ],
+      "tried_unit_ids": [
+        [
+          "Clickjacking_Defense_Cheat_Sheet#s18",
+          "wstg-v4.2#WSTG-CLNT-13"
+        ],
+        [
+          "Clickjacking_Defense_Cheat_Sheet#s19",
+          "wstg-v4.2#WSTG-CLNT-09"
+        ],
+        [
+          "Clickjacking_Defense_Cheat_Sheet#s18",
+          "wstg-v4.2#WSTG-CLNT-06"
+        ]
+      ]
+    },
+    {
+      "slot_id": "test-00671",
+      "level": "L5",
+      "l6_kind": null,
+      "unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s06",
+        "XSS_Filter_Evasion_Cheat_Sheet#s32"
+      ],
+      "tried_unit_ids": [
+        [
+          "XSS_Filter_Evasion_Cheat_Sheet#s06",
+          "XSS_Filter_Evasion_Cheat_Sheet#s39"
+        ],
+        [
+          "XSS_Filter_Evasion_Cheat_Sheet#s39",
+          "XSS_Filter_Evasion_Cheat_Sheet#s32"
+        ],
+        [
+          "XSS_Filter_Evasion_Cheat_Sheet#s06",
+          "XSS_Filter_Evasion_Cheat_Sheet#s09"
+        ]
+      ]
+    },
+    {
+      "slot_id": "test-00865",
+      "level": "L3",
+      "l6_kind": null,
+      "unit_ids": [
+        "wstg-v4.2#WSTG-INPV-15"
+      ],
+      "tried_unit_ids": [
+        [
+          "wstg-v4.2#WSTG-INPV-09"
+        ],
+        [
+          "wstg-v4.2#WSTG-INPV-14"
+        ],
+        [
+          "wstg-v4.2#WSTG-INPV-12"
+        ]
+      ]
+    },
+    {
+      "slot_id": "test-00885",
+      "level": "L4",
+      "l6_kind": null,
+      "unit_ids": [
+        "wstg-v4.2#WSTG-INPV-11",
+        "wstg-v4.2#WSTG-INPV-02"
+      ],
+      "tried_unit_ids": [
+        [
+          "wstg-v4.2#WSTG-INPV-11",
+          "wstg-v4.2#WSTG-INPV-09"
+        ],
+        [
+          "wstg-v4.2#WSTG-INPV-09",
+          "wstg-v4.2#WSTG-INPV-02"
+        ],
+        [
+          "wstg-v4.2#WSTG-INPV-11",
+          "wstg-v4.2#WSTG-INPV-19"
+        ]
+      ]
+    },
+    {
+      "slot_id": "test-00901",
+      "level": "L5",
+      "l6_kind": null,
+      "unit_ids": [
+        "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s07",
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "tried_unit_ids": [
+        [
+          "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s07",
+          "wstg-v4.2#WSTG-INPV-19"
+        ],
+        [
+          "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s03",
+          "wstg-v4.2#WSTG-INPV-05"
+        ],
+        [
+          "Server_Side_Template_Injection_Prevention_Cheat_Sheet#s07",
+          "wstg-v4.2#WSTG-INPV-09"
+        ]
+      ]
+    },
+    {
+      "slot_id": "test-00902",
+      "level": "L5",
+      "l6_kind": null,
+      "unit_ids": [
+        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s04",
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "tried_unit_ids": [
+        [
+          "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s04",
+          "wstg-v4.2#WSTG-INPV-18"
+        ],
+        [
+          "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s01",
+          "wstg-v4.2#WSTG-INPV-05"
+        ],
+        [
+          "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s04",
+          "wstg-v4.2#WSTG-INPV-14"
+        ]
+      ]
+    },
+    {
+      "slot_id": "test-00903",
+      "level": "L5",
+      "l6_kind": null,
+      "unit_ids": [
+        "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s05",
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "tried_unit_ids": [
+        [
+          "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s05",
+          "wstg-v4.2#WSTG-INPV-09"
+        ],
+        [
+          "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s07",
+          "wstg-v4.2#WSTG-INPV-05"
+        ],
+        [
+          "Unvalidated_Redirects_and_Forwards_Cheat_Sheet#s05",
+          "wstg-v4.2#WSTG-INPV-19"
+        ]
+      ]
+    },
+    {
+      "slot_id": "test-00905",
+      "level": "L5",
+      "l6_kind": null,
+      "unit_ids": [
+        "wstg-v4.2#WSTG-INPV-09",
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s18"
+      ],
+      "tried_unit_ids": [
+        [
+          "wstg-v4.2#WSTG-INPV-09",
+          "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s13"
+        ],
+        [
+          "wstg-v4.2#WSTG-INPV-19",
+          "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s18"
+        ],
+        [
+          "wstg-v4.2#WSTG-INPV-09",
+          "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s10"
+        ]
+      ]
+    }
+  ],
+  "n_substituted": 24,
+  "substituted": [
+    {
+      "slot_id": "dev-00111",
+      "level": "L1",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-11"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-17"
+      ]
+    },
+    {
+      "slot_id": "test-00153",
+      "level": "L3",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-APIT-01"
+      ],
+      "to_unit_ids": [
+        "GraphQL_Cheat_Sheet#s05"
+      ]
+    },
+    {
+      "slot_id": "test-00326",
+      "level": "L5",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-BUSL-09",
+        "Abuse_Case_Cheat_Sheet#s08"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-ERRH-01",
+        "Abuse_Case_Cheat_Sheet#s08"
+      ]
+    },
+    {
+      "slot_id": "test-00532",
+      "level": "L3",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-01"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-04"
+      ]
+    },
+    {
+      "slot_id": "test-00533",
+      "level": "L3",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-01"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-03"
+      ]
+    },
+    {
+      "slot_id": "test-00534",
+      "level": "L3",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-02"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-03"
+      ]
+    },
+    {
+      "slot_id": "test-00535",
+      "level": "L3",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-02"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-04"
+      ]
+    },
+    {
+      "slot_id": "test-00556",
+      "level": "L5",
+      "from_unit_ids": [
+        "Authorization_Policy_And_Data_Distribution_Cheat_Sheet#s03",
+        "wstg-v4.2#WSTG-ATHZ-01"
+      ],
+      "to_unit_ids": [
+        "Authorization_Policy_And_Data_Distribution_Cheat_Sheet#s03",
+        "wstg-v4.2#WSTG-ATHZ-02"
+      ]
+    },
+    {
+      "slot_id": "test-00567",
+      "level": "L5",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-04",
+        "Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet#s00"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-04",
+        "Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet#s01"
+      ]
+    },
+    {
+      "slot_id": "test-00569",
+      "level": "L5",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-04",
+        "wstg-v4.2#WSTG-ATHZ-01"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-ATHZ-04",
+        "wstg-v4.2#WSTG-ATHZ-03"
+      ]
+    },
+    {
+      "slot_id": "test-00640",
+      "level": "L3",
+      "from_unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s70"
+      ],
+      "to_unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s87"
+      ]
+    },
+    {
+      "slot_id": "test-00664",
+      "level": "L5",
+      "from_unit_ids": [
+        "Cross-Site_Request_Forgery_Prevention_Cheat_Sheet#s13",
+        "XSS_Filter_Evasion_Cheat_Sheet#s25"
+      ],
+      "to_unit_ids": [
+        "Cross-Site_Request_Forgery_Prevention_Cheat_Sheet#s13",
+        "XSS_Filter_Evasion_Cheat_Sheet#s72"
+      ]
+    },
+    {
+      "slot_id": "test-00665",
+      "level": "L5",
+      "from_unit_ids": [
+        "Cross-Site_Request_Forgery_Prevention_Cheat_Sheet#s30",
+        "XSS_Filter_Evasion_Cheat_Sheet#s70"
+      ],
+      "to_unit_ids": [
+        "Cross-Site_Request_Forgery_Prevention_Cheat_Sheet#s30",
+        "XSS_Filter_Evasion_Cheat_Sheet#s08"
+      ]
+    },
+    {
+      "slot_id": "test-00814",
+      "level": "L1",
+      "from_unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s11"
+      ],
+      "to_unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s15"
+      ]
+    },
+    {
+      "slot_id": "test-00824",
+      "level": "L1",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-08"
+      ]
+    },
+    {
+      "slot_id": "test-00825",
+      "level": "L1",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-01"
+      ]
+    },
+    {
+      "slot_id": "test-00864",
+      "level": "L3",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-10"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-07"
+      ]
+    },
+    {
+      "slot_id": "test-00871",
+      "level": "L4",
+      "from_unit_ids": [
+        "OS_Command_Injection_Defense_Cheat_Sheet#s07",
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "to_unit_ids": [
+        "OS_Command_Injection_Defense_Cheat_Sheet#s07",
+        "wstg-v4.2#WSTG-INPV-17"
+      ]
+    },
+    {
+      "slot_id": "test-00873",
+      "level": "L4",
+      "from_unit_ids": [
+        "Prototype_Pollution_Prevention_Cheat_Sheet#s02",
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "to_unit_ids": [
+        "Prototype_Pollution_Prevention_Cheat_Sheet#s02",
+        "wstg-v4.2#WSTG-INPV-12"
+      ]
+    },
+    {
+      "slot_id": "test-00874",
+      "level": "L4",
+      "from_unit_ids": [
+        "Query_Parameterization_Cheat_Sheet#s14",
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "to_unit_ids": [
+        "Query_Parameterization_Cheat_Sheet#s14",
+        "wstg-v4.2#WSTG-INPV-16"
+      ]
+    },
+    {
+      "slot_id": "test-00875",
+      "level": "L4",
+      "from_unit_ids": [
+        "SQL_Injection_Prevention_Cheat_Sheet#s00",
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "to_unit_ids": [
+        "SQL_Injection_Prevention_Cheat_Sheet#s00",
+        "wstg-v4.2#WSTG-INPV-06"
+      ]
+    },
+    {
+      "slot_id": "test-00880",
+      "level": "L4",
+      "from_unit_ids": [
+        "XML_Security_Cheat_Sheet#s13",
+        "wstg-v4.2#WSTG-INPV-05"
+      ],
+      "to_unit_ids": [
+        "XML_Security_Cheat_Sheet#s13",
+        "wstg-v4.2#WSTG-INPV-10"
+      ]
+    },
+    {
+      "slot_id": "test-00898",
+      "level": "L5",
+      "from_unit_ids": [
+        "SQL_Injection_Prevention_Cheat_Sheet#s23",
+        "wstg-v4.2#WSTG-INPV-11"
+      ],
+      "to_unit_ids": [
+        "SQL_Injection_Prevention_Cheat_Sheet#s13",
+        "wstg-v4.2#WSTG-INPV-11"
+      ]
+    },
+    {
+      "slot_id": "test-00906",
+      "level": "L5",
+      "from_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-12",
+        "XML_External_Entity_Prevention_Cheat_Sheet#s16"
+      ],
+      "to_unit_ids": [
+        "wstg-v4.2#WSTG-INPV-18",
+        "XML_External_Entity_Prevention_Cheat_Sheet#s16"
+      ]
+    }
+  ]
+}

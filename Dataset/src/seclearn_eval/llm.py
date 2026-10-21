@@ -98,17 +98,30 @@ class CachedClient:
         return self.root / safe_model / key[:2] / f"{key}.json"
 
     def _cached(self, request: dict[str, Any], compute: Callable[[], Any]) -> Any:
+        """A refusal is cached too (as `refusal`, no `response`) and raised again on a hit: asking again costs a call
+        and gets the same answer."""
         path = self._path(request)
         if path.is_file():
             self.hits += 1
-            return json.loads(path.read_text(encoding="utf-8"))["response"]
+            entry = json.loads(path.read_text(encoding="utf-8"))
+            if "refusal" in entry:
+                raise ModelRefusal(entry["refusal"])
+            return entry["response"]
         self.misses += 1
-        response = compute()
+        try:
+            response = compute()
+        except ModelRefusal as refusal:
+            self._write(path, {"request": request, "refusal": str(refusal)})
+            raise
+        self._write(path, {"request": request, "response": response})
+        return response
+
+    @staticmethod
+    def _write(path: Path, entry: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"request": request, "response": response}, ensure_ascii=False), encoding="utf-8")
+        tmp.write_text(json.dumps(entry, ensure_ascii=False), encoding="utf-8")
         tmp.replace(path)
-        return response
 
     def ask_json(self, prompt: str, schema: dict[str, Any], *, system: str = "", seed: int = 0) -> dict[str, Any]:
         request = {"kind": "json", "model": self.model, "system": system, "prompt": prompt, "schema": schema, "seed": seed}

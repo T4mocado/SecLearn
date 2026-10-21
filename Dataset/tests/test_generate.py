@@ -8,7 +8,7 @@ from collections import Counter
 
 import pytest
 from conftest import MINI
-from llm_fakes import generator
+from llm_fakes import generator, unit_texts
 
 from seclearn_eval.clusters import build_cluster_map
 from seclearn_eval.generate import MAX_TOP_UPS, OOD_BATCH, generate
@@ -143,12 +143,73 @@ def test_a_refused_slot_is_skipped_reported_and_the_run_goes_on(snap, units, pla
     candidates, report = generate(snap, units, plan, client, oversample=1.6)
     assert not [c for c in candidates if c.level == "L3"]
     assert {c.slot_id for c in candidates} >= {"test-00001", "test-00004", "test-00005", "test-00010"}
-    assert len([c for c in client.calls if "Level L3 (" in c.prompt]) == 1  # a refusal is not asked again
+    # The slot's own unit, then the one other auth unit with >= 2 chunks: each asked once, both refused.
+    l3_calls = [c for c in client.calls if "Level L3 (" in c.prompt]
+    assert len(l3_calls) == 2
     [cell] = [c for c in report.cells if c.level == "L3"]
-    assert (cell.wanted, cell.got, cell.shortfall, cell.calls, cell.refused) == (2, 0, 2, 1, 1)
+    assert (cell.wanted, cell.got, cell.shortfall, cell.calls, cell.refused, cell.substituted) == (2, 0, 2, 2, 1, 0)
     assert all(c.refused == 0 for c in report.cells if c.level != "L3")
-    assert report.n_refused == 1
-    assert [(r.slot_id, r.level, r.unit_ids) for r in report.refused] == [("test-00003", "L3", [f"{SESS}#s02"])]
+    assert report.n_refused == 1 and report.n_substituted == 0
+    [r] = report.refused
+    assert (r.slot_id, r.level, r.unit_ids) == ("test-00003", "L3", [f"{SESS}#s02"])
+    assert r.tried_unit_ids == [["wstg-v4.2#WSTG-SESS-01"]]
+
+
+def _refusing_unit(snap, units, unit_id):
+    """Refuses every prompt that carries `unit_id`'s text, as Claude did for WSTG-INPV-11."""
+    text = unit_texts(snap, units)[unit_id]
+
+    def refuse(prompt, schema):
+        if text in prompt:
+            raise ModelRefusal("claude-fake: stopped with refusal")
+        return None
+
+    return refuse
+
+
+def test_a_refused_slot_is_written_from_another_unit_of_its_cluster(snap, units, plan):
+    client = generator(snap, units, _refusing_unit(snap, units, f"{SESS}#s02"))
+    candidates, report = generate(snap, units, plan, client, oversample=1.6)
+    # L3 needs >= 2 chunks: the only other one in auth is WSTG-SESS-01.
+    l3 = [c for c in candidates if c.slot_id == "test-00003"]
+    assert [c.candidate_id for c in l3] == ["test-00003-c1", "test-00003-c2"]
+    assert all(c.unit_ids == ["wstg-v4.2#WSTG-SESS-01"] and c.level == "L3" and c.cluster == "auth" for c in l3)
+    assert all(q.doc_key == "wstg-v4.2" for c in l3 for q in c.quotes)
+    [cell] = [c for c in report.cells if c.level == "L3"]
+    assert (cell.got, cell.shortfall, cell.refused, cell.substituted) == (2, 0, 0, 1)
+    assert report.n_refused == 0 and report.n_substituted == 2  # the L5 pair also carries s02
+    sub = {s.slot_id: s for s in report.substituted}
+    assert (sub["test-00003"].from_unit_ids, sub["test-00003"].to_unit_ids) == ([f"{SESS}#s02"], ["wstg-v4.2#WSTG-SESS-01"])
+
+
+def test_a_refused_pair_swaps_one_unit_and_keeps_the_other(snap, units, plan):
+    client = generator(snap, units, _refusing_unit(snap, units, "wstg-v4.2#WSTG-SESS-02"))
+    candidates, report = generate(snap, units, plan, client, oversample=1.6)
+    # The second unit is swapped first, for one of its own document (WSTG) in the cluster.
+    [sub] = report.substituted
+    assert sub.slot_id == "test-00004"
+    assert sub.from_unit_ids == [f"{SESS}#s01", "wstg-v4.2#WSTG-SESS-02"]
+    assert sub.to_unit_ids == [f"{SESS}#s01", "wstg-v4.2#WSTG-SESS-01"]
+    assert {tuple(c.unit_ids) for c in candidates if c.slot_id == "test-00004"} == {tuple(sub.to_unit_ids)}
+
+
+def test_a_substitute_keeps_to_the_per_document_cap(snap, units, plan):
+    # WSTG already has one test slot (test-00005); a cap of 1 leaves no room for the L3 slot to move there.
+    capped = plan.model_copy(update={"params": {"cap": 1}})
+    client = generator(snap, units, _refusing_unit(snap, units, f"{SESS}#s02"))
+    _, report = generate(snap, units, capped, client, oversample=1.6)
+    [r] = [r for r in report.refused if r.slot_id == "test-00003"]
+    assert r.tried_unit_ids == []
+
+
+def test_a_refusal_is_cached_so_a_rerun_does_not_ask_again(snap, units, plan, tmp_path):
+    fake = generator(snap, units, _refusing_unit(snap, units, f"{SESS}#s02"))
+    first, first_report = generate(snap, units, plan, CachedClient(fake, tmp_path / "cache"), oversample=1.6)
+    n_calls = len(fake.calls)
+    cached = CachedClient(fake, tmp_path / "cache")
+    again, again_report = generate(snap, units, plan, cached, oversample=1.6)
+    assert len(fake.calls) == n_calls and cached.misses == 0
+    assert again == first and again_report == first_report
 
 
 def test_a_refused_top_up_keeps_the_questions_already_written(snap, units, plan):
@@ -162,10 +223,14 @@ def test_a_refused_top_up_keeps_the_questions_already_written(snap, units, plan)
     client = generator(snap, units, one_then_refuse)
     one_l1 = plan.model_copy(update={"slots": [plan.slots[0]]})  # wants 2: one comes back, the top-up is refused
     candidates, report = generate(snap, units, one_l1, client, oversample=1.6)
-    assert [c.candidate_id for c in candidates] == ["test-00001-c1"]
+    # The one already written stays; the missing one comes from another unit of the same document.
+    assert [c.candidate_id for c in candidates] == ["test-00001-c1", "test-00001-c2"]
+    assert candidates[0].unit_ids == [f"{SESS}#s01"]
+    [other] = candidates[1].unit_ids
+    assert other.startswith(f"{SESS}#") and other != f"{SESS}#s01"
     [cell] = report.cells
-    assert (cell.got, cell.shortfall, cell.calls, cell.refused) == (1, 1, 2, 1)
-    assert [r.slot_id for r in report.refused] == ["test-00001"]
+    assert (cell.got, cell.shortfall, cell.calls, cell.refused, cell.substituted) == (2, 0, 3, 0, 1)
+    assert report.refused == []
 
 
 def test_a_large_l6a_cell_is_asked_in_bounded_batches(snap, units):

@@ -86,6 +86,17 @@ class FakeAPIs:
         return {p: self.client(p) for p in ("claude", "gemini")}
 
 
+def test_a_gemini_api_error_is_an_llm_error_naming_the_model():
+    # Google retired gemini-2.5-pro for new users with a 404; the CLI should say so in one line, not a traceback.
+    gone = {"error": {"code": 404, "message": "This model models/gemini-2.5-pro is no longer available.", "status": "NOT_FOUND"}}
+    http = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(404, json=gone)))
+    client = GeminiClient("gemini-2.5-pro", env=ENV, http_client=http)
+    with pytest.raises(LLMError, match=r"gemini-2\.5-pro: 404 .*no longer available"):
+        client.ask_json("q", {"type": "object"})
+    with pytest.raises(LLMError, match="404"):
+        client.embed(["a"])
+
+
 def test_claude_client_sends_the_key_from_env_and_asks_for_json_schema():
     apis = FakeAPIs([{"x": 1}])
     client = ClaudeClient("claude-opus-5-5", env=ENV, http_client=apis.client("claude"))

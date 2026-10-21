@@ -11,7 +11,8 @@ import hashlib
 import json
 import math
 import os
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -209,10 +210,21 @@ class GeminiClient:
             seed=seed,
             temperature=0,
         )
-        response = self._client.models.generate_content(model=self.model, contents=prompt, config=config)
+        with self._api_errors():
+            response = self._client.models.generate_content(model=self.model, contents=prompt, config=config)
         if not response.text:
             raise LLMError(f"{self.model}: empty reply")
         return json.loads(response.text)
+
+    @contextmanager
+    def _api_errors(self) -> Iterator[None]:
+        """An error the API returns (a retired model's 404, a quota's 429) as an LLMError: one line from the CLI."""
+        from google.genai import errors
+
+        try:
+            yield
+        except errors.APIError as err:
+            raise LLMError(f"{self.model}: {err.code} {err.message}") from err
 
     #: Texts per embedContent request (the API caps a batch at 100).
     EMBED_BATCH = 100
@@ -221,7 +233,8 @@ class GeminiClient:
         out: list[list[float]] = []
         for at in range(0, len(texts), self.EMBED_BATCH):
             batch = texts[at : at + self.EMBED_BATCH]
-            response = self._client.models.embed_content(model=self.model, contents=batch)
+            with self._api_errors():
+                response = self._client.models.embed_content(model=self.model, contents=batch)
             vectors = [list(e.values or []) for e in response.embeddings or []]
             if len(vectors) != len(batch):
                 raise LLMError(f"{self.model}: {len(vectors)} embeddings for {len(batch)} texts")

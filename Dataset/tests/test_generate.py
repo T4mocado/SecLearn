@@ -12,7 +12,7 @@ from llm_fakes import generator
 
 from seclearn_eval.clusters import build_cluster_map
 from seclearn_eval.generate import MAX_TOP_UPS, OOD_BATCH, generate
-from seclearn_eval.llm import CachedClient
+from seclearn_eval.llm import CachedClient, ModelRefusal
 from seclearn_eval.schema import PlanSlot, SamplePlan
 from seclearn_eval.snapshot import load_snapshot
 from seclearn_eval.units import build_units
@@ -130,6 +130,42 @@ def test_a_cell_the_model_keeps_short_is_reported_after_bounded_retries(snap, un
     assert (cell.wanted, cell.got, cell.shortfall) == (2, 0, 2)
     assert report.n_shortfall == 2
     assert all(c.shortfall == 0 for c in report.cells if c.level != "L3")
+
+
+def test_a_refused_slot_is_skipped_reported_and_the_run_goes_on(snap, units, plan):
+    # Claude declines some units (stop_reason "refusal": WSTG-INPV-11's code-injection payloads did, at the 71st call).
+    def refuse_l3(prompt, schema):
+        if "Level L3 (" in prompt:
+            raise ModelRefusal("claude-fake: stopped with refusal")
+        return None
+
+    client = generator(snap, units, refuse_l3)
+    candidates, report = generate(snap, units, plan, client, oversample=1.6)
+    assert not [c for c in candidates if c.level == "L3"]
+    assert {c.slot_id for c in candidates} >= {"test-00001", "test-00004", "test-00005", "test-00010"}
+    assert len([c for c in client.calls if "Level L3 (" in c.prompt]) == 1  # a refusal is not asked again
+    [cell] = [c for c in report.cells if c.level == "L3"]
+    assert (cell.wanted, cell.got, cell.shortfall, cell.calls, cell.refused) == (2, 0, 2, 1, 1)
+    assert all(c.refused == 0 for c in report.cells if c.level != "L3")
+    assert report.n_refused == 1
+    assert [(r.slot_id, r.level, r.unit_ids) for r in report.refused] == [("test-00003", "L3", [f"{SESS}#s02"])]
+
+
+def test_a_refused_top_up_keeps_the_questions_already_written(snap, units, plan):
+    client = None
+
+    def one_then_refuse(prompt, schema):
+        if client.calls[-1].seed == plan.seed:
+            return {"items": [{"claims": [], "question": "Q?", "question_en": "Q?", "answer": "A.", "quotes": []}]}
+        raise ModelRefusal("claude-fake: stopped with refusal")
+
+    client = generator(snap, units, one_then_refuse)
+    one_l1 = plan.model_copy(update={"slots": [plan.slots[0]]})  # wants 2: one comes back, the top-up is refused
+    candidates, report = generate(snap, units, one_l1, client, oversample=1.6)
+    assert [c.candidate_id for c in candidates] == ["test-00001-c1"]
+    [cell] = report.cells
+    assert (cell.got, cell.shortfall, cell.calls, cell.refused) == (1, 1, 2, 1)
+    assert [r.slot_id for r in report.refused] == ["test-00001"]
 
 
 def test_a_large_l6a_cell_is_asked_in_bounded_batches(snap, units):

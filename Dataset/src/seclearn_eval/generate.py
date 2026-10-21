@@ -5,6 +5,9 @@ cluster, and L6(a) out of domain. L2, L7, L6(b) and L6(c) are built later from a
 
 A reply with fewer questions than asked is topped up: another call for the missing ones, on the next seed (so the
 cache sees a new request), at most MAX_TOP_UPS times. What is still missing is the cell's shortfall in the report.
+
+A request the model refuses (Claude declined WSTG-INPV-11's code-injection payloads) ends that slot, or that L6(a)
+cell, keeping what came before; the run goes on and the report lists every refused slot with its units.
 """
 
 from __future__ import annotations
@@ -15,9 +18,9 @@ from collections.abc import Callable
 
 from pydantic import ValidationError
 
-from .llm import LLMClient
+from .llm import LLMClient, ModelRefusal
 from .prompts import GENERATION_SCHEMA, SYSTEM_GENERATE, generation_prompt, ood_prompt
-from .schema import Candidate, Generation, GenerationCell, GenerationReport, PlanSlot, Quote, SamplePlan, Unit
+from .schema import Candidate, Generation, GenerationCell, GenerationReport, PlanSlot, Quote, RefusedSlot, SamplePlan, Unit
 from .snapshot import Snapshot
 
 GROUNDED = ("L1", "L3", "L4", "L5")
@@ -40,23 +43,29 @@ def oversampled(n_slots: int, oversample: float) -> list[int]:
 Build = Callable[[dict, str, int, int], "Candidate | None"]
 
 
-def _collect(client: LLMClient, prompt_for: Callable[[int], tuple[str, str]], want: int, seed: int, batch: int, build: Build) -> tuple[list[Candidate], int]:
+def _collect(
+    client: LLMClient, prompt_for: Callable[[int], tuple[str, str]], want: int, seed: int, batch: int, build: Build
+) -> tuple[list[Candidate], int, bool]:
     """Up to `want` candidates, asking at most `batch` per call on seeds `seed`, `seed + 1`, …; a call that comes back
-    short (too few items, or items off the schema) is followed by at most MAX_TOP_UPS more. Returns (candidates, calls)."""
+    short (too few items, or items off the schema) is followed by at most MAX_TOP_UPS more, and a refused call ends the
+    asking. Returns (candidates, calls, refused)."""
     got: list[Candidate] = []
     calls = short_calls = 0
     while len(got) < want and short_calls <= MAX_TOP_UPS:
         n = min(batch, want - len(got))
         version, prompt = prompt_for(n)
         call_seed = seed + calls
-        reply = client.ask_json(prompt, GENERATION_SCHEMA, system=SYSTEM_GENERATE, seed=call_seed)
         calls += 1
+        try:
+            reply = client.ask_json(prompt, GENERATION_SCHEMA, system=SYSTEM_GENERATE, seed=call_seed)
+        except ModelRefusal:
+            return got, calls, True
         before = len(got)
         for item in _items(reply)[:n]:
             if (c := build(item, version, call_seed, len(got))) is not None:
                 got.append(c)
         short_calls += len(got) - before < n
-    return got, calls
+    return got, calls, False
 
 
 def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMClient, *, oversample: float) -> tuple[list[Candidate], GenerationReport]:
@@ -69,20 +78,25 @@ def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMCli
 
     out: list[Candidate] = []
     report: list[GenerationCell] = []
+    refused: list[RefusedSlot] = []
     for (split, cluster, level, kind), slots in sorted(cells.items(), key=lambda kv: kv[1][0].slot_id):
         counts = oversampled(len(slots), oversample)
-        got_cell, calls_cell = 0, 0
+        got_cell, calls_cell, refused_cell = 0, 0, 0
         if level == "L6":
             first = slots[0]
-            pool, calls_cell = _collect(
+            pool, calls_cell, was_refused = _collect(
                 client, ood_prompt, sum(counts), plan.seed, OOD_BATCH,
                 lambda item, version, seed, j, first=first: _candidate(first, j, item, [], client.model, version, seed),
             )
-            # Hand the cell's questions out to its slots in order.
+            # Hand the cell's questions out to its slots in order. One prompt serves the whole cell, so after a
+            # refusal every slot left short is a refused one.
             at = 0
             for s, k in zip(slots, counts, strict=True):
                 for j, c in enumerate(pool[at : at + k]):
                     out.append(c.model_copy(update={"candidate_id": _candidate_id(s, j), "slot_id": s.slot_id}))
+                if was_refused and len(pool[at : at + k]) < k:
+                    refused.append(_refused(s))
+                    refused_cell += 1
                 at += k
             got_cell = len(pool)
         else:
@@ -90,19 +104,28 @@ def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMCli
                 pair = [by_id[uid] for uid in s.unit_ids]
                 texts = [snap.markdown[u.doc_key][u.char_start : u.char_end] for u in pair]
                 doc_keys = [u.doc_key for u in pair]
-                found, calls = _collect(
+                found, calls, was_refused = _collect(
                     client, lambda n, texts=texts, level=level: generation_prompt(level, texts, n), k, plan.seed, k,
                     lambda item, version, seed, j, s=s, doc_keys=doc_keys: _candidate(s, j, item, doc_keys, client.model, version, seed),
                 )
                 out += found
                 got_cell += len(found)
                 calls_cell += calls
+                if was_refused:
+                    refused.append(_refused(s))
+                    refused_cell += 1
         wanted = sum(counts)
         report.append(
             GenerationCell(split=split, cluster=cluster, level=level, l6_kind=kind, wanted=wanted, got=got_cell,
-                           shortfall=wanted - got_cell, calls=calls_cell)
+                           shortfall=wanted - got_cell, calls=calls_cell, refused=refused_cell)
         )
-    return out, GenerationReport(cells=report, n_candidates=len(out), n_shortfall=sum(c.shortfall for c in report))
+    return out, GenerationReport(
+        cells=report, n_candidates=len(out), n_shortfall=sum(c.shortfall for c in report), n_refused=len(refused), refused=refused
+    )
+
+
+def _refused(s: PlanSlot) -> RefusedSlot:
+    return RefusedSlot(slot_id=s.slot_id, level=s.level, l6_kind=s.l6_kind, unit_ids=list(s.unit_ids))
 
 
 def _items(reply: dict) -> list[dict]:

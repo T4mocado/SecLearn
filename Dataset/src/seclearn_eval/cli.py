@@ -289,7 +289,9 @@ def _generate(args: argparse.Namespace) -> int:
         if cell.shortfall:
             where = f"{cell.split}/{cell.cluster or '-'}/{cell.level}" + (f"({cell.l6_kind})" if cell.l6_kind else "")
             print(f"  short: {where} got {cell.got} of {cell.wanted} after {cell.calls} call(s)")
-    print(f"shortfall {report.n_shortfall} (report: {report_file})")
+    for r in report.refused:
+        print(f"  refused: {r.slot_id} {r.level}{f'({r.l6_kind})' if r.l6_kind else ''} {', '.join(r.unit_ids) or '(no unit)'}")
+    print(f"shortfall {report.n_shortfall}, refused slots {report.n_refused} (report: {report_file})")
     print(_cache_line(client))
     return 0
 

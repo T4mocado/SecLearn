@@ -16,8 +16,8 @@ from conftest import MINI
 from seclearn_eval import cli
 from seclearn_eval.clusters import build_cluster_map
 from seclearn_eval.io import read_json, read_jsonl, read_questions, write_json, write_jsonl
-from seclearn_eval.llm import ClaudeClient, GeminiClient, LLMError, make_clients
-from seclearn_eval.schema import Candidate, FilterReport, LLMConfig, ModelRef, PlanSlot, SamplePlan
+from seclearn_eval.llm import ClaudeClient, GeminiClient, LLMError, ModelRefusal, make_clients
+from seclearn_eval.schema import Candidate, FilterReport, GenerationReport, LLMConfig, ModelRef, PlanSlot, SamplePlan
 from seclearn_eval.snapshot import load_snapshot
 from seclearn_eval.units import build_units
 
@@ -55,9 +55,10 @@ def test_a_missing_key_names_the_variable_not_a_value():
 class FakeAPIs:
     """Plays api.anthropic.com and generativelanguage.googleapis.com; records requests."""
 
-    def __init__(self, claude_items: list[dict] | None = None):
+    def __init__(self, claude_items: list[dict] | None = None, claude_stop: str = "end_turn"):
         self.requests: list[httpx.Request] = []
         self.claude_items = claude_items or []
+        self.claude_stop = claude_stop
 
     def respond(self, request) -> dict:
         self.requests.append(request)
@@ -66,7 +67,7 @@ class FakeAPIs:
             text = json.dumps({"items": self.claude_items})
             return {
                 "id": "msg_1", "type": "message", "role": "assistant", "model": body["model"],
-                "content": [{"type": "text", "text": text}], "stop_reason": "end_turn", "stop_sequence": None,
+                "content": [{"type": "text", "text": text}], "stop_reason": self.claude_stop, "stop_sequence": None,
                 "usage": {"input_tokens": 1, "output_tokens": 1},
             }
         if "embedContent" in request.url.path or "batchEmbedContents" in request.url.path:
@@ -95,6 +96,32 @@ def test_claude_client_sends_the_key_from_env_and_asks_for_json_schema():
     body = json.loads(req.content)
     assert body["model"] == "claude-opus-5-5" and body["system"] == "sys"
     assert body["output_config"] == {"format": {"type": "json_schema", "schema": schema}}
+
+
+def test_a_claude_refusal_is_a_refusal_and_a_cut_reply_is_not():
+    schema = {"type": "object"}
+    refusing = ClaudeClient("claude-opus-5-5", env=ENV, http_client=FakeAPIs([], "refusal").client("claude"))
+    with pytest.raises(ModelRefusal, match="refusal"):
+        refusing.ask_json("q", schema)
+    cut = ClaudeClient("claude-opus-5-5", env=ENV, http_client=FakeAPIs([], "max_tokens").client("claude"))
+    with pytest.raises(LLMError, match="max_tokens") as err:
+        cut.ask_json("q", schema)
+    assert not isinstance(err.value, ModelRefusal)
+
+
+def test_generate_command_reports_refused_slots_and_writes_its_files(files, monkeypatch, capsys):
+    for k, v in ENV.items():
+        monkeypatch.setenv(k, v)
+    apis = FakeAPIs([], "refusal")
+    monkeypatch.setattr(cli, "make_clients", lambda config, cache: make_clients(config, cache, http_clients=apis.clients()))
+    root = files["root"]
+    argv = ["generate", "--snapshot", str(MINI), "--units", str(files["units"]), "--config", str(files["config"])]
+    assert cli.main([*argv, "--cache", str(root / "cache"), "--plan", str(files["plan"]), "--out", str(root / "candidates.jsonl")]) == 0
+    assert read_jsonl(root / "candidates.jsonl", Candidate) == []
+    report = read_json(root / "generate-report.json", GenerationReport)
+    assert report.n_refused == 2 and {r.slot_id for r in report.refused} == {"test-00001", "test-00002"}
+    out = capsys.readouterr().out
+    assert "refused" in out and "Session_Management_Cheat_Sheet#s01" in out
 
 
 def test_gemini_client_sends_the_key_from_env_json_mode_and_embeds():

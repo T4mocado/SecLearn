@@ -25,6 +25,11 @@ class LLMError(Exception):
     """A missing key or an unusable reply."""
 
 
+class ModelRefusal(LLMError):
+    """The model declined the request (Claude `stop_reason: refusal`), e.g. on a unit full of exploit payloads.
+    Asking again gets the same answer: callers skip the request and report it."""
+
+
 class LLMClient(Protocol):
     model: str
 
@@ -158,8 +163,10 @@ class ClaudeClient:
         if system:
             kwargs["system"] = system
         response = self._client.messages.create(**kwargs)
-        if response.stop_reason in ("refusal", "max_tokens"):
-            raise LLMError(f"{self.model}: stopped with {response.stop_reason}")
+        if response.stop_reason == "refusal":
+            raise ModelRefusal(f"{self.model}: stopped with refusal")
+        if response.stop_reason == "max_tokens":
+            raise LLMError(f"{self.model}: stopped with max_tokens")
         text = next((b.text for b in response.content if b.type == "text"), None)
         if text is None:
             raise LLMError(f"{self.model}: no text block in the reply")

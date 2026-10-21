@@ -48,3 +48,11 @@ Ngưỡng 0,9 và 0,6 là giá trị khởi đầu, nên chỉnh sau khi xem `fi
 - **Quote phải nằm trong đơn vị của ứng viên**: bước quote chỉ nhận vị trí nằm trong khoảng offset của các đơn vị trong `unit_ids` (đúng tài liệu); tìm thấy trong tài liệu nhưng ngoài đơn vị thì loại với lý do mới `quote_outside_units`. Gold span cũng chỉ lấy vị trí trong đơn vị.
 - **Đổi nhãn L1 → L3** chỉ khi đơn vị có ≥ 2 chunk (`plan.L3_MIN_CHUNKS`); không đủ thì loại với lý do `l3_needs_two_chunks` (điểm "chưa kiểm" ở comment trên đã xong).
 - CLI không còn crash trên console Windows cp1252 (stdout / stderr đổi sang UTF-8 trong `main`). Danh sách mức trong `prompts.py` lấy từ `schema.Level`; mọi lệnh đọc `--units` dùng chung một mặc định `<snapshot>/units.jsonl`; file ghi mới đi qua `io.write_*`.
+
+**2026-10-20, agent (sau lần chạy thật đầu tiên):** Lần chạy `generate` đầu tiên dừng ở lời gọi Claude thứ 71 với `LLM error: claude-opus-5-5: stopped with refusal`. Request bị từ chối là slot `dev-00111` (L1), đơn vị `wstg-v4.2#WSTG-INPV-11` "Testing for Code Injection" (có URL độc hại và lệnh `cmd=uname -a`). 70 câu trả lời trước đó vẫn nằm trong `cache/llm/`, nhưng `candidates.jsonl` chưa được ghi vì `generate` dừng ở lỗi đầu tiên. Đã sửa, có test viết trước (đỏ rồi xanh):
+- `ClaudeClient` báo `ModelRefusal` (lớp con của `LLMError`) khi `stop_reason = refusal`. `max_tokens` vẫn là lỗi dừng.
+- `generate` gặp từ chối thì bỏ slot đó (giữ các câu đã có trước lời gọi bị từ chối), không hỏi lại, và chạy tiếp. Với ô L6(a), các slot còn thiếu câu khi bị từ chối đều tính là bị từ chối.
+- `generate-report.json` có `refused` theo từng ô, cùng `n_refused` và danh sách `refused` (`slot_id`, mức, `unit_ids`). Lệnh in mỗi slot bị từ chối thành một dòng `refused: …`. Câu thiếu do từ chối được tính vào `shortfall`.
+- Từ chối không được cache. Mỗi lần chạy lại, slot đó được hỏi lại một lần (tốn một lời gọi) và nhiều khả năng lại bị từ chối.
+- Thử trên kế hoạch thật mà không gọi API (mọi request ngoài cache giả lập là bị từ chối): lệnh chạy hết, 143 ứng viên lấy từ cache.
+- Cần để ý: các đơn vị WSTG nhóm INPV / CLNT (payload injection, XSS) dễ bị từ chối, nên cụm `inj` và `browser` có thể hụt nhiều hơn các cụm khác. Sau lần chạy thật, xem `refused` trong report trước khi sinh bù ở ticket 09; có thể cần đổi đơn vị trong kế hoạch.

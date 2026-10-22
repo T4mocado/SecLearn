@@ -8,6 +8,7 @@ from conftest import MINI
 from seclearn_eval.clusters import build_cluster_map
 from seclearn_eval.filter import STEPS, candidates_to_questions, run_filter
 from seclearn_eval.llm import CachedClient, FakeClient
+from seclearn_eval.prompts import LEVEL_VERSION, level_prompt
 from seclearn_eval.schema import Candidate, Generation, LLMConfig, ModelRef, Quote
 from seclearn_eval.snapshot import load_snapshot
 from seclearn_eval.spans import quote_at
@@ -147,6 +148,20 @@ def test_step_level_relabels_within_the_units_capability_or_rejects(snap, units)
     assert (by_id["pair"].level, by_id["pair"].relabelled_from) == ("L5", "L4")
     step = report.steps[2]
     assert (step.n_rejected, step.n_relabelled) == (3, 2)
+
+
+def test_step_level_keeps_an_l1_the_judge_calls_l2(snap, units):
+    # L2 is L1 worded away from the document: same task, so an L1 the judge calls L2 stays L1, neither moved nor dropped.
+    kept, report = run([cand("l1")], snap, units, j=judge([cand("l1")], levels={cand("l1").question: "L2"}))
+    assert rejected(report) == {}
+    assert [(c.candidate_id, c.level, c.relabelled_from) for c in kept] == [("l1", "L1", None)]
+    assert report.steps[2].n_relabelled == 0
+
+
+def test_level_prompt_says_a_vietnamese_question_on_english_evidence_is_not_a_paraphrase():
+    prompt = level_prompt("Thuộc tính Secure của cookie có tác dụng gì?", [REAL_QUOTE])
+    assert "Vietnamese" in prompt and "English" in prompt and "translation" in prompt
+    assert LEVEL_VERSION == "filter-level-v2"
 
 
 def test_step_quote_rejects_a_quote_found_only_outside_the_candidates_units(snap, units):

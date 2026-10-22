@@ -115,7 +115,7 @@ GENERATION_SCHEMA: dict[str, Any] = {
 # --- Filter (Gemini) -------------------------------------------------------------------------------
 
 ANSWER_VERSION = "filter-answer-v1"
-LEVEL_VERSION = "filter-level-v1"
+LEVEL_VERSION = "filter-level-v2"
 
 SYSTEM_JUDGE = "You check evaluation questions for a Vietnamese web security assistant. Answer strictly in the JSON asked for."
 
@@ -141,6 +141,8 @@ ANSWER_SCHEMA: dict[str, Any] = {
 def level_prompt(question: str, evidence: list[str]) -> str:
     quotes = "\n".join(f"<evidence>{e}</evidence>" for e in evidence) or "(no evidence: the question was written to be unanswerable)"
     return f"""Classify the question into exactly one level, judging what answering it really takes, not how it is phrased.
+The question is in Vietnamese and the evidence is English OWASP text. That translation is expected: it does not make
+a question L2 on its own. Choose L2 only when the question avoids the document's terms even allowing for translation.
 
 {LEVELS}
 

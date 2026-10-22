@@ -3,8 +3,8 @@ and why, so the thesis can report the rejection rate of every step.
 
 1. quote           every quote is found verbatim (up to whitespace) in the snapshot markdown, inside the candidate's units;
 2. answerable      the judge answers from the quotes alone (L6 is not asked: it is meant to be unanswerable);
-3. level           the judge re-levels; a level the candidate's units can hold (L3: a unit of 2+ chunks) is a relabel,
-                   any other is a rejection;
+3. level           the judge re-levels; an L1 judged L2 stays L1; a level the candidate's units can hold (L3: a unit
+                   of 2+ chunks) is a relabel, any other is a rejection;
 4. self_reference  questions that point at "this document", a figure, a table or a chapter;
 5. dedup           same-meaning questions within one cluster (embedding cosine), the later one goes;
 6. l2_overlap      L2 questions whose content words are mostly the evidence's own words.
@@ -28,6 +28,9 @@ STEPS = ("quote", "answerable", "level", "self_reference", "dedup", "l2_overlap"
 
 #: Levels a candidate may be moved between by the judge, by how many units it was written from.
 RELABEL_GROUPS = ({"L1", "L3"}, {"L4", "L5"})
+#: (written, judged) pairs that are one task: L2 is L1 worded away from the document, and a Vietnamese question on
+#: English evidence always reads that way, so an L1 judged L2 keeps its level. L2 variants are made in ticket 09.
+SAME_TASK = {("L1", "L2")}
 
 _SELF_REFERENCE = [
     re.compile(p, re.IGNORECASE)
@@ -147,7 +150,7 @@ def run_filter(
         kept = []
         for c in cands:
             got = judge.ask_json(level_prompt(c.question, [q.quote for q in c.quotes]), LEVEL_SCHEMA, system=SYSTEM_JUDGE).get("level")
-            if got == c.level:
+            if got == c.level or (c.level, got) in SAME_TASK:
                 kept.append(c)
                 continue
             n_units = len(c.unit_ids)

@@ -11,8 +11,8 @@ import hashlib
 import json
 import math
 import os
-from collections.abc import Callable, Iterator, Mapping
-from contextlib import contextmanager
+import time
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -210,21 +210,30 @@ class GeminiClient:
             seed=seed,
             temperature=0,
         )
-        with self._api_errors():
-            response = self._client.models.generate_content(model=self.model, contents=prompt, config=config)
+        response = self._call(lambda: self._client.models.generate_content(model=self.model, contents=prompt, config=config))
         if not response.text:
             raise LLMError(f"{self.model}: empty reply")
         return json.loads(response.text)
 
-    @contextmanager
-    def _api_errors(self) -> Iterator[None]:
-        """An error the API returns (a retired model's 404, a quota's 429) as an LLMError: one line from the CLI."""
+    #: Tries for a request whose connection drops (the server closes it with no reply); waits double from RETRY_WAIT s.
+    RETRIES = 5
+    RETRY_WAIT = 2.0
+
+    def _call(self, request: Callable[[], Any]) -> Any:
+        """One API request. A dropped connection is tried again; an error the API returns (a retired model's 404,
+        a quota's 429) and a connection that keeps dropping are an LLMError: one line from the CLI."""
+        import httpx
         from google.genai import errors
 
-        try:
-            yield
-        except errors.APIError as err:
-            raise LLMError(f"{self.model}: {err.code} {err.message}") from err
+        for attempt in range(self.RETRIES):
+            try:
+                return request()
+            except errors.APIError as err:
+                raise LLMError(f"{self.model}: {err.code} {err.message}") from err
+            except httpx.TransportError as err:
+                if attempt == self.RETRIES - 1:
+                    raise LLMError(f"{self.model}: {type(err).__name__} after {self.RETRIES} tries: {err}") from err
+                time.sleep(self.RETRY_WAIT * 2**attempt)
 
     #: Texts per embedContent request (the API caps a batch at 100).
     EMBED_BATCH = 100
@@ -233,8 +242,7 @@ class GeminiClient:
         out: list[list[float]] = []
         for at in range(0, len(texts), self.EMBED_BATCH):
             batch = texts[at : at + self.EMBED_BATCH]
-            with self._api_errors():
-                response = self._client.models.embed_content(model=self.model, contents=batch)
+            response = self._call(lambda batch=batch: self._client.models.embed_content(model=self.model, contents=batch))
             vectors = [list(e.values or []) for e in response.embeddings or []]
             if len(vectors) != len(batch):
                 raise LLMError(f"{self.model}: {len(vectors)} embeddings for {len(batch)} texts")

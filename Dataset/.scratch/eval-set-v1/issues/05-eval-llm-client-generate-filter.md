@@ -68,3 +68,27 @@ Ngưỡng 0,9 và 0,6 là giá trị khởi đầu, nên chỉnh sau khi xem `fi
 **2026-10-21, agent (kết quả lần chạy lại):** 1.446 / 1.463 ứng viên (98,8%), 903 lời gọi tính cả phần lấy từ cache, khoảng 106 lời gọi mới. 24 slot được viết lại từ đơn vị thay thế, còn 10 slot bị từ chối (inj 7, browser 3) sau khi đã thử đủ 3 đơn vị, và còn thiếu 17 câu. Không ô nào có ít ứng viên hơn số slot: thấp nhất là test / inj / L5 với 25 ứng viên cho 20 slot, và dev / inj / L4 với 3 cho 3, tức không còn dư. Lý do còn bị từ chối: thứ tự "cùng tài liệu trước" chọn đơn vị thay thế lại là một WSTG-INPV khác hoặc một mục XSS Filter Evasion khác, cũng đầy payload. Luật đổi đơn vị cho phần sinh bù ghi ở ticket 09.
 
 **2026-10-21, agent (đổi model judge):** `gemini-2.5-pro` trả 404 "no longer available" với người dùng mới; `gemini-3.1-pro-preview` chỉ có 250 request / ngày trên project này, trong khi `filter` cần khoảng 2.600 (hai câu hỏi cho mỗi ứng viên). Judge chuyển sang `gemini-3.8-flash` (bản ổn định, 1K RPM, 10K RPD), dùng cho cả `filter` lẫn `judge` của pool để cả hai bước cùng một model; chất lượng của nó được đo bằng κ Gemini-người (ticket 08 / 12). 247 lời gọi đã cache cho 3.1 Pro không dùng lại. `CARD.md` sinh lại bằng `card` sẽ ghi model mới.
+
+**2026-10-22, agent (sửa bước level, chạy lại filter):** Lần chạy `filter` đầu trên `gemini-3.8-flash` chỉ giữ 668 / 1.446 câu: bước level loại 309 câu, trong đó 243 câu L1 bị judge gọi là L2. Đọc mẫu thì đều là câu tra cứu một sự kiện đúng nghĩa. Nguyên nhân: câu hỏi bằng tiếng Việt còn bằng chứng bằng tiếng Anh, trong khi L2 định nghĩa là "diễn đạt khác thuật ngữ của tài liệu", nên câu dịch nào cũng trông như L2. Đã sửa, có test viết trước (đỏ rồi xanh):
+- `filter.SAME_TASK = {("L1", "L2")}`: câu sinh ra là L1 mà judge gọi L2 thì giữ L1, không loại, không tính là đổi nhãn (`relabelled_from` để trống). Biến thể L2 vẫn làm ở ticket 09.
+- Prompt phân loại mức nói rõ câu tiếng Việt trên nguồn OWASP tiếng Anh, và việc dịch không tự làm câu thành L2. `LEVEL_VERSION` = `filter-level-v2`; lời gọi level là request mới, còn answerable lấy từ cache.
+- `GeminiClient` thử lại tối đa 5 lần khi rớt kết nối (lần chạy lại đầu dừng ở `RemoteProtocolError: Server disconnected`), chờ tăng gấp đôi từ 2 s; rớt mãi thì báo một dòng `LLMError`. Lỗi API (404, 429) vẫn báo ngay.
+
+Kết quả lần chạy lại (báo cáo cũ → mới):
+
+| Bước | Vào | Loại | Đổi nhãn |
+|---|---|---|---|
+| quote | 1.446 | 4 → 4 | |
+| answerable | 1.442 | 414 → 414 | |
+| level | 1.028 | **309 → 46** | 27 → 37 |
+| self_reference | 719 → 982 | 1 → 1 | |
+| dedup | 718 → 981 | 50 → 61 | |
+| l2_overlap | 668 → 920 | 0 → 0 | |
+
+Giữ **920** câu (trước 668). Theo mức, giữ / slot của kế hoạch: L1 dev 39 / 25, test 249 / 183; L3 dev 35 / 25, test 209 / 183; L4 dev 12 / 25, test 94 / 184; L5 dev 32 / 25, test 189 / 183; L6(a) dev 10 / 6, test 51 / 50. Đổi nhãn: L1 → L3 26, L3 → L1 10, L5 → L4 1.
+
+Còn lại cho các bước sau:
+- **22 / 80 ô thấp hơn số slot, thiếu 120 câu**, trong đó L4 17 ô (khoảng 104 câu). L4 mất 229 / 339 ở bước answerable; đọc mẫu thì phần lớn là so sánh gượng giữa hai đơn vị không liên quan (ví dụ "bí mật JWT HMAC" với "mục đích SAML"), tức lỗi ở cách chọn cặp chứ không ở bộ lọc. Sinh bù ở ticket 09 nên chọn cặp đơn vị thật sự so sánh được. Các ô khác thiếu: dev / inj / L5 2 / 3, test / api / L3 14 / 17, test / arch / L5 22 / 24, test / browser / L5 12 / 18, test / inj / L5 16 / 20.
+- 44 câu còn bị loại `level_mismatch`, chủ yếu là L3 bị gọi L5 (20) hoặc L4 (15): câu một đơn vị viết theo kiểu tình huống hoặc so sánh. Có thể cân nhắc cho L3 bị gọi L4 / L5 được giữ L3, nhưng chưa làm.
+- Bước answerable loại oan một số câu L3 / L5 tốt vì quote chỉ là mảnh câu, judge thiếu ngữ cảnh (ví dụ câu `java.util.Random`). Chưa sửa.
+- `CARD.md` còn ghi `filter-level-v1`: chạy `card` để sinh lại.

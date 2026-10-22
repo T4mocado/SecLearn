@@ -135,6 +135,26 @@ def test_generate_command_reports_refused_slots_and_writes_its_files(files, monk
     assert "refused" in out and "Session_Management_Cheat_Sheet#s01" in out
 
 
+def test_a_dropped_gemini_connection_is_retried_then_an_llm_error(monkeypatch):
+    # A real filter run died on "Server disconnected without sending a response" after hundreds of good calls.
+    monkeypatch.setattr(GeminiClient, "RETRY_WAIT", 0.0)
+    apis, drops = FakeAPIs(), [2]
+
+    def flaky(request):
+        if drops[0]:
+            drops[0] -= 1
+            raise httpx.RemoteProtocolError("Server disconnected without sending a response.", request=request)
+        return httpx.Response(200, json=apis.respond(request))
+
+    client = GeminiClient("gemini-3.8-flash", env=ENV, http_client=httpx.Client(transport=httpx.MockTransport(flaky)))
+    assert client.ask_json("q", {"type": "object"})["answerable"] is True
+    drops[0] = 10**6
+    with pytest.raises(LLMError, match=r"gemini-3\.8-flash: .*Server disconnected"):
+        client.ask_json("q", {"type": "object"})
+    with pytest.raises(LLMError, match="Server disconnected"):
+        client.embed(["a"])
+
+
 def test_gemini_client_sends_the_key_from_env_json_mode_and_embeds():
     apis = FakeAPIs()
     client = GeminiClient("gemini-2.5-pro", env=ENV, http_client=apis.client("gemini"))

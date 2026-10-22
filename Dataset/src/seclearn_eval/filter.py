@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from .llm import LLMClient, cosine
 from .plan import L3_MIN_CHUNKS
 from .prompts import ANSWER_SCHEMA, LEVEL_SCHEMA, SYSTEM_JUDGE, answer_prompt, level_prompt
-from .schema import Candidate, FilterReport, FilterStep, GoldSpan, LLMConfig, Question, Rejection, Review, Strata, Unit
+from .schema import Candidate, FilterReport, FilterStep, GoldSpan, LLMConfig, Question, Quote, Rejection, Review, Strata, Unit
 from .snapshot import Snapshot
 from .spans import find_quote
 
@@ -77,19 +77,24 @@ class Located:
 
 
 def locate(c: Candidate, snap: Snapshot, units: dict[str, Unit]) -> Located:
-    """A gold span per quote, found inside the candidate's own units (the text it was written from).
+    """A gold span per quote, found inside the candidate's own units (the text it was written from)."""
+    return locate_quotes(c.quotes, c.unit_ids, snap, units)
+
+
+def locate_quotes(quotes: list[Quote], unit_ids: list[str], snap: Snapshot, units: dict[str, Unit]) -> Located:
+    """A gold span per quote, found inside the given units.
 
     A quote not in its document is `quote_not_found`; one found in the document but only outside the candidate's
     units is `quote_outside_units` (the generator quoted text it was not shown, or a passage that repeats elsewhere).
     """
     spans: list[GoldSpan] = []
-    for q in c.quotes:
+    for q in quotes:
         md = snap.markdown.get(q.doc_key)
         doc = snap.document(q.doc_key)
         found = find_quote(md, q.quote) if md is not None and doc is not None else []
         if not found:
             return Located([], "quote_not_found", q.quote)
-        ranges = [(u.char_start, u.char_end) for uid in c.unit_ids if (u := units.get(uid)) and u.doc_key == q.doc_key]
+        ranges = [(u.char_start, u.char_end) for uid in unit_ids if (u := units.get(uid)) and u.doc_key == q.doc_key]
         inside = [f for f in found if any(s <= f[0] and f[1] <= e for s, e in ranges)]
         if not inside:
             return Located([], "quote_outside_units", q.quote)
@@ -98,8 +103,20 @@ def locate(c: Candidate, snap: Snapshot, units: dict[str, Unit]) -> Located:
     return Located(spans)
 
 
-def _content_words(text: str) -> set[str]:
+def content_words(text: str) -> set[str]:
+    """Lower-case words of 3+ letters, without English stop words."""
     return {w for w in _WORD.findall(text.lower()) if len(w) >= 3 and w not in _STOP}
+
+
+def refers_to_document(*texts: str) -> str | None:
+    """The first words pointing at "this document", a figure, a table or a chapter, if any."""
+    return next((m.group(0) for p in _SELF_REFERENCE for text in texts if (m := p.search(text))), None)
+
+
+def evidence_overlap(question_en: str, quotes: list[str]) -> float:
+    """Share of the question's content words found in its evidence (an L2 question should be worded away from it)."""
+    words = content_words(question_en)
+    return len(words & content_words(" ".join(quotes))) / len(words) if words else 0.0
 
 
 def run_filter(
@@ -168,8 +185,7 @@ def run_filter(
     def self_reference(s: _Step, cands: list[Candidate]) -> list[Candidate]:
         kept = []
         for c in cands:
-            hit = next((m.group(0) for p in _SELF_REFERENCE for text in (c.question, c.question_en) if (m := p.search(text))), None)
-            if hit:
+            if hit := refers_to_document(c.question, c.question_en):
                 s.reject(c, "refers_to_document", hit)
             else:
                 kept.append(c)
@@ -192,9 +208,7 @@ def run_filter(
         kept = []
         for c in cands:
             if c.level == "L2":
-                words = _content_words(c.question_en)
-                evidence = _content_words(" ".join(q.quote for q in c.quotes))
-                share = len(words & evidence) / len(words) if words else 0.0
+                share = evidence_overlap(c.question_en, [q.quote for q in c.quotes])
                 if share >= config.l2_max_overlap:
                     s.reject(c, "too_close_to_document", f"{share:.2f} of content words in the evidence")
                     continue

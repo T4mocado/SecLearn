@@ -12,6 +12,12 @@ rule (L3: >= 2 chunks) and the plan's per-document cap, the replaced unit's own 
 uses least; an L4 / L5 pair swaps one unit and keeps the other. A slot still short after that, or a refused L6(a) cell,
 is reported as refused, and the run goes on. The report lists every substitution, and every refused slot with the
 units tried.
+
+`prefer_other_doc` is the rule `topup` uses (ticket 09, 2026-10-21): same-document substitutes were full of payloads
+too, so after a refusal the units of other documents of the cluster come first, and a unit refused for any slot (or
+listed in `banned_units`, from earlier runs) is never a substitute again. `doc_load` adds the kept questions of each
+(split, document, cluster) to the per-document cap, which otherwise counts this plan's slots only. `generate` keeps
+the first rule, so the slots it already wrote from substitutes are not asked again.
 """
 
 from __future__ import annotations
@@ -89,7 +95,11 @@ def _collect(
     return got, calls, False
 
 
-def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMClient, *, oversample: float) -> tuple[list[Candidate], GenerationReport]:
+def generate(
+    snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMClient, *, oversample: float,
+    prefer_other_doc: bool = False, banned_units: set[str] | None = None,
+    doc_load: Counter[tuple[str, str, str | None]] | None = None,
+) -> tuple[list[Candidate], GenerationReport]:
     """One call per grounded slot, L6(a) cells in batches of OOD_BATCH; short replies topped up. Replies that do not
     fit the schema are skipped, not fatal: they count towards the shortfall."""
     by_id = {u.unit_id: u for u in units}
@@ -101,7 +111,7 @@ def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMCli
     report: list[GenerationCell] = []
     refused: list[RefusedSlot] = []
     substituted: list[SubstitutedSlot] = []
-    substitutes = _Substitutes(units, plan)
+    substitutes = _Substitutes(units, plan, prefer_other_doc, banned_units or set(), doc_load or Counter())
     for (split, cluster, level, kind), slots in sorted(cells.items(), key=lambda kv: kv[1][0].slot_id):
         counts = oversampled(len(slots), oversample)
         got_cell, calls_cell, refused_cell, substituted_cell = 0, 0, 0, 0
@@ -126,9 +136,15 @@ def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMCli
             for s, k in zip(slots, counts, strict=True):
                 found, calls, was_refused = _ask_slot(client, snap, by_id, s, k, 0, plan.seed)
                 tried: list[list[str]] = []
-                for option in substitutes.options(s, by_id) if was_refused else []:
+                if was_refused:
+                    substitutes.refused(s.unit_ids)
+                asked: list[list[str]] = []
+                while was_refused and len(asked) < MAX_SUBSTITUTES and (option := substitutes.next(s, by_id, asked)) is not None:
+                    asked.append(option)
                     alt = s.model_copy(update={"unit_ids": option})
                     more, more_calls, was_refused = _ask_slot(client, snap, by_id, alt, k - len(found), len(found), plan.seed)
+                    if was_refused:
+                        substitutes.refused([uid for uid in option if uid not in s.unit_ids])
                     found += more
                     calls += more_calls
                     if more:
@@ -139,8 +155,6 @@ def generate(snap: Snapshot, units: list[Unit], plan: SamplePlan, client: LLMCli
                         substituted_cell += 1
                     else:
                         tried.append(option)
-                    if not was_refused:
-                        break
                 out += found
                 got_cell += len(found)
                 calls_cell += calls
@@ -174,14 +188,27 @@ def _ask_slot(
 class _Substitutes:
     """Other units of a slot's cluster to write a refused slot from. Keeps the plan's level rule (L3: >= 2 chunks) and
     its per-document cap, per split and counted like the plan (one per slot of the document). Order: the replaced
-    unit's own document first, then the units the plan uses least, then a hash of seed, slot and unit (no set order)."""
+    unit's own document first (other documents first when `prefer_other_doc`), then the units the plan uses least,
+    then a hash of seed, slot and unit (no set order). With `prefer_other_doc`, a refused unit is never offered again."""
 
-    def __init__(self, units: list[Unit], plan: SamplePlan) -> None:
+    def __init__(self, units: list[Unit], plan: SamplePlan, prefer_other_doc: bool, banned: set[str],
+                 doc_load: Counter[tuple[str, str, str | None]]) -> None:
         self.units = sorted((u for u in units if u.sampleable and u.cluster), key=lambda u: u.unit_id)
         self.seed = plan.seed
         self.cap = int(plan.params.get("cap", DEFAULT_CAP))
-        self.load = Counter((s.split, s.doc_key, s.cluster) for s in plan.slots)
+        self.load = Counter((s.split, s.doc_key, s.cluster) for s in plan.slots) + doc_load
         self.uses = Counter(uid for s in plan.slots for uid in s.unit_ids)
+        self.prefer_other_doc = prefer_other_doc
+        self.banned = set(banned)
+
+    def refused(self, unit_ids: list[str]) -> None:
+        """Units of a refused request: never substitutes again, under the `prefer_other_doc` rule."""
+        if self.prefer_other_doc:
+            self.banned.update(unit_ids)
+
+    def next(self, s: PlanSlot, by_id: dict[str, Unit], asked: list[list[str]]) -> list[str] | None:
+        """The first option not asked yet, ranked again so units refused since are left out."""
+        return next((o for o in self.options(s, by_id) if o not in asked), None)
 
     def options(self, s: PlanSlot, by_id: dict[str, Unit]) -> list[list[str]]:
         """Unit lists to ask, in order, each with one unit swapped. A pair swaps its second unit first, then its first."""
@@ -206,7 +233,7 @@ class _Substitutes:
         old = by_id[s.unit_ids[i]]
 
         def fits(u: Unit) -> bool:
-            if u.cluster != s.cluster or u.unit_id in s.unit_ids:
+            if u.cluster != s.cluster or u.unit_id in s.unit_ids or u.unit_id in self.banned:
                 return False
             if s.level == "L3" and u.chunks < L3_MIN_CHUNKS:
                 return False
@@ -214,7 +241,7 @@ class _Substitutes:
 
         def order(u: Unit) -> tuple[bool, int, str]:
             tie = hashlib.sha256(f"{self.seed}:{s.slot_id}:{u.unit_id}".encode()).hexdigest()
-            return (u.doc_key != old.doc_key, self.uses[u.unit_id], tie)
+            return ((u.doc_key == old.doc_key) if self.prefer_other_doc else (u.doc_key != old.doc_key), self.uses[u.unit_id], tie)
 
         return [u.unit_id for u in sorted(filter(fits, self.units), key=order)]
 

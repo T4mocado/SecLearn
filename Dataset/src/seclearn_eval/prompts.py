@@ -112,6 +112,96 @@ GENERATION_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
+# --- Variants of reviewed questions (ticket 09) ------------------------------------------------------
+
+#: kind → (prompt version, task text). Each rewrites one reviewed L1 / L3 question (L6(c): L1) and keeps its answer.
+_VARIANT_TASKS = {
+    "L2": (
+        "var-L2-v1",
+        "Level L2 (paraphrase). Rewrite the question so it asks for the same thing but avoids the evidence's own terms: "
+        "use everyday words, describe the mechanism instead of naming it, or use a synonym, as a Vietnamese developer "
+        "who does not know the term would ask. The reference answer must stay correct. Give the Vietnamese question (with "
+        "diacritics) and question_en, the English of your rewrite, which also avoids the evidence's words.",
+    ),
+    "L7": (
+        "var-L7-v1",
+        "Level L7 (conversation). Turn the question into the last turn of a short chat: write one or two earlier "
+        "exchanges (a user turn, then an assistant turn, each in Vietnamese) on the same topic, then a follow-up user "
+        "question that only makes sense after them (it may say \"nó\", \"cái đó\" or leave the topic out) and whose "
+        "answer is the reference answer. Assistant turns must agree with the evidence. Give the turns, the follow-up "
+        "question and question_en, its English.",
+    ),
+    "L6c": (
+        "var-L6c-v1",
+        "Level L6(c) (false premise). Change one detail of the question into something the unit contradicts (a wrong "
+        "value, the wrong mechanism, the opposite advice), so the question rests on a false belief a user might hold. "
+        "Give false_premise (the wrong claim, in English), the Vietnamese question, question_en, answer (in Vietnamese: "
+        "say the premise is wrong and give the right fact from the unit) and refuting_quote: a verbatim quote from the "
+        "unit that shows the premise is false, copied character for character (one sentence or a short run of them).",
+    ),
+}
+
+_TURNS = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {"role": {"type": "string", "enum": ["user", "assistant"]}, "content": {"type": "string"}},
+        "required": ["role", "content"],
+        "additionalProperties": False,
+    },
+}
+
+
+def _object(**props: Any) -> dict[str, Any]:
+    return {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
+
+
+_TEXT = {"type": "string"}
+VARIANT_SCHEMAS: dict[str, dict[str, Any]] = {
+    "L2": _object(question=_TEXT, question_en=_TEXT),
+    "L7": _object(turns=_TURNS, question=_TEXT, question_en=_TEXT),
+    "L6c": _object(false_premise=_TEXT, question=_TEXT, question_en=_TEXT, answer=_TEXT, refuting_quote=_TEXT),
+}
+
+
+def variant_prompt(kind: str, question: str, question_en: str, answer: str, evidence: list[str], unit_texts: list[str]) -> tuple[str, str]:
+    """(prompt version, prompt) for one variant of a reviewed question; L6(c) also sees the unit, to quote from it."""
+    version, task = _VARIANT_TASKS[kind]
+    quotes = "\n".join(f"<evidence>{e}</evidence>" for e in evidence)
+    units = "\n\n".join(f"<unit>\n{text}\n</unit>" for text in unit_texts) if kind == "L6c" else ""
+    prompt = f"""{task}
+
+Question: {question}
+Question (English): {question_en}
+Reference answer: {answer}
+
+{quotes}
+
+{units}""".rstrip()
+    return version, prompt
+
+
+L6B_VERSION = "gen-L6b-v1"
+
+
+def not_in_corpus_prompt(n: int, titles: list[str]) -> tuple[str, str]:
+    """L6(b): security questions the corpus does not answer; the document titles say what it covers."""
+    listed = "\n".join(f"- {t}" for t in titles)
+    prompt = f"""Level L6(b) (security, but not in the corpus). Write exactly {n} question(s) a Vietnamese developer might
+ask a web security assistant whose only sources are the OWASP documents listed below, about security topics those
+documents do not cover (other standards, specific products or CVEs, network or OS security, compliance, incidents...).
+Vary the topics. For each give the Vietnamese question, question_en, and keywords: two to four English terms, specific
+to the topic, that any text answering it would contain (they are searched for in the documents to show it is absent).
+
+Documents:
+{listed}"""
+    return L6B_VERSION, prompt
+
+
+L6B_SCHEMA: dict[str, Any] = _object(
+    items={"type": "array", "items": _object(question=_TEXT, question_en=_TEXT, keywords={"type": "array", "items": _TEXT})}
+)
+
 # --- Filter (Gemini) -------------------------------------------------------------------------------
 
 ANSWER_VERSION = "filter-answer-v1"
@@ -213,5 +303,11 @@ POOL_JUDGE_SCHEMA: dict[str, Any] = {
 
 
 def question_prompt_versions() -> list[str]:
-    """The prompt versions a question can be made and filtered with: generation per level, L6(a), the two filter checks."""
-    return [version for version, _ in _TASKS.values()] + [OOD_VERSION, ANSWER_VERSION, LEVEL_VERSION]
+    """The prompt versions a question can be made and filtered with: generation per level, L6(a), L6(b), the variants,
+    the two filter checks."""
+    return (
+        [version for version, _ in _TASKS.values()]
+        + [OOD_VERSION, L6B_VERSION]
+        + [version for version, _ in _VARIANT_TASKS.values()]
+        + [ANSWER_VERSION, LEVEL_VERSION]
+    )

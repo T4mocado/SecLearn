@@ -205,6 +205,30 @@ class Turn(Record):
     content: str
 
 
+class KeywordHit(Record):
+    """One English keyword of an L6(b) question, searched for in every document of the snapshot (whole words, any case)."""
+
+    keyword: str
+    n_hits: int = Field(ge=0)
+    #: Documents with hits, most hits first (at most `absence.KEYWORD_DOCS`).
+    doc_keys: list[str] = []
+
+
+class RetrievedChunk(Record):
+    system: str
+    rank: int = Field(ge=1)
+    chunk_key: str
+    score: float
+
+
+class AbsenceEvidence(Record):
+    """Why an L6(b) question is thought to have no answer in the corpus, for the reviewer to confirm (spec user story 31)."""
+
+    keywords: list[KeywordHit]
+    #: Top `absence.ABSENCE_DEPTH` chunks of each of two retrievers on the snapshot.
+    retrieved: list[RetrievedChunk]
+
+
 class Question(Record):
     id: str
     split: SplitName
@@ -223,6 +247,8 @@ class Question(Record):
     reference_answer: str | None
     reference_claims: list[str] = []
     gold_evidence: list[GoldSpan] = []
+    #: L6(b) only: keyword grep and retrieval results showing the corpus does not answer it.
+    absence_evidence: AbsenceEvidence | None = None
     review: Review = Review()
     generation: Generation
 
@@ -537,6 +563,31 @@ class Rejection(Record):
     step: str
     reason: str
     detail: str = ""
+
+
+class TopUpCell(Record):
+    """One plan cell a top-up step (`variants`, `l6b`, `topup`) wrote for: questions kept before it, and how many it made."""
+
+    split: SplitName
+    cluster: ClusterId | None
+    level: Level
+    l6_kind: L6Kind | None = None
+    target: int = Field(ge=0)
+    #: Questions of the cell already in the input files and not rejected.
+    kept: int = Field(ge=0)
+    #: ceil(oversample × (target − kept)), as many as the cell's seeds allow.
+    wanted: int = Field(ge=0)
+    made: int = Field(ge=0)
+    calls: int = Field(ge=0)
+    #: Calls the model refused (each ends the asking for that cell, or for that seed of a variant cell).
+    refused: int = Field(default=0, ge=0)
+
+
+class TopUpReport(Record):
+    cells: list[TopUpCell]
+    n_made: int
+    #: Variants dropped by their own checks (no refuting quote, too close to the evidence, refers to the document…).
+    rejected: list[Rejection] = []
 
 
 class FilterStep(Record):

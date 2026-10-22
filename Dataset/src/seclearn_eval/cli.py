@@ -35,6 +35,7 @@ from .schema import (
     AnswerLine,
     Candidate,
     ClusterMap,
+    GenerationReport,
     Label,
     LLMConfig,
     PoolConfig,
@@ -43,9 +44,10 @@ from .schema import (
     QuestionFileHeader,
     SamplePlan,
     ScoreReport,
+    TopUpReport,
     Unit,
 )
-from .snapshot import load_snapshot, verify_snapshot
+from .snapshot import Snapshot, load_snapshot, verify_snapshot
 from .units import build_units
 
 #: Pipeline steps still to build, and the ticket in Dataset/.scratch/eval-set-v1/issues/ that builds them.
@@ -324,6 +326,128 @@ def _read_question_files(files: list[Path]) -> list[Question]:
     return [q for path in files for q in read_questions(path)[1]]
 
 
+def _header(args: argparse.Namespace, snap: Snapshot) -> QuestionFileHeader:
+    return QuestionFileHeader(canary=snap.manifest.canary, eval_version=args.eval_version, snapshot_id=snap.snapshot_id)
+
+
+def _where(split: str, cluster: str | None, level: str, l6_kind: str | None) -> str:
+    """A plan cell as `test/auth/L1` or `test/-/L6(not_in_corpus)`."""
+    return f"{split}/{cluster or '-'}/{level}" + (f"({l6_kind})" if l6_kind else "")
+
+
+def _print_topup(report: TopUpReport) -> None:
+    for c in report.cells:
+        refused = f", {c.refused} refused" if c.refused else ""
+        print(f"  {_where(c.split, c.cluster, c.level, c.l6_kind)}: kept {c.kept} of {c.target}, wanted {c.wanted}, "
+              f"made {c.made} in {c.calls} call(s){refused}")
+    reasons = Counter(r.reason for r in report.rejected)
+    if reasons:
+        print("  dropped: " + ", ".join(f"{r} {n}" for r, n in sorted(reasons.items())))
+
+
+def _variants(args: argparse.Namespace) -> int:
+    from .variants import build_variants
+
+    snap = load_snapshot(args.snapshot)
+    units = read_jsonl(_units_file(args), Unit)
+    config = read_json(args.config, LLMConfig)
+    client = _clients(args, config)["generator"]
+    made, report = build_variants(_read_question_files(args.questions), read_json(args.plan, SamplePlan), snap, units, client, config=config)
+    write_questions(args.out, _header(args, snap), made)
+    report_file = args.report or args.out.with_name(args.out.stem + "-report.json")
+    write_json(report_file, report)
+    _print_topup(report)
+    print(f"{report.n_made} variants → {args.out} (report: {report_file}); review them, then `split`")
+    print(_cache_line(client))
+    return 0
+
+
+def _l6b(args: argparse.Namespace) -> int:
+    from .absence import not_in_corpus
+    from .retrieval import BM25, DenseRetriever, EmbeddingCache, UnpinnedModelError
+
+    snap = load_snapshot(args.snapshot)
+    config = read_json(args.config, LLMConfig)
+    pool_config = read_json(args.pool_config, PoolConfig)
+    try:
+        encoder = model_factory(allow_unpinned=args.allow_unpinned)("encoder", pool_config.multilingual)
+    except UnpinnedModelError as err:
+        print(f"l6b: {err}", file=sys.stderr)
+        return 1
+    # Two retrievers of different kinds: words of the English question, and a multilingual dense model on the Vietnamese one.
+    retrievers = [BM25(), DenseRetriever("bge-m3-vi", encoder, EmbeddingCache(args.embeddings), snap, field="question")]
+    client = _clients(args, config)["generator"]
+    made, report = not_in_corpus(_read_question_files(args.questions), read_json(args.plan, SamplePlan), snap, client, retrievers,
+                                 oversample=config.oversample, round=args.round)
+    out = args.out or paths.GOLD / f"l6b-r{args.round}.jsonl"
+    write_questions(out, _header(args, snap), made)
+    report_file = out.with_name(out.stem + "-report.json")
+    write_json(report_file, report)
+    _print_topup(report)
+    with_hits = sum(any(k.n_hits for k in q.absence_evidence.keywords) for q in made if q.absence_evidence)
+    print(f"{report.n_made} L6(b) questions → {out} ({with_hits} with keyword hits in the snapshot: check those first)")
+    print(_cache_line(client))
+    return 0
+
+
+def _topup(args: argparse.Namespace) -> int:
+    from .quota import doc_load, refused_units, topup_plan
+
+    snap = load_snapshot(args.snapshot)
+    units = read_jsonl(_units_file(args), Unit)
+    config = read_json(args.config, LLMConfig)
+    reports = sorted(paths.GOLD.glob("generate-report*.json")) if args.refusals is None else args.refusals
+    banned = refused_units([read_json(p, GenerationReport) for p in reports])
+    texts = {u.unit_id: snap.markdown[u.doc_key][u.char_start : u.char_end] for u in units if u.doc_key in snap.markdown}
+    questions = _read_question_files(args.questions)
+    extra, unplaced = topup_plan(read_json(args.plan, SamplePlan), questions, units, round=args.round, banned=banned, texts=texts)
+    out = args.out or paths.GOLD / f"candidates-r{args.round}.jsonl"
+    write_json(out.with_name(f"topup-plan-r{args.round}.json"), extra)
+    client = _clients(args, config)["generator"]
+    candidates, report = generate(snap, units, extra, client, oversample=config.oversample, prefer_other_doc=True,
+                                  banned_units=banned, doc_load=doc_load(questions, units))
+    write_jsonl(out, candidates)
+    report_file = out.with_name(f"generate-report-r{args.round}.json")
+    write_json(report_file, report)
+    per_cell = Counter(_where(s.split, s.cluster, s.level, s.l6_kind) for s in extra.slots)
+    print(f"{len(extra.slots)} new slots in short root cells: " + (", ".join(f"{k} {n}" for k, n in sorted(per_cell.items())) or "none"))
+    for cell, n in sorted(unplaced.items(), key=str):
+        print(f"  no unit left for {n} question(s) of {_where(*cell)} (refused, at the cap, or used this round)")
+    print(f"{len(banned)} unit(s) refused before are left out (from {len(reports)} report(s))")
+    for sub in report.substituted:
+        print(f"  substituted: {sub.slot_id} {sub.level} {', '.join(sub.from_unit_ids)} -> {', '.join(sub.to_unit_ids)}")
+    for r in report.refused:
+        print(f"  refused: {r.slot_id} {r.level} {', '.join(r.unit_ids) or '(no unit)'}")
+    print(f"{len(candidates)} candidates → {out} (report: {report_file}); next: `filter --candidates {out}`")
+    print(_cache_line(client))
+    return 0
+
+
+def _split(args: argparse.Namespace) -> int:
+    from .quota import cell_of, kept_counts, plan_cell, split_files
+
+    snap = load_snapshot(args.snapshot)
+    plan = read_json(args.plan, SamplePlan)
+    questions = _read_question_files(args.questions)
+    try:
+        kept, cut = split_files(questions, plan, _header(args, snap), args.out_dir)
+    except ValueError as err:
+        print(f"split: {err}", file=sys.stderr)
+        return 1
+    write_plain_json(args.out_dir / "split-report.json", {"seed": plan.seed, "cut": sorted(q.id for q in cut),
+                                                          "cut_by_cell": dict(sorted(Counter(str(cell_of(q)) for q in cut).items()))})
+    have = kept_counts(kept)
+    for c in plan.cells:
+        if have[plan_cell(c)] < c.target:
+            print(f"  short: {_where(c.split, c.cluster, c.level, c.l6_kind)} {have[plan_cell(c)]} of {c.target}")
+    if pending := sum(q.review.status == "pending" for q in questions):
+        print(f"  {pending} question(s) not reviewed yet are left out")
+    per_split = Counter(q.split for q in kept)
+    print(f"test {per_split['test']}, dev {per_split['dev']} questions → {args.out_dir}/test.jsonl, dev.jsonl; "
+          f"{len(cut)} cut by seed {plan.seed} (split-report.json)")
+    return 0
+
+
 def _pool(args: argparse.Namespace) -> int:
     from .pool import build_pool, run_lines, run_systems
     from .retrieval import EmbeddingCache, UnpinnedModelError, build_systems
@@ -498,6 +622,44 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--report", type=Path, default=paths.GOLD / "filter-report.json")
     p.add_argument("--eval-version", default="1.0.0")
     p.set_defaults(run=_filter)
+
+    p = sub.add_parser("topup", help="new candidates for the root cells (L1, L3-L5, L6(a)) still short of the plan, and only those")
+    _llm_args(p)
+    p.add_argument("--questions", type=Path, nargs="+", required=True, help="every question file so far (filtered / reviewed)")
+    p.add_argument("--plan", type=Path, default=paths.GOLD / "sample-plan.json")
+    p.add_argument("--refusals", type=Path, nargs="*", help="generate reports whose refused units are left out; default questions/<version>/generate-report*.json")
+    p.add_argument("--round", type=int, default=1, help="top-up round: new slot ids and seeds")
+    p.add_argument("--out", type=Path, help="default: questions/<version>/candidates-r<round>.jsonl")
+    p.set_defaults(run=_topup)
+
+    p = sub.add_parser("variants", help="L2, L7 and L6(c) from reviewed L1 / L3 questions, for the cells short of the plan")
+    _llm_args(p)
+    p.add_argument("--questions", type=Path, nargs="+", required=True, help="reviewed question files (and earlier variants)")
+    p.add_argument("--plan", type=Path, default=paths.GOLD / "sample-plan.json")
+    p.add_argument("--out", type=Path, default=paths.GOLD / "variants.jsonl")
+    p.add_argument("--report", type=Path, help="default: <out>-report.json")
+    p.add_argument("--eval-version", default="1.0.0")
+    p.set_defaults(run=_variants)
+
+    p = sub.add_parser("l6b", help="L6(b) questions (security, not in the corpus) with keyword grep and top-20 of 2 retrievers")
+    _llm_args(p)
+    p.add_argument("--questions", type=Path, nargs="*", default=[], help="question files so far (their L6(b) count towards the plan)")
+    p.add_argument("--plan", type=Path, default=paths.GOLD / "sample-plan.json")
+    p.add_argument("--pool-config", type=Path, default=paths.POOL_CONFIG, help="its `multilingual` model is the dense retriever")
+    p.add_argument("--embeddings", type=Path, default=Path("cache/embeddings"), help="chunk embedding cache (shared with `pool`)")
+    p.add_argument("--allow-unpinned", action="store_true", help="run a model whose `revision` is null (not reproducible)")
+    p.add_argument("--round", type=int, default=1)
+    p.add_argument("--out", type=Path, help="default: questions/<version>/l6b-r<round>.jsonl")
+    p.add_argument("--eval-version", default="1.0.0")
+    p.set_defaults(run=_l6b)
+
+    p = sub.add_parser("split", help="cut over-full cells by the plan's seed, write test.jsonl / dev.jsonl by seed_id")
+    p.add_argument("--snapshot", type=Path, required=True)
+    p.add_argument("--questions", type=Path, nargs="+", required=True, help="every reviewed question file")
+    p.add_argument("--plan", type=Path, default=paths.GOLD / "sample-plan.json")
+    p.add_argument("--out-dir", type=Path, default=paths.GOLD)
+    p.add_argument("--eval-version", default="1.0.0")
+    p.set_defaults(run=_split)
 
     p = sub.add_parser("check", help="all checks to run before a measurement; exit 1 on any problem")
     p.add_argument("--snapshot", type=Path, required=True)

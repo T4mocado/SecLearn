@@ -46,6 +46,8 @@
     <Label value="Ô 4" background="#00838f"/>
   </Labels>
   <Text name="source_1" value="$source_1" saveTextResult="yes"/>
+  <Header value="L6(b): bằng chứng corpus không có đáp án (grep từ khoá, top-20 của 2 retriever)" size="5"/>
+  <Text name="absence_evidence" value="$absence_evidence"/>
 
   <Header value="3. Xong phần span thì mới mở đáp án của LLM"/>
   <Choices name="reveal" toName="question" choice="single" showInline="true">

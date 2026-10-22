@@ -259,3 +259,44 @@ def test_rerun_answers_from_the_cache_without_calling_the_api(snap, units, plan,
     # A different seed is a different request.
     generate(snap, units, plan.model_copy(update={"seed": 100}), CachedClient(fake, tmp_path / "cache"), oversample=1.6)
     assert len(fake.calls) == 2 * n_calls
+
+
+def _units_asked(client, snap, units):
+    """The unit(s) each call carried, in call order."""
+    texts = unit_texts(snap, units)
+    return [tuple(sorted(uid for uid, t in texts.items() if t in c.prompt)) for c in client.calls]
+
+
+def test_after_a_refusal_another_document_comes_first_and_a_refused_unit_is_never_a_substitute(snap, units):
+    # Ticket 09, 2026-10-21: same-document substitutes were full of payloads too, so after one refusal look elsewhere.
+    refused = {f"{SESS}#s01", f"{SESS}#s00", "wstg-v4.2#WSTG-SESS-01", "wstg-v4.2#WSTG-SESS-02"}
+    texts = unit_texts(snap, units)
+
+    def refuse(prompt, schema):
+        if any(texts[uid] in prompt for uid in refused):
+            raise ModelRefusal("claude-fake: stopped with refusal")
+        return None
+
+    two = SamplePlan(snapshot_id="2026-10-18-mini", seed=99, params={}, cells=[], slots=[
+        slot("test-00001", "L1", "auth", [f"{SESS}#s01"], SESS),
+        slot("test-00002", "L1", "auth", [f"{SESS}#s00"], SESS),
+    ])
+    client = generator(snap, units, refuse)
+    candidates, report = generate(snap, units, two, client, oversample=1.6, prefer_other_doc=True)
+    asked = [ids[0] for ids in _units_asked(client, snap, units)]
+    # Slot 1: its own unit, then both WSTG units (the other document), then back to its own document.
+    assert asked[0] == f"{SESS}#s01"
+    assert set(asked[1:3]) == {"wstg-v4.2#WSTG-SESS-01", "wstg-v4.2#WSTG-SESS-02"}
+    assert asked[3] == f"{SESS}#s02"
+    # Slot 2: its own unit, then straight to s02; no unit refused for slot 1 is tried again.
+    assert asked[4:] == [f"{SESS}#s00", f"{SESS}#s02"]
+    assert {c.slot_id for c in candidates} == {"test-00001", "test-00002"}
+    assert report.n_refused == 0 and report.n_substituted == 2
+
+
+def test_units_refused_in_an_earlier_run_are_never_substitutes(snap, units, plan):
+    client = generator(snap, units, _refusing_unit(snap, units, f"{SESS}#s02"))
+    # L3 needs 2 chunks: WSTG-SESS-01 is the only other choice, and an earlier run saw it refused.
+    _, report = generate(snap, units, plan, client, oversample=1.6, prefer_other_doc=True, banned_units={"wstg-v4.2#WSTG-SESS-01"})
+    [r] = [r for r in report.refused if r.slot_id == "test-00003"]
+    assert r.tried_unit_ids == []

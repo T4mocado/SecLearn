@@ -41,6 +41,9 @@ SOURCE_SLOTS = 2
 EMPTY_SOURCE = "(không có đoạn nguồn thứ hai)"
 #: Review task fields written by the LLM: shown only after the spans are done, and to hide in the Data Manager.
 LLM_FIELDS = ("llm_level", "llm_answer", "llm_quotes", "question_en")
+NO_ABSENCE_EVIDENCE = "(không phải câu L6(b))"
+#: Characters of each retrieved chunk shown under an L6(b) question.
+ABSENCE_SNIPPET = 300
 
 QUESTION_CHECK = {"Tự đứng được": "ok", "Mơ hồ": "ambiguous", "Cần ngữ cảnh tài liệu": "needs_context", "Hỏi ý kiến": "opinion"}
 DECISION = {"Chấp nhận": "accepted", "Sửa": "edited", "Loại": "rejected"}
@@ -120,6 +123,7 @@ def review_tasks(questions: list[Question], snap: Snapshot, units: list[Unit], v
             "llm_answer": q.reference_answer or "(không có đáp án: câu L6)",
             "llm_quotes": "\n\n".join(f"[{s.doc_key}] {s.quote}" for s in q.gold_evidence) or "(không có trích dẫn)",
             "question_en": q.question_en,
+            "absence_evidence": _absence_evidence(q, snap),
             "guideline_version": version,
             "snapshot_id": snap.snapshot_id,
             "sources": [s.model_dump() for s in sources],
@@ -134,6 +138,23 @@ def review_tasks(questions: list[Question], snap: Snapshot, units: list[Unit], v
                 data[f"source_{n}_title"] = ""
         tasks.append({"data": data})
     return tasks
+
+
+def _absence_evidence(q: Question, snap: Snapshot) -> str:
+    """An L6(b) question's keyword hits and each retriever's top chunks, with their text, as one block to read."""
+    ev = q.absence_evidence
+    if ev is None:
+        return NO_ABSENCE_EVIDENCE
+    chunks = {c.chunk_key: c.text for c in snap.chunks}
+    lines = ["Từ khoá (số lần xuất hiện trong snapshot, tài liệu có nhiều nhất):"]
+    lines += [f"- {k.keyword}: {k.n_hits}" + (f" ({', '.join(k.doc_keys)})" if k.doc_keys else "") for k in ev.keywords]
+    for system in dict.fromkeys(r.system for r in ev.retrieved):
+        lines.append(f"\nTop {sum(r.system == system for r in ev.retrieved)} của {system}:")
+        for r in ev.retrieved:
+            if r.system == system:
+                text = " ".join(chunks.get(r.chunk_key, "(chunk không có trong snapshot)").split())[:ABSENCE_SNIPPET]
+                lines.append(f"{r.rank}. [{r.chunk_key}] {text}")
+    return "\n".join(lines)
 
 
 def pool_tasks(entries: list[PoolEntry], questions: list[Question], snap: Snapshot, version: str) -> list[dict]:

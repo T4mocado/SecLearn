@@ -14,6 +14,8 @@ from .spans import QUOTE_WINDOW, covers, find_quote, overlap, quote_at
 
 #: A plan cell may differ from its target by this share before the check fails.
 PLAN_TOLERANCE = 0.05
+#: The question files a bare `check` reads: the eval set as `split` writes it.
+SPLIT_FILES = ("dev.jsonl", "test.jsonl")
 
 CHECKS = (
     "format",  # 1. files match the schema, ids unique
@@ -47,15 +49,17 @@ class CheckInputs:
 
 
 def discover(snapshot: Path, root: Path, version: str) -> CheckInputs:
-    """Every input found at its usual place: `<snapshot>/units.jsonl`, `questions/<version>/*.jsonl` and
-    `sample-plan.json`, `runs/*/`. A bare `check --snapshot` once passed with 7 of 9 checks never run."""
+    """Every input found at its usual place: `<snapshot>/units.jsonl`, the split files `questions/<version>/{dev,test}.jsonl`
+    and `sample-plan.json`, `runs/*/`. A bare `check --snapshot` once passed with 7 of 9 checks never run.
+    Only the split files: the working files beside them (candidates, filtered, pilot, variants…) are drafts of the same
+    questions, and candidates are not question files at all."""
     qdir = root / "questions" / version
     units = snapshot / "units.jsonl"
     plan = qdir / "sample-plan.json"
     runs = root / "runs"
     return CheckInputs(
         snapshot=snapshot,
-        questions=sorted(qdir.glob("*.jsonl")) if qdir.is_dir() else [],
+        questions=[p for name in SPLIT_FILES if (p := qdir / name).is_file()],
         units=units if units.is_file() else None,
         plan=plan if plan.is_file() else None,
         runs=sorted(p for p in runs.iterdir() if p.is_dir()) if runs.is_dir() else [],

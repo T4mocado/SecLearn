@@ -50,7 +50,7 @@
   <Text name="absence_evidence" value="$absence_evidence"/>
 
   <Header value="3. Xong phần span thì mới mở đáp án của LLM"/>
-  <Choices name="reveal" toName="question" choice="single" showInline="true">
+  <Choices name="reveal" toName="question" choice="single" showInline="true" required="true">
     <Choice value="Đã bôi xong span"/>
   </Choices>
   <View visibleWhen="choice-selected" whenTagName="reveal" whenChoiceValue="Đã bôi xong span">
@@ -64,13 +64,13 @@
     <Text name="question_en" value="$question_en"/>
 
     <Header value="Quyết định" size="5"/>
-    <Choices name="decision" toName="question" choice="single-radio" showInline="true">
+    <Choices name="decision" toName="question" choice="single-radio" showInline="true" required="true">
       <Choice value="Chấp nhận"/>
       <Choice value="Sửa"/>
       <Choice value="Loại"/>
     </Choices>
     <Header value="Mức (chọn lại kể cả khi giữ nguyên)" size="5"/>
-    <Choices name="level" toName="question" choice="single-radio" showInline="true">
+    <Choices name="level" toName="question" choice="single-radio" showInline="true" required="true">
       <Choice value="L1"/>
       <Choice value="L2"/>
       <Choice value="L3"/>
@@ -85,6 +85,8 @@
       <Choice value="Corpus không có"/>
       <Choice value="Tiền đề sai"/>
     </Choices>
+    <Header value="Câu hỏi sửa (để trống = giữ câu hỏi)" size="5"/>
+    <TextArea name="question_edit" toName="question" rows="2" maxSubmissions="1" editable="true"/>
     <Header value="Đáp án sửa (để trống = giữ đáp án LLM)" size="5"/>
     <TextArea name="answer" toName="question" rows="4" maxSubmissions="1" editable="true"/>
     <Header value="Ghi chú (L6(b): ghi lệnh grep / truy vấn đã dùng)" size="5"/>

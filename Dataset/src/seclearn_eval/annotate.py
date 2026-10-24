@@ -19,9 +19,10 @@ from typing import Literal, get_args
 from pydantic import Field, ValidationError
 
 from .io import FormatError
-from .schema import GoldSpan, Label, Level, PoolEntry, Question, Record, Unit
+from .schema import CompareCell, GoldSpan, Label, Level, PoolEntry, Question, Record, Unit
 from .snapshot import Snapshot, sha256_text
 from .spans import normalize
+from .units import unit_title
 
 OffsetUnit = Literal["utf16", "codepoint"]
 LEVELS: tuple[str, ...] = get_args(Level)
@@ -52,6 +53,11 @@ SPAN_EVIDENCE = "Bằng chứng"
 SPAN_REFUTES = "Bác bỏ tiền đề"
 #: Comparison questions: "Ô 1" … "Ô 4" → `GoldSpan.cell` 0 … 3.
 SPAN_CELLS = {f"Ô {n + 1}": n for n in range(4)}
+#: Label Studio 1.13.1 writes each line break in a region's `text` as these two characters (the pilot: 87 of 126
+#: regions); its offsets still count the real break.
+LS_LINE_BREAK = "\\n"
+#: The review box that rewrites the question (the old wording goes to `review.original_question`).
+QUESTION_EDIT = "question_edit"
 POOL_GRADE = {"3 - Trả lời trực tiếp": 3, "2 - Có đáp án nhưng lẫn / không rõ": 2, "1 - Đúng chủ đề, không trả lời": 1, "0 - Không liên quan": 0}
 
 _VERSION = re.compile(r"^guideline_version:\s*(\S+)\s*$", re.MULTILINE)
@@ -87,6 +93,16 @@ def to_codepoint(text: str, offset: int, unit: OffsetUnit) -> int:
 # --- Export --------------------------------------------------------------------------------------
 
 
+def source_cells(sources: list[TaskSource]) -> list[CompareCell]:
+    """An L4's cells when it has none: "Ô 1" is the unit shown on top, "Ô 2" the one below (the generator compares unit 1 with unit 2)."""
+    return [CompareCell(item=s.title, aspect="") for s in sources]
+
+
+def _cells_text(cells: list[CompareCell]) -> str:
+    lines = [f"Ô {n + 1}: {c.item}" + (f" / {c.aspect}" if c.aspect else "") for n, c in enumerate(cells)]
+    return "\n".join(lines) or "(không phải câu so sánh)"
+
+
 def _sources(q: Question, snap: Snapshot, units: dict[str, Unit]) -> list[TaskSource]:
     out = []
     for uid in q.unit_ids:
@@ -96,7 +112,7 @@ def _sources(q: Question, snap: Snapshot, units: dict[str, Unit]) -> list[TaskSo
         doc = snap.document(unit.doc_key)
         if doc is None or unit.doc_key not in snap.markdown:
             raise FormatError(f"{q.id}: document {unit.doc_key} not in snapshot {snap.snapshot_id}")
-        out.append(TaskSource(doc_key=unit.doc_key, md_sha256=doc.md_sha256, title=f"{doc.title} › {unit.title}",
+        out.append(TaskSource(doc_key=unit.doc_key, md_sha256=doc.md_sha256, title=unit_title(unit, snap),
                               char_start=unit.char_start, char_end=unit.char_end))
     if len(out) > SOURCE_SLOTS:
         raise FormatError(f"{q.id}: {len(out)} units, the review project shows at most {SOURCE_SLOTS}")
@@ -118,7 +134,7 @@ def review_tasks(questions: list[Question], snap: Snapshot, units: list[Unit], v
             "question_id": q.id,
             "question": q.question,
             "turns": "\n".join(f"{t.role}: {t.content}" for t in q.turns) or "(không có lượt trước)",
-            "compare_cells": "\n".join(f"Ô {n + 1}: {c.item} / {c.aspect}" for n, c in enumerate(q.compare_cells)) or "(không phải câu so sánh)",
+            "compare_cells": _cells_text(q.compare_cells or (source_cells(sources) if q.strata.level == "L4" else [])),
             "llm_level": q.strata.level + (f" ({q.strata.l6_kind})" if q.strata.l6_kind else ""),
             "llm_answer": q.reference_answer or "(không có đáp án: câu L6)",
             "llm_quotes": "\n\n".join(f"[{s.doc_key}] {s.quote}" for s in q.gold_evidence) or "(không có trích dẫn)",
@@ -276,7 +292,7 @@ def _spans(a: Annotation, snap: Snapshot, unit: OffsetUnit) -> list[GoldSpan]:
         v = r["value"]
         start = src.char_start + to_codepoint(shown, v["start"], unit)
         end = src.char_start + to_codepoint(shown, v["end"], unit)
-        if normalize(md[start:end]) != normalize(v["text"]):
+        if normalize(md[start:end]) not in {normalize(v["text"]), normalize(v["text"].replace(LS_LINE_BREAK, "\n"))}:
             raise FormatError(
                 f"{a.question_id}: region text {v['text']!r} is not the markdown at {start}-{end} ({md[start:end]!r}); "
                 f"Label Studio offsets may not be {unit} (see --offset-unit)"
@@ -326,6 +342,12 @@ def apply_review(q: Question, a: Annotation, snap: Snapshot, unit: OffsetUnit) -
     update: dict[str, object] = {"strata": strata, "review": review}
     if spans:
         update["gold_evidence"] = spans
+    rewritten = _result_text(a.result, QUESTION_EDIT, "textarea")
+    if rewritten and rewritten.strip() != q.question:
+        update["question"] = rewritten.strip()
+        update["review"] = review.model_copy(update={"original_question": q.review.original_question or q.question})
+    if strata.level == "L4" and not q.compare_cells:
+        update["compare_cells"] = source_cells([TaskSource.model_validate(s) for s in a.data.get("sources", [])])
     answer = _result_text(a.result, "answer", "textarea")
     if answer:
         update["reference_answer"] = answer

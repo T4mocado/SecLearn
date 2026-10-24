@@ -69,6 +69,19 @@ def test_llm_answer_shown_only_after_spans_and_reveal():
     assert order.index(tags(root, "Choices")["question_check"]) < last_span < order.index(reveal) < order.index(gated[0])
 
 
+def test_review_cannot_be_submitted_without_reveal_decision_and_level():
+    # The pilot could submit a task with no decision (it stays pending) or no level (it keeps the LLM's).
+    root = config("review.xml")
+    choices = tags(root, "Choices")
+    assert all(choices[name].get("required") == "true" for name in ("question_check", "reveal", "decision", "level"))
+
+
+def test_review_has_a_question_edit_box_after_the_reveal():
+    root = config("review.xml")
+    gated = next(e for e in root.iter("View") if e.get("whenTagName") == "reveal")
+    assert annotate.QUESTION_EDIT in {e.get("name") for e in gated.iter("TextArea")}
+
+
 def test_pool_config_grades_0_to_3_without_the_llm_grade(snap_dir, tmp_path):
     root = config("pool.xml")
     assert values(tags(root, "Choices")["grade"], "Choice") == set(annotate.POOL_GRADE)

@@ -20,9 +20,23 @@ from dataclasses import dataclass
 from .llm import LLMClient, cosine
 from .plan import L3_MIN_CHUNKS
 from .prompts import ANSWER_SCHEMA, LEVEL_SCHEMA, SYSTEM_JUDGE, answer_prompt, level_prompt
-from .schema import Candidate, FilterReport, FilterStep, GoldSpan, LLMConfig, Question, Quote, Rejection, Review, Strata, Unit
+from .schema import (
+    Candidate,
+    CompareCell,
+    FilterReport,
+    FilterStep,
+    GoldSpan,
+    LLMConfig,
+    Question,
+    Quote,
+    Rejection,
+    Review,
+    Strata,
+    Unit,
+)
 from .snapshot import Snapshot
 from .spans import find_quote
+from .units import unit_title
 
 STEPS = ("quote", "answerable", "level", "self_reference", "dedup", "l2_overlap")
 
@@ -243,6 +257,8 @@ def candidates_to_questions(kept: list[Candidate], snap: Snapshot, units: list[U
                 reference_answer=c.reference_answer,
                 reference_claims=c.reference_claims,
                 gold_evidence=spans,
+                # The generator compares unit 1 with unit 2: one cell each, in that order (the review shows them top, then below).
+                compare_cells=[CompareCell(item=unit_title(by_unit[u], snap), aspect="") for u in c.unit_ids] if c.level == "L4" else [],
                 review=Review(),
                 generation=c.generation,
             )

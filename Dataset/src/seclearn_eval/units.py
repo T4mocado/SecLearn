@@ -184,3 +184,9 @@ def build_units(snap: Snapshot, cmap: ClusterMap) -> tuple[list[Unit], list[str]
                 )
             )
     return units, warnings
+
+
+def unit_title(unit: Unit, snap: Snapshot) -> str:
+    """How a unit is named to annotators: its document's title, then its own (the review task's source heading, an L4 cell)."""
+    doc = snap.document(unit.doc_key)
+    return f"{doc.title if doc else unit.doc_key} › {unit.title}"

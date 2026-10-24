@@ -157,6 +157,18 @@ def test_discover_finds_inputs_at_their_usual_places(eval_files, tmp_path):
     assert skipped(found) == [] and run_checks(found) == []
 
 
+def test_discover_reads_the_split_files_not_the_working_files_beside_them(eval_files, tmp_path):
+    # questions/v1.0 also holds candidates (not question files), filtered, pilot, variants…: each a draft of the same
+    # questions, so reading them all fails on format and on every id twice.
+    qdir = tmp_path / "evalset" / "questions" / "v1.0"
+    qdir.mkdir(parents=True)
+    for name in ("test.jsonl", "dev.jsonl", "filtered.jsonl", "pilot.jsonl"):
+        (qdir / name).write_bytes(eval_files["questions"].read_bytes())
+    (qdir / "candidates.jsonl").write_text('{"candidate_id": "x"}\n', encoding="utf-8")
+    found = discover(eval_files["snapshot"], tmp_path / "evalset", "v1.0")
+    assert found.questions == [qdir / "dev.jsonl", qdir / "test.jsonl"]
+
+
 def test_skipped_says_what_was_not_checked(eval_files, tmp_path):
     bare = discover(eval_files["snapshot"], tmp_path / "empty", "v1.0")
     assert run_checks(bare) == []

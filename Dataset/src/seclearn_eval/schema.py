@@ -187,6 +187,8 @@ class Review(Record):
     notes: str = ""
     #: The annotator's verdict on the question alone, given before reading the sources.
     question_check: Literal["ok", "ambiguous", "needs_context", "opinion"] | None = None
+    #: The question as generated, when the annotator rewrote it (`question` then holds the rewrite; `question_en` does not follow).
+    original_question: str | None = None
 
 
 class Generation(Record):

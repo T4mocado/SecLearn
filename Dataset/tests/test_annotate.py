@@ -13,7 +13,7 @@ from seclearn_eval import annotate
 from seclearn_eval.cli import main
 from seclearn_eval.clusters import build_cluster_map
 from seclearn_eval.io import FormatError, read_jsonl, read_questions, write_jsonl, write_questions
-from seclearn_eval.schema import Label, PoolEntry, QuestionFileHeader
+from seclearn_eval.schema import CompareCell, Label, PoolEntry, QuestionFileHeader
 from seclearn_eval.snapshot import load_snapshot
 from seclearn_eval.units import build_units
 
@@ -155,6 +155,34 @@ def test_round_trip_keeps_every_field_and_code_point_offsets(snap_dir, tmp_path)
     ]
 
 
+def test_a_region_across_a_line_break_imports_though_label_studio_writes_it_as_backslash_n(snap_dir, tmp_path):
+    # The pilot export: Label Studio 1.13.1 saves a region's text with each line break as the two characters "\n"
+    # (87 of 126 regions); its offsets still count the real line break.
+    _, units, questions, guideline, *_ = review_setup(snap_dir, tmp_path)
+    tasks = export_review(snap_dir, units, questions, guideline, tmp_path)
+    text = tasks[0]["data"]["source_0"]
+    brk = text.index("\n", text.index(AFTER_EMOJI))
+    quote = text[brk - 20 : brk + 20]
+    assert "\n" in quote
+    region = ls_span(tasks[0], 0, quote)
+    region["value"]["text"] = quote.replace("\n", "\\n")
+    code, out, _ = import_review(snap_dir, questions, ls_export(tasks, {"q1": [ls_annotation([region])]}, tmp_path), tmp_path)
+    assert code == 0
+    _, (got1, _) = read_questions(out)
+    assert [s.quote for s in got1.gold_evidence] == [quote]
+
+
+def test_an_edited_question_replaces_the_question_and_keeps_the_original(snap_dir, tmp_path):
+    _, units, questions, guideline, _, q1, _ = review_setup(snap_dir, tmp_path)
+    tasks = export_review(snap_dir, units, questions, guideline, tmp_path)
+    result = [ls_choice("decision", "Sửa"), ls_choice("level", "L1"), ls_text(annotate.QUESTION_EDIT, "Session ID cần dài ít nhất bao nhiêu bit?")]
+    code, out, _ = import_review(snap_dir, questions, ls_export(tasks, {"q1": [ls_annotation(result)]}, tmp_path), tmp_path)
+    assert code == 0
+    _, (got1, got2) = read_questions(out)
+    assert (got1.question, got1.review.original_question) == ("Session ID cần dài ít nhất bao nhiêu bit?", q1.question)
+    assert got2.review.original_question is None
+
+
 def test_offsets_read_in_the_wrong_unit_fail_instead_of_shifting_spans(snap_dir, tmp_path, capsys):
     _, units, questions, guideline, *_ = review_setup(snap_dir, tmp_path)
     tasks = export_review(snap_dir, units, questions, guideline, tmp_path)
@@ -221,6 +249,23 @@ def test_l4_pair_cells_and_l6c_refuting_span(snap_dir, tmp_path):
     ]
     assert got6.gold_evidence == [span(snap_dir, SESSION, AFTER_EMOJI).model_copy(update={"refutes": True})]
     assert got6.strata.l6_kind == "false_premise"
+
+
+def test_an_l4_without_cells_gets_one_cell_per_source(snap_dir, tmp_path):
+    # Questions filtered before L4 had cells: "Ô 1" is the unit shown on top, "Ô 2" the one below.
+    _, units, _, guideline, header, *_ = review_setup(snap_dir, tmp_path)
+    l4 = question("q4", "test", "auth", "L4", []).model_copy(update={"unit_ids": [f"{SESSION}#s02", "wstg-v4.2#WSTG-SESS-02"]})
+    assert l4.compare_cells == []
+    questions = tmp_path / "pair.jsonl"
+    write_questions(questions, header, [l4])
+    [task] = export_review(snap_dir, units, questions, guideline, tmp_path)
+    titles = [task["data"]["source_0_title"], task["data"]["source_1_title"]]
+    assert task["data"]["compare_cells"] == f"Ô 1: {titles[0]}\nÔ 2: {titles[1]}"
+
+    code, out, _ = import_review(snap_dir, questions, ls_export([task], {"q4": [ls_annotation([ls_choice("level", "L4")])]}, tmp_path), tmp_path)
+    assert code == 0
+    _, (got,) = read_questions(out)
+    assert got.compare_cells == [CompareCell(item=titles[0], aspect=""), CompareCell(item=titles[1], aspect="")]
 
 
 def test_pool_round_trip_grades_blind(snap_dir, tmp_path):

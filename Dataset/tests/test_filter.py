@@ -9,7 +9,7 @@ from seclearn_eval.clusters import build_cluster_map
 from seclearn_eval.filter import STEPS, candidates_to_questions, run_filter
 from seclearn_eval.llm import CachedClient, FakeClient
 from seclearn_eval.prompts import LEVEL_VERSION, level_prompt
-from seclearn_eval.schema import Candidate, Generation, LLMConfig, ModelRef, Quote
+from seclearn_eval.schema import Candidate, CompareCell, Generation, LLMConfig, ModelRef, Quote
 from seclearn_eval.snapshot import load_snapshot
 from seclearn_eval.spans import quote_at
 from seclearn_eval.units import build_units
@@ -162,6 +162,17 @@ def test_level_prompt_says_a_vietnamese_question_on_english_evidence_is_not_a_pa
     prompt = level_prompt("Thuộc tính Secure của cookie có tác dụng gì?", [REAL_QUOTE])
     assert "Vietnamese" in prompt and "English" in prompt and "translation" in prompt
     assert LEVEL_VERSION == "filter-level-v2"
+
+
+def test_an_l4_question_gets_one_compare_cell_per_unit_in_order(snap, units):
+    pair = [f"{SESS}#s02", "wstg-v4.2#WSTG-SESS-02"]
+    l4, l1 = cand("l4", "Q l4?", level="L4", unit_ids=pair), cand("l1", "Q l1?")
+    kept, _ = run([l4, l1], snap, units)
+    by_unit = {u.unit_id: u for u in units}
+    titles = [f"{snap.document(by_unit[uid].doc_key).title} › {by_unit[uid].title}" for uid in pair]
+    q4, q1 = candidates_to_questions(kept, snap, units)
+    assert q4.compare_cells == [CompareCell(item=t, aspect="") for t in titles]
+    assert q1.compare_cells == []
 
 
 def test_step_quote_rejects_a_quote_found_only_outside_the_candidates_units(snap, units):

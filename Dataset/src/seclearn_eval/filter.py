@@ -170,7 +170,7 @@ def run_filter(
         kept = []
         for c in cands:
             if c.level != "L6":
-                reply = judge.ask_json(answer_prompt(c.question, [q.quote for q in c.quotes]), ANSWER_SCHEMA, system=SYSTEM_JUDGE)
+                reply = judge.ask_json(answer_prompt(c.question, [q.quote for q in c.quotes], c.level), ANSWER_SCHEMA, system=SYSTEM_JUDGE)
                 if not reply.get("answerable"):
                     s.reject(c, "not_answerable_from_evidence", str(reply.get("answer", "")))
                     continue

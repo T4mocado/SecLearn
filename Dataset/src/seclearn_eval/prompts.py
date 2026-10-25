@@ -204,17 +204,27 @@ L6B_SCHEMA: dict[str, Any] = _object(
 
 # --- Filter (Gemini) -------------------------------------------------------------------------------
 
-ANSWER_VERSION = "filter-answer-v1"
+ANSWER_VERSION = "filter-answer-v2"
 LEVEL_VERSION = "filter-level-v2"
 
 SYSTEM_JUDGE = "You check evaluation questions for a Vietnamese web security assistant. Answer strictly in the JSON asked for."
 
 
-def answer_prompt(question: str, evidence: list[str]) -> str:
+#: L4 / L5 answers are drawn from two places: no single quote states the difference or the outcome (v2; round 1 of
+#: top-up kept 54 of 173 L4, and judged "session fixation vs hijacking" unanswerable on five quotes about the two).
+_COMBINE = """This question compares two things or follows a situation through several steps. No single piece of
+evidence needs to state the comparison or the outcome: it is answerable when the evidence says what is needed about
+each side (or each step), and you may combine those and infer the difference or the consequence from them. It is not
+answerable when the evidence says nothing about one of the sides or steps the question asks about.
+"""
+
+
+def answer_prompt(question: str, evidence: list[str], level: str = "L1") -> str:
     quotes = "\n".join(f"<evidence>{e}</evidence>" for e in evidence)
+    combine = _COMBINE if level in ("L4", "L5") else ""
     return f"""Answer the question using ONLY the evidence below, not your own knowledge.
 If the evidence does not contain enough to answer it, set answerable to false.
-
+{combine}
 Question: {question}
 
 {quotes}"""

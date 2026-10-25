@@ -8,7 +8,7 @@ from conftest import MINI
 from seclearn_eval.clusters import build_cluster_map
 from seclearn_eval.filter import STEPS, candidates_to_questions, run_filter
 from seclearn_eval.llm import CachedClient, FakeClient
-from seclearn_eval.prompts import LEVEL_VERSION, level_prompt
+from seclearn_eval.prompts import ANSWER_VERSION, LEVEL_VERSION, answer_prompt, level_prompt
 from seclearn_eval.schema import Candidate, CompareCell, Generation, LLMConfig, ModelRef, Quote
 from seclearn_eval.snapshot import load_snapshot
 from seclearn_eval.spans import quote_at
@@ -173,6 +173,40 @@ def test_an_l4_question_gets_one_compare_cell_per_unit_in_order(snap, units):
     q4, q1 = candidates_to_questions(kept, snap, units)
     assert q4.compare_cells == [CompareCell(item=t, aspect="") for t in titles]
     assert q1.compare_cells == []
+
+
+def test_answer_prompt_lets_comparisons_and_scenarios_combine_each_sides_evidence():
+    # Round 1 of top-up: "session fixation vs session hijacking", with five quotes on the two, was judged unanswerable;
+    # the judge would not draw the difference from what each quote says about one side.
+    for level in ("L4", "L5"):
+        prompt = answer_prompt("Q?", [REAL_QUOTE], level)
+        assert "each side" in prompt and "infer" in prompt
+    assert ANSWER_VERSION == "filter-answer-v2"
+
+
+def test_answer_prompt_for_single_unit_levels_is_unchanged_so_its_cache_still_hits():
+    v1 = f"""Answer the question using ONLY the evidence below, not your own knowledge.
+If the evidence does not contain enough to answer it, set answerable to false.
+
+Question: Q?
+
+<evidence>{REAL_QUOTE}</evidence>"""
+    assert [answer_prompt("Q?", [REAL_QUOTE], level) for level in ("L1", "L3")] == [v1, v1]
+
+
+def test_step_answerable_asks_with_the_candidates_level(snap, units):
+    pair = [f"{SESS}#s02", "wstg-v4.2#WSTG-SESS-02"]
+    cands = [cand("l4", "Q l4?", level="L4", unit_ids=pair), cand("l1", "Q l1?")]
+    levels = {c.question: c.level for c in cands}
+
+    def reply(prompt, schema):
+        if "answerable" in schema["properties"]:
+            return {"answerable": "each side" in prompt, "answer": "…"}
+        question = next(line[len("Question: "):] for line in prompt.splitlines() if line.startswith("Question: "))
+        return {"level": levels[question]}
+
+    _, report = run(cands, snap, units, j=FakeClient(model="gemini-fake", reply=reply))
+    assert rejected(report) == {"l1": ("answerable", "not_answerable_from_evidence")}
 
 
 def test_step_quote_rejects_a_quote_found_only_outside_the_candidates_units(snap, units):

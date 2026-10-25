@@ -107,7 +107,7 @@ def test_actual_distribution_and_language_variety_count_the_question_files(snap_
 def test_collection_shows_models_prompt_versions_and_rejection_rates(snap_dir, root):
     text = section(card(snap_dir, root), "Cách thu thập")
     assert "claude-test-1" in text and "gemini-test-2" in text and "embed-test-3" in text
-    assert "gen-L1-v1" in text and "filter-answer-v1" in text
+    assert "gen-L1-v1" in text and "filter-answer-v2" in text
     assert "chưa có" in text  # no filter report yet
 
     steps = [

@@ -694,7 +694,7 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--questions", type=Path, required=True)
     e.add_argument("--units", type=Path, help="review: default <snapshot>/units.jsonl")
     e.add_argument("--pool", type=Path, help="pool: pool.jsonl")
-    e.add_argument("--guideline", type=Path, default=paths.ANNOTATION / "guideline-v0.md", help="its `guideline_version:` line goes on every label")
+    e.add_argument("--guideline", type=Path, default=paths.ANNOTATION / "guideline-v1.md", help="its `guideline_version:` line goes on every label (v1: frozen after the pilot)")
     e.add_argument("--out", type=Path, required=True)
     e.set_defaults(run=_annotate_export)
     i = asub.add_parser("import", help="a Label Studio JSON export back into questions and labels")

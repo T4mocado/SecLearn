@@ -6,11 +6,11 @@
 
 **Blocked by:** 05, 06
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] 50 câu pilot được duyệt và nhập về với `lead_time`
-- [ ] Trung vị thời gian gán được ghi lại; ngân sách giờ và cỡ gold được chỉnh nếu cần
-- [ ] Hướng dẫn v1 được commit và đánh dấu đóng băng
+- [x] 50 câu pilot được duyệt và nhập về với `lead_time`
+- [x] Trung vị thời gian gán được ghi lại; ngân sách giờ và cỡ gold được chỉnh nếu cần
+- [x] Hướng dẫn v1 được commit và đánh dấu đóng băng
 
 ## Comments
 
@@ -48,3 +48,8 @@ Sửa, mỗi lỗi có test viết trước (đỏ rồi xanh), 222 pytest qua, 
 - **`check` không kèm `--questions`** giờ chỉ đọc `questions/<version>/dev.jsonl` và `test.jsonl` (file `split` ghi), không đọc các file làm việc bên cạnh (`candidates*`, `filtered*`, `pilot`, `variants`…).
 
 Khi tạo project duyệt mới: dán `review.xml` **hiện tại**, xuất lại task bằng `annotate export`, và làm lại bước ẩn 4 cột `llm_*`. Hướng dẫn v1 cần nói thêm về ô "Câu hỏi sửa" và quy ước Ô 1 / Ô 2.
+
+**2026-10-25, agent (đóng ticket):** Pilot nhập chính thức từ `annotation/exports/raw/pilot.json` vào `annotation/pilot/reviewed.jsonl` (50 câu) và `annotation/pilot/labels.jsonl`. Sau khi bạn sửa lại trong Label Studio (`test-01258-c1`, L6, "Mơ hồ" → "Tự đứng được"): 50 / 50 "Tự đứng được", 50 / 50 "Chấp nhận", không đổi mức, không sửa đáp án, không ghi chú. Trung vị `lead_time` 446 s (khoảng 7,4 phút); L1 khoảng 6 phút, L4 khoảng 7,5, L3 / L5 khoảng 10, L6 khoảng 10 s.
+- **Cỡ gold:** bạn giữ nguyên kế hoạch và duyệt hết 995 câu gốc còn lại (ticket 12). Ngân sách giờ chỉnh theo số đo: khoảng 120 giờ cho câu gốc thay vì 60 giờ của spec, chưa tính biến thể / L6(b) (khoảng 586 câu mục tiêu) và chấm pool.
+- **Hướng dẫn v1:** `annotation/guideline-v1.md`, `guideline_version: v1`, đóng băng. Thay đổi so với v0: ô "Câu hỏi sửa", các ô bắt buộc và nút Add của ô văn bản, quy ước Ô 1 = nguồn trên / Ô 2 = nguồn dưới và luôn tự bôi câu L4 bằng nhãn ô, câu L4 ghép hai thứ không so được thì Loại, cách giữ `lead_time` đúng và export / import cuối mỗi đợt. `annotate export` giờ mặc định dùng v1. Test hướng dẫn chạy cho cả v0 và v1 (trích dẫn có thật trong snapshot, đủ mục) và kiểm v1 có các điểm trên.
+- Câu pilot `test-00647-c1` bị bước answerable của `filter-answer-v2` loại, nhưng người đã Chấp nhận: nó vẫn có trong `reviewed.jsonl` của pilot, nên đưa file đó vào `split`.

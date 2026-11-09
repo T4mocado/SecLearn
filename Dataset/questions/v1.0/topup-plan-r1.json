@@ -1,0 +1,1461 @@
+{
+  "snapshot_id": "2026-10-18-owasp",
+  "seed": 20262018,
+  "params": {
+    "seed": 20261018,
+    "test_answerable": 1100,
+    "test_floor": 100,
+    "test_l6": [
+      50,
+      100,
+      50
+    ],
+    "dev_answerable": 150,
+    "dev_l6": [
+      6,
+      13,
+      6
+    ],
+    "cap": 20
+  },
+  "cells": [],
+  "slots": [
+    {
+      "slot_id": "dev-r1-00001",
+      "split": "dev",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "AI_Agent_Security_Cheat_Sheet",
+      "unit_ids": [
+        "AI_Agent_Security_Cheat_Sheet#s15",
+        "MCP_Security_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00002",
+      "split": "dev",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "AI_Agent_Security_Cheat_Sheet",
+      "unit_ids": [
+        "AI_Agent_Security_Cheat_Sheet#s00",
+        "MCP_Security_Cheat_Sheet#s00"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00003",
+      "split": "dev",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s22",
+        "Logging_Vocabulary_Cheat_Sheet#s23"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00004",
+      "split": "dev",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s48",
+        "Logging_Vocabulary_Cheat_Sheet#s49"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00005",
+      "split": "dev",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s66",
+        "Logging_Vocabulary_Cheat_Sheet#s67"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00006",
+      "split": "dev",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Authentication_Cheat_Sheet",
+      "unit_ids": [
+        "Authentication_Cheat_Sheet#s41",
+        "Authentication_Cheat_Sheet#s42"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00007",
+      "split": "dev",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Session_Management_Cheat_Sheet",
+      "unit_ids": [
+        "Session_Management_Cheat_Sheet#s20",
+        "Session_Management_Cheat_Sheet#s23"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00008",
+      "split": "dev",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Mass_Assignment_Cheat_Sheet",
+      "unit_ids": [
+        "Mass_Assignment_Cheat_Sheet#s11",
+        "Mass_Assignment_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00009",
+      "split": "dev",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Cross_Site_Scripting_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Cross_Site_Scripting_Prevention_Cheat_Sheet#s12",
+        "DOM_based_XSS_Prevention_Cheat_Sheet#s17"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00010",
+      "split": "dev",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "C-Based_Toolchain_Hardening_Cheat_Sheet",
+      "unit_ids": [
+        "C-Based_Toolchain_Hardening_Cheat_Sheet#s17",
+        "C-Based_Toolchain_Hardening_Cheat_Sheet#s18"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00011",
+      "split": "dev",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "DotNet_Security_Cheat_Sheet",
+      "unit_ids": [
+        "DotNet_Security_Cheat_Sheet#s08",
+        "Java_Security_Cheat_Sheet#s21"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00012",
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Query_Parameterization_Cheat_Sheet",
+      "unit_ids": [
+        "Query_Parameterization_Cheat_Sheet#s14",
+        "Query_Parameterization_Cheat_Sheet#s16"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00013",
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s18",
+        "SQL_Injection_Prevention_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00014",
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "LDAP_Injection_Prevention_Cheat_Sheet#s07",
+        "SQL_Injection_Prevention_Cheat_Sheet#s19"
+      ]
+    },
+    {
+      "slot_id": "dev-r1-00015",
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "Query_Parameterization_Cheat_Sheet",
+      "unit_ids": [
+        "Query_Parameterization_Cheat_Sheet#s14",
+        "Query_Parameterization_Cheat_Sheet#s16"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00001",
+      "split": "test",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "AI_Agent_Security_Cheat_Sheet",
+      "unit_ids": [
+        "AI_Agent_Security_Cheat_Sheet#s15",
+        "MCP_Security_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00002",
+      "split": "test",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "AI_Agent_Security_Cheat_Sheet",
+      "unit_ids": [
+        "AI_Agent_Security_Cheat_Sheet#s00",
+        "MCP_Security_Cheat_Sheet#s00"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00003",
+      "split": "test",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "AML_Sanctions_AI_Agent_Payments_Cheat_Sheet",
+      "unit_ids": [
+        "AML_Sanctions_AI_Agent_Payments_Cheat_Sheet#s01",
+        "AML_Sanctions_AI_Agent_Payments_Cheat_Sheet#s15"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00004",
+      "split": "test",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "AI_Agent_Security_Cheat_Sheet",
+      "unit_ids": [
+        "AI_Agent_Security_Cheat_Sheet#s03",
+        "AI_Agent_Security_Cheat_Sheet#s04"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00005",
+      "split": "test",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "AML_Sanctions_AI_Agent_Payments_Cheat_Sheet",
+      "unit_ids": [
+        "AML_Sanctions_AI_Agent_Payments_Cheat_Sheet#s04",
+        "AML_Sanctions_AI_Agent_Payments_Cheat_Sheet#s16"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00006",
+      "split": "test",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "AI_Agent_Security_Cheat_Sheet",
+      "unit_ids": [
+        "AI_Agent_Security_Cheat_Sheet#s01",
+        "AI_Agent_Security_Cheat_Sheet#s24"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00007",
+      "split": "test",
+      "cluster": "api",
+      "level": "L3",
+      "l6_kind": null,
+      "doc_key": "Webhook_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Webhook_Security_Cheat_Sheet#s01"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00008",
+      "split": "test",
+      "cluster": "api",
+      "level": "L3",
+      "l6_kind": null,
+      "doc_key": "GraphQL_Cheat_Sheet",
+      "unit_ids": [
+        "GraphQL_Cheat_Sheet#s09"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00009",
+      "split": "test",
+      "cluster": "api",
+      "level": "L3",
+      "l6_kind": null,
+      "doc_key": "REST_Assessment_Cheat_Sheet",
+      "unit_ids": [
+        "REST_Assessment_Cheat_Sheet#s02"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00010",
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "gRPC_Security_Cheat_Sheet",
+      "unit_ids": [
+        "gRPC_Security_Cheat_Sheet#s04",
+        "gRPC_Security_Cheat_Sheet#s05"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00011",
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Webhook_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Webhook_Security_Cheat_Sheet#s01",
+        "Webhook_Security_Cheat_Sheet#s16"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00012",
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "REST_Security_Cheat_Sheet",
+      "unit_ids": [
+        "REST_Security_Cheat_Sheet#s06",
+        "REST_Security_Cheat_Sheet#s09"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00013",
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Webhook_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Webhook_Security_Cheat_Sheet#s05",
+        "Webhook_Security_Cheat_Sheet#s16"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00014",
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "REST_Security_Cheat_Sheet",
+      "unit_ids": [
+        "REST_Security_Cheat_Sheet#s07",
+        "REST_Security_Cheat_Sheet#s09"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00015",
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "GraphQL_Cheat_Sheet",
+      "unit_ids": [
+        "GraphQL_Cheat_Sheet#s18",
+        "GraphQL_Cheat_Sheet#s19"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00016",
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "REST_Security_Cheat_Sheet",
+      "unit_ids": [
+        "REST_Security_Cheat_Sheet#s06",
+        "REST_Security_Cheat_Sheet#s07"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00017",
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "gRPC_Security_Cheat_Sheet",
+      "unit_ids": [
+        "gRPC_Security_Cheat_Sheet#s04",
+        "gRPC_Security_Cheat_Sheet#s10"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00018",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s22",
+        "Logging_Vocabulary_Cheat_Sheet#s23"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00019",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s48",
+        "Logging_Vocabulary_Cheat_Sheet#s49"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00020",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s66",
+        "Logging_Vocabulary_Cheat_Sheet#s67"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00021",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s47",
+        "Logging_Vocabulary_Cheat_Sheet#s48"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00022",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s47",
+        "Logging_Vocabulary_Cheat_Sheet#s49"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00023",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s09",
+        "Logging_Vocabulary_Cheat_Sheet#s10"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00024",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s16",
+        "Logging_Vocabulary_Cheat_Sheet#s17"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00025",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s62",
+        "Logging_Vocabulary_Cheat_Sheet#s63"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00026",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s64",
+        "Logging_Vocabulary_Cheat_Sheet#s65"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00027",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s07",
+        "Logging_Vocabulary_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00028",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s09",
+        "Logging_Vocabulary_Cheat_Sheet#s13"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00029",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
+      "unit_ids": [
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s06",
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s09"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00030",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Logging_Vocabulary_Cheat_Sheet",
+      "unit_ids": [
+        "Logging_Vocabulary_Cheat_Sheet#s07",
+        "Logging_Vocabulary_Cheat_Sheet#s09"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00031",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
+      "unit_ids": [
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s14",
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s22"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00032",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Virtual_Patching_Cheat_Sheet",
+      "unit_ids": [
+        "Virtual_Patching_Cheat_Sheet#s15",
+        "Virtual_Patching_Cheat_Sheet#s18"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00033",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
+      "unit_ids": [
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s14",
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s24"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00034",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
+      "unit_ids": [
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s07",
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s08"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00035",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
+      "unit_ids": [
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s06",
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s09"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00036",
+      "split": "test",
+      "cluster": "arch",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "Microservices_based_Security_Arch_Doc_Cheat_Sheet",
+      "unit_ids": [
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s14",
+        "Microservices_based_Security_Arch_Doc_Cheat_Sheet#s22"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00037",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Authentication_Cheat_Sheet",
+      "unit_ids": [
+        "Authentication_Cheat_Sheet#s41",
+        "Authentication_Cheat_Sheet#s42"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00038",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Session_Management_Cheat_Sheet",
+      "unit_ids": [
+        "Session_Management_Cheat_Sheet#s20",
+        "Session_Management_Cheat_Sheet#s23"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00039",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Authentication_Cheat_Sheet",
+      "unit_ids": [
+        "Authentication_Cheat_Sheet#s29",
+        "Credential_Stuffing_Prevention_Cheat_Sheet#s04"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00040",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Authentication_Cheat_Sheet",
+      "unit_ids": [
+        "Authentication_Cheat_Sheet#s24",
+        "Credential_Stuffing_Prevention_Cheat_Sheet#s00"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00041",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Passkey_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Passkey_Security_Cheat_Sheet#s07",
+        "Passkey_Security_Cheat_Sheet#s10"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00042",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Authentication_Cheat_Sheet",
+      "unit_ids": [
+        "Authentication_Cheat_Sheet#s25",
+        "Multifactor_Authentication_Cheat_Sheet#s01"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00043",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "wstg-v4.2",
+      "unit_ids": [
+        "wstg-v4.2#WSTG-SESS-03",
+        "wstg-v4.2#WSTG-SESS-09"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00044",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Authentication_Cheat_Sheet",
+      "unit_ids": [
+        "Authentication_Cheat_Sheet#s38",
+        "Multifactor_Authentication_Cheat_Sheet#s43"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00045",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Session_Management_Cheat_Sheet",
+      "unit_ids": [
+        "Session_Management_Cheat_Sheet#s22",
+        "Session_Management_Cheat_Sheet#s25"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00046",
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Session_Management_Cheat_Sheet",
+      "unit_ids": [
+        "Session_Management_Cheat_Sheet#s35",
+        "Session_Management_Cheat_Sheet#s36"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00047",
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Mass_Assignment_Cheat_Sheet",
+      "unit_ids": [
+        "Mass_Assignment_Cheat_Sheet#s11",
+        "Mass_Assignment_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00048",
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Mass_Assignment_Cheat_Sheet",
+      "unit_ids": [
+        "Mass_Assignment_Cheat_Sheet#s14",
+        "Mass_Assignment_Cheat_Sheet#s15"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00049",
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Mass_Assignment_Cheat_Sheet",
+      "unit_ids": [
+        "Mass_Assignment_Cheat_Sheet#s08",
+        "Mass_Assignment_Cheat_Sheet#s09"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00050",
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Mass_Assignment_Cheat_Sheet",
+      "unit_ids": [
+        "Mass_Assignment_Cheat_Sheet#s06",
+        "Mass_Assignment_Cheat_Sheet#s07"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00051",
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Mass_Assignment_Cheat_Sheet",
+      "unit_ids": [
+        "Mass_Assignment_Cheat_Sheet#s08",
+        "Mass_Assignment_Cheat_Sheet#s11"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00052",
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Multi_Tenant_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Multi_Tenant_Security_Cheat_Sheet#s02",
+        "Multi_Tenant_Security_Cheat_Sheet#s07"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00053",
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Transaction_Authorization_Cheat_Sheet",
+      "unit_ids": [
+        "Transaction_Authorization_Cheat_Sheet#s14",
+        "Transaction_Authorization_Cheat_Sheet#s15"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00054",
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Authorization_Decisions_And_Output_Handling_Cheat_Sheet",
+      "unit_ids": [
+        "Authorization_Decisions_And_Output_Handling_Cheat_Sheet#s00",
+        "Authorization_Policy_And_Data_Distribution_Cheat_Sheet#s00"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00055",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Cross_Site_Scripting_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Cross_Site_Scripting_Prevention_Cheat_Sheet#s12",
+        "DOM_based_XSS_Prevention_Cheat_Sheet#s17"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00056",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "DOM_based_XSS_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "DOM_based_XSS_Prevention_Cheat_Sheet#s15",
+        "DOM_based_XSS_Prevention_Cheat_Sheet#s16"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00057",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Clickjacking_Defense_Cheat_Sheet",
+      "unit_ids": [
+        "Clickjacking_Defense_Cheat_Sheet#s01",
+        "Clickjacking_Defense_Cheat_Sheet#s05"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00058",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "XS_Leaks_Cheat_Sheet",
+      "unit_ids": [
+        "XS_Leaks_Cheat_Sheet#s12",
+        "XS_Leaks_Cheat_Sheet#s13"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00059",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "XSS_Filter_Evasion_Cheat_Sheet",
+      "unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s65",
+        "XSS_Filter_Evasion_Cheat_Sheet#s66"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00060",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Web_Frontend_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Web_Frontend_Security_Cheat_Sheet#s01",
+        "Web_Frontend_Security_Cheat_Sheet#s07"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00061",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "XSS_Filter_Evasion_Cheat_Sheet",
+      "unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s61",
+        "XSS_Filter_Evasion_Cheat_Sheet#s62"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00062",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Browser_Extension_Vulnerabilities_Cheat_Sheet",
+      "unit_ids": [
+        "Browser_Extension_Vulnerabilities_Cheat_Sheet#s12",
+        "DOM_Clobbering_Prevention_Cheat_Sheet#s02"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00063",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "Cross_Site_Scripting_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Cross_Site_Scripting_Prevention_Cheat_Sheet#s12",
+        "DOM_based_XSS_Prevention_Cheat_Sheet#s17"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00064",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "DOM_based_XSS_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "DOM_based_XSS_Prevention_Cheat_Sheet#s15",
+        "DOM_based_XSS_Prevention_Cheat_Sheet#s16"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00065",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "Clickjacking_Defense_Cheat_Sheet",
+      "unit_ids": [
+        "Clickjacking_Defense_Cheat_Sheet#s01",
+        "Clickjacking_Defense_Cheat_Sheet#s05"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00066",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "XS_Leaks_Cheat_Sheet",
+      "unit_ids": [
+        "XS_Leaks_Cheat_Sheet#s12",
+        "XS_Leaks_Cheat_Sheet#s13"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00067",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "XSS_Filter_Evasion_Cheat_Sheet",
+      "unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s65",
+        "XSS_Filter_Evasion_Cheat_Sheet#s66"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00068",
+      "split": "test",
+      "cluster": "browser",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "Web_Frontend_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Web_Frontend_Security_Cheat_Sheet#s01",
+        "Web_Frontend_Security_Cheat_Sheet#s07"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00069",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "C-Based_Toolchain_Hardening_Cheat_Sheet",
+      "unit_ids": [
+        "C-Based_Toolchain_Hardening_Cheat_Sheet#s17",
+        "C-Based_Toolchain_Hardening_Cheat_Sheet#s18"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00070",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "DotNet_Security_Cheat_Sheet",
+      "unit_ids": [
+        "DotNet_Security_Cheat_Sheet#s08",
+        "Java_Security_Cheat_Sheet#s21"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00071",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Django_REST_Framework_Cheat_Sheet",
+      "unit_ids": [
+        "Django_REST_Framework_Cheat_Sheet#s20",
+        "Ruby_on_Rails_Cheat_Sheet#s13"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00072",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Django_REST_Framework_Cheat_Sheet",
+      "unit_ids": [
+        "Django_REST_Framework_Cheat_Sheet#s09",
+        "Django_REST_Framework_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00073",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "DotNet_Security_Cheat_Sheet",
+      "unit_ids": [
+        "DotNet_Security_Cheat_Sheet#s12",
+        "Java_Security_Cheat_Sheet#s24"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00074",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "DotNet_Security_Cheat_Sheet",
+      "unit_ids": [
+        "DotNet_Security_Cheat_Sheet#s13",
+        "Java_Security_Cheat_Sheet#s27"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00075",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Java_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Java_Security_Cheat_Sheet#s23",
+        "Java_Security_Cheat_Sheet#s26"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00076",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "DotNet_Security_Cheat_Sheet",
+      "unit_ids": [
+        "DotNet_Security_Cheat_Sheet#s12",
+        "DotNet_Security_Cheat_Sheet#s13"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00077",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "DotNet_Security_Cheat_Sheet",
+      "unit_ids": [
+        "DotNet_Security_Cheat_Sheet#s13",
+        "Java_Security_Cheat_Sheet#s24"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00078",
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Django_REST_Framework_Cheat_Sheet",
+      "unit_ids": [
+        "Django_REST_Framework_Cheat_Sheet#s18",
+        "DotNet_Security_Cheat_Sheet#s26"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00079",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Query_Parameterization_Cheat_Sheet",
+      "unit_ids": [
+        "Query_Parameterization_Cheat_Sheet#s14",
+        "Query_Parameterization_Cheat_Sheet#s16"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00080",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s18",
+        "SQL_Injection_Prevention_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00081",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "LDAP_Injection_Prevention_Cheat_Sheet#s07",
+        "SQL_Injection_Prevention_Cheat_Sheet#s19"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00082",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s17",
+        "XML_External_Entity_Prevention_Cheat_Sheet#s43"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00083",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "XML_External_Entity_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "XML_External_Entity_Prevention_Cheat_Sheet#s46",
+        "XML_External_Entity_Prevention_Cheat_Sheet#s47"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00084",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s19",
+        "LDAP_Injection_Prevention_Cheat_Sheet#s00"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00085",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Bean_Validation_Cheat_Sheet",
+      "unit_ids": [
+        "Bean_Validation_Cheat_Sheet#s04",
+        "Bean_Validation_Cheat_Sheet#s07"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00086",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s17",
+        "SQL_Injection_Prevention_Cheat_Sheet#s05"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00087",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s17",
+        "Query_Parameterization_Cheat_Sheet#s02"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00088",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Query_Parameterization_Cheat_Sheet",
+      "unit_ids": [
+        "Query_Parameterization_Cheat_Sheet#s04",
+        "SQL_Injection_Prevention_Cheat_Sheet#s06"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00089",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Query_Parameterization_Cheat_Sheet",
+      "unit_ids": [
+        "Query_Parameterization_Cheat_Sheet#s02",
+        "SQL_Injection_Prevention_Cheat_Sheet#s05"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00090",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Query_Parameterization_Cheat_Sheet",
+      "unit_ids": [
+        "Query_Parameterization_Cheat_Sheet#s15",
+        "Query_Parameterization_Cheat_Sheet#s17"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00091",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s14",
+        "SQL_Injection_Prevention_Cheat_Sheet#s09"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00092",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "Query_Parameterization_Cheat_Sheet",
+      "unit_ids": [
+        "Query_Parameterization_Cheat_Sheet#s14",
+        "Query_Parameterization_Cheat_Sheet#s16"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00093",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Injection_Prevention_Cheat_Sheet#s18",
+        "SQL_Injection_Prevention_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00094",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "LDAP_Injection_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "LDAP_Injection_Prevention_Cheat_Sheet#s07",
+        "SQL_Injection_Prevention_Cheat_Sheet#s19"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00095",
+      "split": "test",
+      "cluster": "inj",
+      "level": "L5",
+      "l6_kind": null,
+      "doc_key": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
+      "unit_ids": [
+        "Server_Side_Request_Forgery_Prevention_Cheat_Sheet#s17",
+        "XML_External_Entity_Prevention_Cheat_Sheet#s43"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00096",
+      "split": "test",
+      "cluster": "supply",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Docker_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Docker_Security_Cheat_Sheet#s04",
+        "Docker_Security_Cheat_Sheet#s05"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00097",
+      "split": "test",
+      "cluster": "supply",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Docker_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Docker_Security_Cheat_Sheet#s03",
+        "Docker_Security_Cheat_Sheet#s05"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00098",
+      "split": "test",
+      "cluster": "supply",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Docker_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Docker_Security_Cheat_Sheet#s03",
+        "Docker_Security_Cheat_Sheet#s04"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00099",
+      "split": "test",
+      "cluster": "supply",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Kubernetes_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Kubernetes_Security_Cheat_Sheet#s08",
+        "Kubernetes_Security_Cheat_Sheet#s13"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00100",
+      "split": "test",
+      "cluster": "supply",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Kubernetes_Security_Cheat_Sheet",
+      "unit_ids": [
+        "Kubernetes_Security_Cheat_Sheet#s13",
+        "Kubernetes_Security_Cheat_Sheet#s18"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00101",
+      "split": "test",
+      "cluster": "supply",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Secrets_Management_Cheat_Sheet",
+      "unit_ids": [
+        "Secrets_Management_Cheat_Sheet#s72",
+        "Secrets_Management_Cheat_Sheet#s73"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00102",
+      "split": "test",
+      "cluster": "transport",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "HTTP_Headers_Cheat_Sheet",
+      "unit_ids": [
+        "HTTP_Headers_Cheat_Sheet#s19",
+        "HTTP_Headers_Cheat_Sheet#s20"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00103",
+      "split": "test",
+      "cluster": "transport",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Pinning_Cheat_Sheet",
+      "unit_ids": [
+        "Pinning_Cheat_Sheet#s13",
+        "Pinning_Cheat_Sheet#s14"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00104",
+      "split": "test",
+      "cluster": "transport",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "HTTP_Headers_Cheat_Sheet",
+      "unit_ids": [
+        "HTTP_Headers_Cheat_Sheet#s17",
+        "HTTP_Headers_Cheat_Sheet#s18"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00105",
+      "split": "test",
+      "cluster": "transport",
+      "level": "L4",
+      "l6_kind": null,
+      "doc_key": "Key_Management_Cheat_Sheet",
+      "unit_ids": [
+        "Key_Management_Cheat_Sheet#s01",
+        "Key_Management_Cheat_Sheet#s10"
+      ]
+    }
+  ]
+}

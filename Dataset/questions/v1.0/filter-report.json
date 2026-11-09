@@ -1,0 +1,2910 @@
+{
+  "steps": [
+    {
+      "step": "quote",
+      "n_in": 1446,
+      "n_rejected": 4,
+      "n_relabelled": 0,
+      "reasons": {
+        "quote_not_found": 4
+      }
+    },
+    {
+      "step": "answerable",
+      "n_in": 1442,
+      "n_rejected": 363,
+      "n_relabelled": 0,
+      "reasons": {
+        "not_answerable_from_evidence": 363
+      }
+    },
+    {
+      "step": "level",
+      "n_in": 1079,
+      "n_rejected": 46,
+      "n_relabelled": 37,
+      "reasons": {
+        "l3_needs_two_chunks": 2,
+        "level_mismatch": 44
+      }
+    },
+    {
+      "step": "self_reference",
+      "n_in": 1033,
+      "n_rejected": 1,
+      "n_relabelled": 0,
+      "reasons": {
+        "refers_to_document": 1
+      }
+    },
+    {
+      "step": "dedup",
+      "n_in": 1032,
+      "n_rejected": 61,
+      "n_relabelled": 0,
+      "reasons": {
+        "duplicate": 61
+      }
+    },
+    {
+      "step": "l2_overlap",
+      "n_in": 971,
+      "n_rejected": 0,
+      "n_relabelled": 0,
+      "reasons": {}
+    }
+  ],
+  "n_kept": 971,
+  "rejected": [
+    {
+      "candidate_id": "test-00268-c2",
+      "step": "quote",
+      "reason": "quote_not_found",
+      "detail": "Strip the query string/fragment before logging, and prefer the effective-directive + blocked-uri (origin+path) over the full report body to avoid a secondary sensitive-data or log-injection risk."
+    },
+    {
+      "candidate_id": "test-00438-c2",
+      "step": "quote",
+      "reason": "quote_not_found",
+      "detail": "The cookie will be sent if the URL equals the cookie’s domain (first-party) even if the link is coming from a third-party domain."
+    },
+    {
+      "candidate_id": "test-00627-c1",
+      "step": "quote",
+      "reason": "quote_not_found",
+      "detail": "If a web proxy strips the X-Frame-Options header then the site loses its framing protection."
+    },
+    {
+      "candidate_id": "test-00670-c2",
+      "step": "quote",
+      "reason": "quote_not_found",
+      "detail": "Validate that the scope of the Service Worker is restricted (use the scope option or the Service-Worker-Allowed response header) so a compromised worker cannot intercept unrelated paths."
+    },
+    {
+      "candidate_id": "dev-00002-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00005-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa đủ thông tin để trả lời phần câu hỏi về việc cần chuẩn hóa những gì khi làm sạch input người dùng."
+    },
+    {
+      "candidate_id": "dev-00007-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question."
+    },
+    {
+      "candidate_id": "dev-00007-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00008-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00010-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00019-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về thời gian ghi trong log sự kiện bảo mật, do đó không đủ căn cứ để so sánh theo yêu cầu của câu hỏi."
+    },
+    {
+      "candidate_id": "dev-00020-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00034-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00034-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question, as it does not mention dividing code coverage measurement into three methods."
+    },
+    {
+      "candidate_id": "dev-00035-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not mention the microservice architecture cheat sheet or the WSTG testing guide, nor does it identify which statement belongs to which source."
+    },
+    {
+      "candidate_id": "dev-00035-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to contrast the microservice architecture cheat sheet approach with WSTG passive testing approach."
+    },
+    {
+      "candidate_id": "dev-00037-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer where the log review should focus on."
+    },
+    {
+      "candidate_id": "dev-00052-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa đầy đủ thông tin để trả lời câu hỏi, cụ thể là không có hướng dẫn về việc nên đặt độ dài tối đa của mật khẩu như thế nào."
+    },
+    {
+      "candidate_id": "dev-00056-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00056-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "dev-00072-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa đủ thông tin để trả lời câu hỏi (không đề cập rõ đến kiểm thử phân quyền API dựa trên OpenAPI cũng như không đủ chi tiết về chốt kiểm soát trước khi thực thi giao dịch)."
+    },
+    {
+      "candidate_id": "dev-00073-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information about mass assignment attacks, how sending permission information in mass assignment differs from role explosion in RBAC, or the risks/limitations associated with mass assignment."
+    },
+    {
+      "candidate_id": "dev-00074-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00081-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to fully answer the question."
+    },
+    {
+      "candidate_id": "dev-00085-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00085-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về header Sec-Fetch-Site cũng như sự so sánh rủi ro của subdomain giữa hai trường hợp này."
+    },
+    {
+      "candidate_id": "dev-00088-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about whether escaping with \\uXXXX makes the input safe or how that specific escape mechanism interacts with setTimeout."
+    },
+    {
+      "candidate_id": "dev-00089-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00100-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00101-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer what a server must check in a JWT upon receiving it, nor how handling the token during authentication differs from handling it during system logging."
+    },
+    {
+      "candidate_id": "dev-00101-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "dev-00102-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about Rails or Devise to compare it with Next.js."
+    },
+    {
+      "candidate_id": "dev-00102-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00103-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence is incomplete and does not contain enough information to answer how to prevent CSRF without ViewState or to fully evaluate the proposed command-line handling approach."
+    },
+    {
+      "candidate_id": "dev-00110-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00115-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer how to declare the specific annotations on the reviewRating model to constrain it between 1 and 5."
+    },
+    {
+      "candidate_id": "dev-00119-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about how enumeration in an XML schema handles values outside the allowed list or how it compares to Runtime.exec."
+    },
+    {
+      "candidate_id": "dev-00122-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00122-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00123-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00128-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00129-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00134-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information on how to configure the labels."
+    },
+    {
+      "candidate_id": "dev-00137-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "dev-00138-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer the question, as it does not explicitly mention AWS Lambda, Docker, dumb-init, or the Parameters and Secrets Extension."
+    },
+    {
+      "candidate_id": "dev-00140-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00149-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about java.util.Random or its Java-specific replacements."
+    },
+    {
+      "candidate_id": "dev-00152-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "dev-00153-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer how the encrypted data is affected and the complete remediation steps for this scenario."
+    },
+    {
+      "candidate_id": "dev-00154-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00003-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00013-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided context does not contain information about using shadow deployments specifically to evaluate a candidate AI model's robustness against adversarial attacks."
+    },
+    {
+      "candidate_id": "test-00038-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00042-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00051-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question."
+    },
+    {
+      "candidate_id": "test-00052-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer this question."
+    },
+    {
+      "candidate_id": "test-00053-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00055-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các đoạn thông tin được cung cấp, không có đủ cơ sở để so sánh điểm giống và khác nhau về thời điểm cần thực hiện lại giữa kiểm thử đối kháng và sàng lọc trừng phạt. Dữ liệu chỉ nêu việc thực hiện kiểm thử đối kháng trước khi triển khai và bỏ qua sau các thay đổi (prompt, tool, memory, retrieval, provider), đồng thời yêu cầu xác định tần suất/điều kiện kích hoạt sàng lọc lại trừng phạt (danh sách liên quan, thay đổi quyền sở hữu), nhưng không cung cấp thông tin về bất kỳ điểm tương đồng nào hoặc quy định về thời điểm cần thực hiện lại kiểm thử đối kháng."
+    },
+    {
+      "candidate_id": "test-00056-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about checking the agent's output (tool calls) or comparing how these two methods restrict an agent's permissions."
+    },
+    {
+      "candidate_id": "test-00056-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00057-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00060-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer this question. Specifically, there is no mention of a fail-closed mechanism before an agent executes payments."
+    },
+    {
+      "candidate_id": "test-00062-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00062-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các đoạn bằng chứng được cung cấp, không có đủ thông tin để trả lời câu hỏi vì tài liệu không đề cập hay định nghĩa về bảo mật API suy luận hoặc bảo vệ chuỗi cung ứng AI."
+    },
+    {
+      "candidate_id": "test-00064-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question, as it does not identify or mention the specific documents (\"hướng dẫn monitoring cho hệ thống AI\" and \"Secure Coding with AI Cheat Sheet\")."
+    },
+    {
+      "candidate_id": "test-00066-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về việc gọi API sàng lọc bên thứ ba."
+    },
+    {
+      "candidate_id": "test-00068-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00069-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00076-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer whether an alert will be automatically triggered."
+    },
+    {
+      "candidate_id": "test-00079-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00080-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00113-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00117-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Bằng chứng được cung cấp không chứa thông tin về cấu hình TLS cho server gRPC chạy production."
+    },
+    {
+      "candidate_id": "test-00118-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00139-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa ví dụ cụ thể về việc truy vấn GraphQL độc hại trông như thế nào."
+    },
+    {
+      "candidate_id": "test-00140-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00145-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00145-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to specify which exact error codes should be returned."
+    },
+    {
+      "candidate_id": "test-00152-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about GraphiQL, so there is not enough information to fully answer your question."
+    },
+    {
+      "candidate_id": "test-00154-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about GraphiQL, so there is not enough information to fully answer your question."
+    },
+    {
+      "candidate_id": "test-00155-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about GraphiQL, so there is not enough information to fully answer your question."
+    },
+    {
+      "candidate_id": "test-00156-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about GraphQL or REST to answer this question."
+    },
+    {
+      "candidate_id": "test-00157-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00158-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00159-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question, as it does not mention GraphQL or provide a comparison between the two issues."
+    },
+    {
+      "candidate_id": "test-00161-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00161-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các đoạn thông tin được cung cấp, không có nội dung nào nhắc đến GraphQL hay các khuyến nghị liên quan đến GraphQL, do đó không đủ căn cứ để trả lời câu hỏi."
+    },
+    {
+      "candidate_id": "test-00163-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không đủ thông tin về WebSocket để trả lời câu hỏi so sánh này."
+    },
+    {
+      "candidate_id": "test-00164-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question."
+    },
+    {
+      "candidate_id": "test-00164-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00166-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information on how to handle or resolve the difficulties in determining the attack surface for testing RESTful web services."
+    },
+    {
+      "candidate_id": "test-00166-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about SOAP services or REST API testing to answer this question."
+    },
+    {
+      "candidate_id": "test-00168-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about how to protect a webhook endpoint against denial of service, so this comparison cannot be answered."
+    },
+    {
+      "candidate_id": "test-00169-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00171-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer how access token handling in GraphQL differs from a gRPC interceptor checking JWT, or which one verifies the token before processing the request."
+    },
+    {
+      "candidate_id": "test-00172-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không đủ thông tin để trả lời cách lần theo (track) các request khi đi qua các microservice phía sau."
+    },
+    {
+      "candidate_id": "test-00177-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00178-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không đầy đủ thông tin để trả lời câu hỏi (bằng chứng bị cắt dở và không nêu chi tiết cách khai thác cụ thể cũng như toàn bộ các biện pháp khắc phục cần thực hiện)."
+    },
+    {
+      "candidate_id": "test-00178-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00213-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00217-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00227-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00258-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00258-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00259-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00260-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00261-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00263-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer how Cloudflare Turnstile compares to a Privacy Pass token."
+    },
+    {
+      "candidate_id": "test-00265-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00272-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa đầy đủ thông tin để trả lời câu hỏi (thiếu thông tin cụ thể về việc cần cấu hình cài đặt/thuộc tính nào để bắt buộc mở khóa thiết bị)."
+    },
+    {
+      "candidate_id": "test-00276-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information on how to prevent an adversary from discovering that an account is a fake account."
+    },
+    {
+      "candidate_id": "test-00282-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00282-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question. The evidence does not describe the level of detail recorded in a login event log to make the comparison."
+    },
+    {
+      "candidate_id": "test-00283-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00283-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về quy tắc 'server chỉ nhận mã sản phẩm và số lượng rồi tự tính giá' cũng như không so sánh mức độ cụ thể giữa hai loại yêu cầu này."
+    },
+    {
+      "candidate_id": "test-00285-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about how CAPTCHA is used to block bots or whether it should be relied upon as a sole measure."
+    },
+    {
+      "candidate_id": "test-00287-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về việc kiểm tra các abuse case trong quá trình phát triển phần mềm, do đó không thể so sánh hai bên."
+    },
+    {
+      "candidate_id": "test-00288-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00289-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00290-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00292-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không đủ thông tin để trả lời câu hỏi so sánh này, do thiếu thông tin chi tiết về việc tìm các file cũ, file backup không được tham chiếu trên web server."
+    },
+    {
+      "candidate_id": "test-00292-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00293-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question."
+    },
+    {
+      "candidate_id": "test-00293-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa vào bằng chứng được cung cấp, không có đủ thông tin về nguồn gốc thông tin cần có để xác minh chức năng nghiệp vụ/bảo mật của các thành phần ứng dụng để so sánh với thông tin nhà phát triển cần từ nhà nghiên cứu."
+    },
+    {
+      "candidate_id": "test-00295-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00295-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to contrast how tool-based static analysis and manual analysis are carried out."
+    },
+    {
+      "candidate_id": "test-00297-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about how threat modeling is used in manual code review (review code thủ công)."
+    },
+    {
+      "candidate_id": "test-00297-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về góc độ review code thủ công, do đó không thể trả lời câu hỏi so sánh này."
+    },
+    {
+      "candidate_id": "test-00298-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about how abuse cases are used when reviewing business logic or how that compares to using them when writing secure code."
+    },
+    {
+      "candidate_id": "test-00298-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to compare what secure coding principles and business logic review emphasize regarding authorization."
+    },
+    {
+      "candidate_id": "test-00299-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không nhắc đến OWASP và cũng không có đủ thông tin chi tiết đầy đủ để trả lời câu hỏi so sánh này."
+    },
+    {
+      "candidate_id": "test-00300-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00302-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question. The text does not provide details on the main beneficiaries or specific recommendations for developers or testers regarding browser Dev Tools."
+    },
+    {
+      "candidate_id": "test-00303-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about the security risks caused by default sample files to compare them with old or backup files."
+    },
+    {
+      "candidate_id": "test-00303-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về tiêu đề hoặc ngữ cảnh của hai quy trình kiểm thử (\"kiểm thử cấu hình nền tảng ứng dụng\" và \"rà soát file sao lưu, file không được tham chiếu\") để có thể đối chiếu và so sánh lý do giữa chúng."
+    },
+    {
+      "candidate_id": "test-00304-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các đoạn bằng chứng được cung cấp, không có đủ thông tin về việc sử dụng vulnerability scanner để kiểm thử cách server xử lý phần mở rộng file nhằm tìm thông tin nhạy cảm."
+    },
+    {
+      "candidate_id": "test-00305-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các đoạn thông tin được cung cấp, không có đủ cơ sở để trả lời câu hỏi vì tài liệu không đề cập đến việc hai cách tiếp cận này tương ứng với kỹ thuật kiểm thử nào theo OWASP."
+    },
+    {
+      "candidate_id": "test-00307-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00309-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00309-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "test-00311-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00312-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00312-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question."
+    },
+    {
+      "candidate_id": "test-00313-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information regarding considerations when using logs from other systems (hệ thống khác)."
+    },
+    {
+      "candidate_id": "test-00314-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00314-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00315-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00318-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer how to handle the server configuration to prevent server version leakage through default error pages."
+    },
+    {
+      "candidate_id": "test-00319-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00322-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00323-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00324-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00326-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00326-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "test-00365-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không liệt kê cụ thể những thông tin cốt lõi nào cần lưu ở phía server khi tạo session."
+    },
+    {
+      "candidate_id": "test-00365-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00401-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00404-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question, as the specific details of what information can be collected from HTTP headers and JavaScript are cut off."
+    },
+    {
+      "candidate_id": "test-00411-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00421-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các đoạn ngữ cảnh được cung cấp, không có đủ thông tin để trả lời đầy đủ sự so sánh giữa việc xác thực node bằng khóa ở tầng mạng và cơ chế session token chia identifier/verifier (thiếu thông tin chi tiết về cách sinh, lưu trữ khóa cho node mạng, đối tượng gắn kết của session token, cũng như độ phức tạp vận hành của cơ chế split token)."
+    },
+    {
+      "candidate_id": "test-00422-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các bằng chứng được cung cấp, không có đủ thông tin để trả lời câu hỏi vì tài liệu không đề cập đến rủi ro cụ thể nếu chỉ áp dụng chuẩn hóa email ở một nơi."
+    },
+    {
+      "candidate_id": "test-00423-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không đủ thông tin để trả lời câu hỏi. Đoạn văn bản không đề cập đến tình huống sau khi đã đăng xuất và cũng không nêu rõ cách xử lý cụ thể để ngăn nút Back hiển thị dữ liệu nhạy cảm."
+    },
+    {
+      "candidate_id": "test-00424-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00425-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about SAML in the context of SSO."
+    },
+    {
+      "candidate_id": "test-00426-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00426-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question regarding how the focus of checking core JWT claims differs from verifying whether credentials are transmitted over an encrypted channel."
+    },
+    {
+      "candidate_id": "test-00427-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer how attackers exploit cross-JWT confusion and brute-force session guessing attacks."
+    },
+    {
+      "candidate_id": "test-00428-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00430-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer the question, as it does not explicitly mention or describe Implicit Grant."
+    },
+    {
+      "candidate_id": "test-00430-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to explain how the nonce parameter and hybrid response type \"code id_token\" differ from PKCE."
+    },
+    {
+      "candidate_id": "test-00431-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to explain how both WebAuthn and JWT verify they are intended for the correct service and validly signed."
+    },
+    {
+      "candidate_id": "test-00432-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Bằng chứng được cung cấp không chứa đủ thông tin để trả lời câu hỏi, vì không nêu rõ khuyến nghị của OWASP cho trường hợp SSO do IdP khởi tạo (unsolicited response) cũng như không nhắc đến tổ chức OWASP."
+    },
+    {
+      "candidate_id": "test-00433-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00435-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về tên miền quốc tế hóa (IDN) nên không đủ căn cứ để so sánh và trả lời đầy đủ câu hỏi."
+    },
+    {
+      "candidate_id": "test-00435-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00436-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not mention reverse proxy phishing or Evilginx, so there is not enough information to compare the two methods or state the defenses specifically for each."
+    },
+    {
+      "candidate_id": "test-00436-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về tấn công phishing qua reverse proxy hay so sánh mức bảo vệ của hai cách tiếp cận này."
+    },
+    {
+      "candidate_id": "test-00440-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00443-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question, as it does not mention localStorage, 2FA, or Passkey."
+    },
+    {
+      "candidate_id": "test-00446-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer the question."
+    },
+    {
+      "candidate_id": "test-00447-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00448-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question, particularly regarding the SAML step."
+    },
+    {
+      "candidate_id": "test-00450-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00451-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00454-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên thông tin được cung cấp, không có đủ dữ liệu để trả lời câu hỏi kẻ tấn công có thể làm gì."
+    },
+    {
+      "candidate_id": "test-00495-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00496-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00499-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00524-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00525-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer which services are assigned to the ANONYMOUS, BASIC, and ADMIN roles."
+    },
+    {
+      "candidate_id": "test-00525-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question, as it does not mention specific URL values such as messageId."
+    },
+    {
+      "candidate_id": "test-00529-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00530-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00534-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00536-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00537-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00539-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to compare the platform dependency between authorization filtering with PDPs (such as Cerbos or OPA) and path traversal testing, nor does it detail the specific differences to consider for each."
+    },
+    {
+      "candidate_id": "test-00540-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about OWASP's guidance for JSON mapping libraries such as Jackson and GSON, nor does it provide a comparison with service-level authorization."
+    },
+    {
+      "candidate_id": "test-00541-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00542-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00544-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00544-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00547-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các đoạn bằng chứng được cung cấp, không có đủ thông tin để giải thích sự khác biệt cũng như mối liên hệ giữa việc dùng allow-list với _.pick và việc kiểm thử sửa trường profile thành SysAdmin."
+    },
+    {
+      "candidate_id": "test-00547-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "test-00548-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00549-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00551-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00552-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Không có thông tin đầy đủ trong ngữ cảnh để trả lời bối cảnh xác thực giao dịch có giới hạn thời gian."
+    },
+    {
+      "candidate_id": "test-00552-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không có thông tin về \"thông tin xác thực giao dịch\" (transaction credentials), do đó không đủ cơ sở để so sánh theo yêu cầu của câu hỏi."
+    },
+    {
+      "candidate_id": "test-00556-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên tài liệu được cung cấp, không có đủ thông tin để trả lời câu hỏi vì tài liệu không đề cập đến chức năng deleteEvent cụ thể cũng như cách thiết kế PDP."
+    },
+    {
+      "candidate_id": "test-00557-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer the question."
+    },
+    {
+      "candidate_id": "test-00561-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer how to present the authorization matrix before an audit or what specific tests to write to prove it is properly enforced at the data layer."
+    },
+    {
+      "candidate_id": "test-00561-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00564-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to explain what the result means and how the integration test should be fully organized."
+    },
+    {
+      "candidate_id": "test-00566-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00568-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00568-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không đủ thông tin để trả lời câu hỏi."
+    },
+    {
+      "candidate_id": "test-00596-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00628-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00629-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer the question, as it does not mention synchronizer token or double-submit cookie to compare their advantages."
+    },
+    {
+      "candidate_id": "test-00633-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00644-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about servlet filters, Spring interceptors, or chrome.runtime.onMessage to compare them or provide recommendations."
+    },
+    {
+      "candidate_id": "test-00644-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question. The text mentions that content scripts are less trustworthy than extension pages and cautions against webpages indirectly influencing privileged logic, and it notes that filters or interceptors often miss HTTP headers (such as cookie data) or edge cases, but it does not mention XSS or compare the similarities and differences in risks between receiving messages from content scripts and using servlet filters to filter XSS."
+    },
+    {
+      "candidate_id": "test-00645-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "test-00647-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00648-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer the question, as it does not explicitly mention output encoding against XSS or how to compensate for its limitations."
+    },
+    {
+      "candidate_id": "test-00649-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about naming collisions during production to compare their causes with DOM-based XSS."
+    },
+    {
+      "candidate_id": "test-00649-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không đủ thông tin để trả lời câu hỏi vì không đề cập đến cách phòng vệ cụ thể cho DOM-based XSS cũng như vị trí can thiệp trong code của từng phương pháp."
+    },
+    {
+      "candidate_id": "test-00650-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00650-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about clickjacking or its prevention measures to answer this question."
+    },
+    {
+      "candidate_id": "test-00651-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên dữ liệu được cung cấp, không có đủ thông tin về kiểu tấn công XML Data Island kết hợp CDATA cũng như phạm vi trình duyệt và cách thức né bộ lọc để so sánh."
+    },
+    {
+      "candidate_id": "test-00652-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to compare the XSS risks between postMessage handling (using eval or innerHTML) and Flash applications (using ExternalInterface.call and htmlText)."
+    },
+    {
+      "candidate_id": "test-00654-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00657-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to compare what attackers exploit and how to remediate both top-level JSON array vulnerabilities and XS-Leaks."
+    },
+    {
+      "candidate_id": "test-00657-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Không thể trả lời câu hỏi dựa trên các bằng chứng được cung cấp, vì thông tin không đề cập hoặc so sánh mức độ rõ ràng giữa việc xác định JSON có bị khai thác với việc đánh giá mức độ nguy hiểm của XS-Leaks, cũng như không nêu rõ bên nào phụ thuộc vào ngữ cảnh ứng dụng."
+    },
+    {
+      "candidate_id": "test-00659-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00660-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer the question."
+    },
+    {
+      "candidate_id": "test-00661-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không đủ để trả lời câu hỏi vì không đề cập đến khái niệm XSSI hay thuộc tính HREF."
+    },
+    {
+      "candidate_id": "test-00663-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00665-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer how both issues should be fixed."
+    },
+    {
+      "candidate_id": "test-00665-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00668-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00668-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00670-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information on how to handle or fix the issue."
+    },
+    {
+      "candidate_id": "test-00673-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to explain what happens to the viewer."
+    },
+    {
+      "candidate_id": "test-00673-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer whether setting a data:image/svg+xml;base64,... value on an embed tag's src attribute is dangerous or whether src is considered safe like class or title."
+    },
+    {
+      "candidate_id": "test-00677-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00678-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa vào các bằng chứng được cung cấp, không có đủ thông tin về việc áp dụng interceptor toàn cục cho ứng dụng chat realtime dùng WebSocket cũng như tình huống dev đã tự encode trước đó để trả lời câu hỏi."
+    },
+    {
+      "candidate_id": "test-00678-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00741-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không đủ thông tin để trả lời chi tiết cách token anti-CSRF được lưu và kiểm tra như thế nào khi không sử dụng ViewState."
+    },
+    {
+      "candidate_id": "test-00745-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00748-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00749-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00753-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer the question, as it does not mention building OpenSSL for C/C++ projects."
+    },
+    {
+      "candidate_id": "test-00754-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about security reviews for macros in C/C++ projects or secret management specifically in Django projects."
+    },
+    {
+      "candidate_id": "test-00754-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about macro configurations for SQLite in C/C++ or secret handling recommendations specifically in Django."
+    },
+    {
+      "candidate_id": "test-00755-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00756-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer what specific tools are used to evaluate third-party libraries, nor how the two approaches differ."
+    },
+    {
+      "candidate_id": "test-00757-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không có đủ thông tin để trả lời câu hỏi. Đoạn trích không đề cập rõ ràng đến C/C++, cũng như không cung cấp đủ ngữ cảnh để so sánh sự khác nhau về cơ chế phát hiện lỗi và mức độ hiểu biết mà lập trình viên cần có giữa hai cách tiếp cận."
+    },
+    {
+      "candidate_id": "test-00758-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các đoạn thông tin được cung cấp, không có đủ dữ liệu để trả lời câu hỏi vì tài liệu không nêu rõ loại rủi ro bảo mật mà toobusy-js hay ASP.NET Core Identity nhằm mục đích bảo vệ trước nó."
+    },
+    {
+      "candidate_id": "test-00759-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00759-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer the question. The evidence does not provide information regarding environment restrictions for .NET Core error handling tools."
+    },
+    {
+      "candidate_id": "test-00760-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer whether the safe options share any common points of caution."
+    },
+    {
+      "candidate_id": "test-00761-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00763-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer the question, as it does not mention NoSQL injection."
+    },
+    {
+      "candidate_id": "test-00764-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về việc bật strict mode trong JavaScript, do đó không đủ căn cứ để so sánh hiệu quả bảo mật giữa hai phương pháp."
+    },
+    {
+      "candidate_id": "test-00764-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về ping hoặc InetAddress.isReachable trong Java."
+    },
+    {
+      "candidate_id": "test-00765-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về Laravel, do đó không đủ cơ sở để trả lời câu hỏi so sánh này."
+    },
+    {
+      "candidate_id": "test-00766-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question. It does not explicitly mention header X-Powered-By or child_process.exec."
+    },
+    {
+      "candidate_id": "test-00768-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về việc kiểm tra URL chuyển hướng trong Rails hay các quy tắc ghi log dành riêng cho API."
+    },
+    {
+      "candidate_id": "test-00769-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question, specifically regarding the trade-offs (pros and cons) between realpath() and basename(), as well as details about Symfony."
+    },
+    {
+      "candidate_id": "test-00772-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question completely, particularly regarding how to test the ASP.NET MVC modifications."
+    },
+    {
+      "candidate_id": "test-00773-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer this question. The text does not mention IIS, ASP.NET, or Express, nor does it specify how each platform corresponds to the provided configurations."
+    },
+    {
+      "candidate_id": "test-00774-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00776-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00781-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to name the specific HTTP headers needed to prevent MIME-sniffing or prevent Internet Explorer from executing downloaded files in the site's context."
+    },
+    {
+      "candidate_id": "test-00782-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the entire question, particularly on how to verify the hardened binary settings."
+    },
+    {
+      "candidate_id": "test-00812-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00816-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00818-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00847-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to fully answer your question."
+    },
+    {
+      "candidate_id": "test-00848-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00852-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00856-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information explaining why the string http://example.com\\@evil.com is dangerous."
+    },
+    {
+      "candidate_id": "test-00864-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00867-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about the prerequisites for using a domain allowlist to prevent SSRF, so there is not enough information to fully answer the question."
+    },
+    {
+      "candidate_id": "test-00868-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about command injection or how parameterization relates to OS command injection to make this comparison."
+    },
+    {
+      "candidate_id": "test-00868-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information about OS command injection to compare its exploitation method and consequences with LDAP injection."
+    },
+    {
+      "candidate_id": "test-00870-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "test-00870-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00871-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên dữ liệu được cung cấp, không có đủ thông tin về vai trò bảo mật cụ thể cũng như việc chạy ứng dụng với quyền tối thiểu giúp ngăn chặn hoặc hạn chế điều gì để so sánh với việc kiểm tra giá trị header Host."
+    },
+    {
+      "candidate_id": "test-00872-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question, as it does not describe how CRLF is processed in HTTP splitting."
+    },
+    {
+      "candidate_id": "test-00872-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không có đủ thông tin để trả lời câu hỏi so sánh này do nhiều đoạn dẫn chứng bị thiếu và cắt đoạn."
+    },
+    {
+      "candidate_id": "test-00873-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question. Specifically, there is no mention of a deny list for OS command injection or why one approach is preferred over the other."
+    },
+    {
+      "candidate_id": "test-00873-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to compare the defense approaches for prototype pollution in JavaScript and OS command injection."
+    },
+    {
+      "candidate_id": "test-00874-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không có đủ thông tin về stored procedure PL/SQL trong Oracle cũng như mục đích cụ thể của nó để thực hiện so sánh."
+    },
+    {
+      "candidate_id": "test-00875-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00876-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question. While it mentions that all SQL code stays within the application when using prepared statements, it does not state which parties the code or request passes through in that case."
+    },
+    {
+      "candidate_id": "test-00877-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00879-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00880-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to compare the two cases, as it lacks details about IMAP/SMTP injection using the message_id parameter."
+    },
+    {
+      "candidate_id": "test-00880-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa vào các đoạn văn bản được cung cấp, không có đủ thông tin về lời khuyên khai báo kiểu cụ thể trong XML schema cũng như việc truyền giá trị chữ vào tham số passed_id của ứng dụng webmail để trả lời câu hỏi."
+    },
+    {
+      "candidate_id": "test-00881-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information about XPath injection or safe redirection to compare them."
+    },
+    {
+      "candidate_id": "test-00882-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00882-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to identify the primary control versus the additional control for XML/XPath processing."
+    },
+    {
+      "candidate_id": "test-00883-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question, as it does not mention stored XSS or XML schema."
+    },
+    {
+      "candidate_id": "test-00883-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer the question, as it does not explicitly mention stored XSS."
+    },
+    {
+      "candidate_id": "test-00884-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về kiểm thử LDAP injection hay SSRF, cũng như không đề cập đến mục đích sử dụng các RFC cho hai trường hợp này."
+    },
+    {
+      "candidate_id": "test-00891-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00892-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00894-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00897-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00897-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to evaluate whether the boss's argument holds up or to provide a recommendation on what to do."
+    },
+    {
+      "candidate_id": "test-00904-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00937-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00938-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00949-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00969-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00977-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00978-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to fully answer your question."
+    },
+    {
+      "candidate_id": "test-00979-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to identify all the security zones that the internal firewall is divided into."
+    },
+    {
+      "candidate_id": "test-00980-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00985-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Tài liệu không cung cấp đầy đủ thông tin về các sai lầm kỹ thuật thường gặp đối với giám sát và hệ thống cũ khi triển khai Zero Trust."
+    },
+    {
+      "candidate_id": "test-00989-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00990-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer how Kubernetes applies pod security policies or what tool provides advanced registry routing capabilities for npm when needs exceed basic configuration."
+    },
+    {
+      "candidate_id": "test-00991-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00992-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question, as it does not state the recommended remediation for SMS-based MFA vulnerabilities."
+    },
+    {
+      "candidate_id": "test-00992-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-00993-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên dữ liệu được cung cấp, không có đủ thông tin để trả lời câu hỏi vì tài liệu chỉ dừng lại ở đoạn mô tả lớp frontend gồm các phần tử mạng ('with the following network elements:') mà không liệt kê cụ thể các thành phần đó là gì."
+    },
+    {
+      "candidate_id": "test-00998-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence is incomplete and does not contain enough information to identify the recommended primary security boundary for Azure Key Vault or provide a full comparison."
+    },
+    {
+      "candidate_id": "test-00998-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không có đủ thông tin để trả lời câu hỏi (thiếu thông tin về cách thực hiện giám sát tài khoản IAM cũng như mục đích cụ thể của việc thu thập log container)."
+    },
+    {
+      "candidate_id": "test-01000-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question."
+    },
+    {
+      "candidate_id": "test-01000-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01002-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain enough information to answer this question. The evidence does not mention what needs to be done when using a host firewall with Docker."
+    },
+    {
+      "candidate_id": "test-01003-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to compare the risks and remedies (cách xử lý) between trusting wildcard subdomains in CSP/CORS and legacy systems trusting internal networks."
+    },
+    {
+      "candidate_id": "test-01003-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về mức độ khó khi khắc phục/bảo vệ phiên đăng nhập và token trong trường hợp có nguy cơ chiếm subdomain, do đó không đủ căn cứ để so sánh mức độ khó giữa hai bên."
+    },
+    {
+      "candidate_id": "test-01006-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không chứa thông tin về cách xử lý ở phía DNS."
+    },
+    {
+      "candidate_id": "test-01011-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không có đủ thông tin để trả lời câu hỏi, cụ thể là không giải thích vì sao kiến trúc mạng gom chung ứng dụng và CI/CD runner lại làm rủi ro trở nên nghiêm trọng hơn."
+    },
+    {
+      "candidate_id": "test-01019-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01021-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không nêu tên công cụ quét cụ thể nào để lựa chọn."
+    },
+    {
+      "candidate_id": "test-01021-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dữ liệu được cung cấp không có thông tin về việc phân phối cảnh báo như thế nào, do đó không đủ căn cứ để trả lời đầy đủ câu hỏi."
+    },
+    {
+      "candidate_id": "test-01046-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer the question."
+    },
+    {
+      "candidate_id": "test-01080-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01082-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01084-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer all parts of the question, specifically regarding the main contents included in the compromise-recovery plan."
+    },
+    {
+      "candidate_id": "test-01089-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01090-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01096-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01096-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not mention ML-KEM, so there is not enough information to compare it with password hashing algorithms or determine if it can be used to protect passwords in a database."
+    },
+    {
+      "candidate_id": "test-01097-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer how each of these headers/directives should be configured."
+    },
+    {
+      "candidate_id": "test-01098-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01099-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not mention HSTS or CAA by name, so there is not enough information to answer the question."
+    },
+    {
+      "candidate_id": "test-01102-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain information about backup pins (ghim dự phòng) in certificate pinning."
+    },
+    {
+      "candidate_id": "test-01104-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "Dựa trên các đoạn thông tin được cung cấp, không có đủ cơ sở để so sánh vì tài liệu không đề cập hay xác định rõ nội dung nào thuộc về \"checklist kiểm thử mã hóa yếu\"."
+    },
+    {
+      "candidate_id": "test-01104-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer this question. The text does not mention the cipher selection guidelines for TLS or the minimum key length requirement list for weak cryptography testing in relation to how they differ regarding Diffie-Hellman key exchange."
+    },
+    {
+      "candidate_id": "test-01111-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain information about compiling an inventory of cryptographic components (bảng kiểm kê các thành phần mật mã) or mention OWASP, so it is not possible to compare the two cases."
+    },
+    {
+      "candidate_id": "test-01111-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain enough information to answer the question."
+    },
+    {
+      "candidate_id": "test-01112-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01113-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer whether the key will be leaked via the Referer header under browser defaults."
+    },
+    {
+      "candidate_id": "test-01113-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "test-01116-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided text does not contain sufficient information to answer the question."
+    },
+    {
+      "candidate_id": "test-01118-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01123-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01123-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question, as it does not mention AES-CBC or token encryption."
+    },
+    {
+      "candidate_id": "test-01124-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01126-c1",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": ""
+    },
+    {
+      "candidate_id": "test-01128-c2",
+      "step": "answerable",
+      "reason": "not_answerable_from_evidence",
+      "detail": "I am sorry, but the provided evidence does not contain sufficient information to answer the question completely."
+    },
+    {
+      "candidate_id": "dev-00009-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L5, judged L1"
+    },
+    {
+      "candidate_id": "dev-00054-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "dev-00082-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "dev-00099-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "dev-00116-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "dev-00134-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "dev-00149-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00005-c1",
+      "step": "level",
+      "reason": "l3_needs_two_chunks",
+      "detail": "judged L3 on a unit of fewer than 2 chunks"
+    },
+    {
+      "candidate_id": "test-00034-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00036-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00044-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00049-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00067-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L4, judged L3"
+    },
+    {
+      "candidate_id": "test-00140-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00150-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00165-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L4, judged L3"
+    },
+    {
+      "candidate_id": "test-00274-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00276-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00285-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L4, judged L3"
+    },
+    {
+      "candidate_id": "test-00407-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00409-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00412-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00416-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00501-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L1, judged L4"
+    },
+    {
+      "candidate_id": "test-00519-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00527-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L2"
+    },
+    {
+      "candidate_id": "test-00533-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00630-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00632-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00638-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00642-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00642-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00707-c1",
+      "step": "level",
+      "reason": "l3_needs_two_chunks",
+      "detail": "judged L3 on a unit of fewer than 2 chunks"
+    },
+    {
+      "candidate_id": "test-00738-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00853-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00854-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00866-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00888-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L5, judged L2"
+    },
+    {
+      "candidate_id": "test-00979-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L4"
+    },
+    {
+      "candidate_id": "test-00981-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-00982-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-01018-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L5, judged L3"
+    },
+    {
+      "candidate_id": "test-01046-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L1, judged L4"
+    },
+    {
+      "candidate_id": "test-01079-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-01083-c1",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-01092-c2",
+      "step": "level",
+      "reason": "level_mismatch",
+      "detail": "asked L3, judged L5"
+    },
+    {
+      "candidate_id": "test-01114-c1",
+      "step": "self_reference",
+      "reason": "refers_to_document",
+      "detail": "hình này"
+    },
+    {
+      "candidate_id": "test-00048-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00006-c1 (cosine 0.906)"
+    },
+    {
+      "candidate_id": "test-00108-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00013-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00108-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00013-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00109-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00013-c2 (cosine 0.964)"
+    },
+    {
+      "candidate_id": "test-00121-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00120-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00121-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00120-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00142-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00017-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00142-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00017-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00154-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00152-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00155-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00152-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00173-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00141-c1 (cosine 0.908)"
+    },
+    {
+      "candidate_id": "test-00266-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00031-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00266-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00031-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00269-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00269-c1 (cosine 0.919)"
+    },
+    {
+      "candidate_id": "test-00379-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00378-c1 (cosine 0.920)"
+    },
+    {
+      "candidate_id": "test-00493-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00066-c1 (cosine 0.990)"
+    },
+    {
+      "candidate_id": "test-00494-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00066-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00494-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00066-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00535-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00532-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00535-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00532-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00632-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00082-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00641-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-00640-c1 (cosine 0.930)"
+    },
+    {
+      "candidate_id": "test-00711-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00095-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00711-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00095-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00738-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00099-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-00739-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00100-c2 (cosine 0.925)"
+    },
+    {
+      "candidate_id": "test-01017-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01013-c1 (cosine 0.934)"
+    },
+    {
+      "candidate_id": "test-01092-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01091-c1 (cosine 0.965)"
+    },
+    {
+      "candidate_id": "test-01093-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01091-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01095-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00150-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01095-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00150-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01107-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01107-c1 (cosine 0.910)"
+    },
+    {
+      "candidate_id": "test-01251-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00170-c1 (cosine 0.942)"
+    },
+    {
+      "candidate_id": "test-01254-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00173-c1 (cosine 0.918)"
+    },
+    {
+      "candidate_id": "test-01254-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00173-c2 (cosine 0.911)"
+    },
+    {
+      "candidate_id": "test-01266-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00170-c1 (cosine 0.942)"
+    },
+    {
+      "candidate_id": "test-01267-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01251-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01267-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01252-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01269-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00172-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01269-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00173-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01271-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01259-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01273-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01256-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01274-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01261-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01274-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00173-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01277-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01265-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01279-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01263-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01282-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00170-c1 (cosine 0.940)"
+    },
+    {
+      "candidate_id": "test-01283-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01252-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01284-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00173-c2 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01285-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00173-c1 (cosine 0.918)"
+    },
+    {
+      "candidate_id": "test-01286-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00174-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01287-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01260-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01287-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01256-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01288-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01257-c1 (cosine 0.936)"
+    },
+    {
+      "candidate_id": "test-01289-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01261-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01289-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01255-c1 (cosine 0.946)"
+    },
+    {
+      "candidate_id": "test-01291-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01265-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01291-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01276-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01292-c2",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01263-c1 (cosine 1.000)"
+    },
+    {
+      "candidate_id": "test-01295-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "test-01266-c1 (cosine 0.942)"
+    },
+    {
+      "candidate_id": "test-01300-c1",
+      "step": "dedup",
+      "reason": "duplicate",
+      "detail": "dev-00172-c1 (cosine 0.906)"
+    }
+  ]
+}

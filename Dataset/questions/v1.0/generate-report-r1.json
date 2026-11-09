@@ -1,0 +1,323 @@
+{
+  "cells": [
+    {
+      "split": "dev",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 2,
+      "got": 2,
+      "shortfall": 0,
+      "calls": 1,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 2,
+      "got": 2,
+      "shortfall": 0,
+      "calls": 1,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "dev",
+      "cluster": "inj",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 2,
+      "got": 2,
+      "shortfall": 0,
+      "calls": 1,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "ai",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 10,
+      "got": 10,
+      "shortfall": 0,
+      "calls": 6,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "api",
+      "level": "L3",
+      "l6_kind": null,
+      "wanted": 5,
+      "got": 5,
+      "shortfall": 0,
+      "calls": 3,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "api",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 13,
+      "got": 13,
+      "shortfall": 0,
+      "calls": 8,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "arch",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 28,
+      "got": 28,
+      "shortfall": 0,
+      "calls": 17,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "arch",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 4,
+      "got": 4,
+      "shortfall": 0,
+      "calls": 2,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "auth",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 16,
+      "got": 16,
+      "shortfall": 0,
+      "calls": 10,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "authz",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 13,
+      "got": 13,
+      "shortfall": 0,
+      "calls": 8,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "browser",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 13,
+      "got": 13,
+      "shortfall": 0,
+      "calls": 10,
+      "refused": 0,
+      "substituted": 2
+    },
+    {
+      "split": "test",
+      "cluster": "browser",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 10,
+      "got": 9,
+      "shortfall": 1,
+      "calls": 9,
+      "refused": 1,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "framework",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 16,
+      "got": 16,
+      "shortfall": 0,
+      "calls": 10,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "inj",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 21,
+      "got": 21,
+      "shortfall": 0,
+      "calls": 13,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "inj",
+      "level": "L5",
+      "l6_kind": null,
+      "wanted": 7,
+      "got": 7,
+      "shortfall": 0,
+      "calls": 4,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "supply",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 10,
+      "got": 10,
+      "shortfall": 0,
+      "calls": 6,
+      "refused": 0,
+      "substituted": 0
+    },
+    {
+      "split": "test",
+      "cluster": "transport",
+      "level": "L4",
+      "l6_kind": null,
+      "wanted": 7,
+      "got": 7,
+      "shortfall": 0,
+      "calls": 4,
+      "refused": 0,
+      "substituted": 0
+    }
+  ],
+  "n_candidates": 200,
+  "n_shortfall": 1,
+  "n_refused": 1,
+  "refused": [
+    {
+      "slot_id": "test-r1-00067",
+      "level": "L5",
+      "l6_kind": null,
+      "unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s65",
+        "XSS_Filter_Evasion_Cheat_Sheet#s66"
+      ],
+      "tried_unit_ids": [
+        [
+          "XSS_Filter_Evasion_Cheat_Sheet#s65",
+          "Third_Party_Javascript_Management_Cheat_Sheet#s12"
+        ],
+        [
+          "XSS_Filter_Evasion_Cheat_Sheet#s65",
+          "Web_Frontend_Security_Cheat_Sheet#s12"
+        ],
+        [
+          "XSS_Filter_Evasion_Cheat_Sheet#s65",
+          "XS_Leaks_Cheat_Sheet#s14"
+        ]
+      ]
+    }
+  ],
+  "n_substituted": 2,
+  "substituted": [
+    {
+      "slot_id": "test-r1-00059",
+      "level": "L4",
+      "from_unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s65",
+        "XSS_Filter_Evasion_Cheat_Sheet#s66"
+      ],
+      "to_unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s65",
+        "Clickjacking_Defense_Cheat_Sheet#s12"
+      ]
+    },
+    {
+      "slot_id": "test-r1-00061",
+      "level": "L4",
+      "from_unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s61",
+        "XSS_Filter_Evasion_Cheat_Sheet#s62"
+      ],
+      "to_unit_ids": [
+        "XSS_Filter_Evasion_Cheat_Sheet#s61",
+        "Micro_Frontend_Security_Cheat_Sheet#s06"
+      ]
+    }
+  ]
+}

@@ -31,3 +31,11 @@ Các bước, trong `Dataset/`:
 7. Xong 995 câu: báo agent. Bước sau: `topup --round 2` cho ô còn thiếu sau duyệt (đọc `reviewed.jsonl`, `filtered-r1.jsonl` không cần vì câu của nó đã nằm trong `review.jsonl`), rồi `variants` và `l6b` từ câu đã duyệt (ticket 09), rồi duyệt đợt hai.
 
 Ước thời gian: 995 × khoảng 7,4 phút ≈ 120 giờ (trung vị của pilot).
+
+**2026-11-09, agent (đóng băng ở 249 câu, ADR 0005):** Bạn chốt dừng duyệt để kịp bảo vệ. Gold set 0.2.0 = 199 câu accepted của đợt duyệt lớn (v1) + 50 câu pilot (v0): `split` ghi `questions/v1.0/test.jsonl` 217 câu, `dev.jsonl` 32 câu, 0 câu bị cắt, 795 câu `pending` để ngoài. Chỉ có L1, L3, L4, L5, L6(a); câu trả lời được trên test mỗi cụm 13–27. Card sinh lại (dòng cuối "Hạn chế đã biết" tính từ dữ liệu), CHANGELOG có mục `[0.2.0] - chưa phát hành`. Phần "Cách báo chuẩn" không đổi.
+
+`check` còn 140 vấn đề: 136 `[plan]` (gold không khớp kế hoạch, đúng như ADR 0005) và 4 vấn đề nhãn ở 2 câu:
+- `dev-00100-c2` (Django, mật khẩu): 3 span dòng `# Checks …` (2402-2483, 2680-2733, 2992-3044) nằm đúng khe giữa hai chunk `sentence-v2` (#6 hết ở 2401, #7 bắt đầu 2484…), không chunk nào phủ. 4 span còn lại vẫn đủ trả lời.
+- `test-00226-c1` (Security Terminology): span 379-445 bôi dòng trong mục lục; cùng chuỗi xuất hiện lại ở tiêu đề mục tại 578.
+
+Các tiêu chí của ticket này (sàn, κ, gán lại, tag 1.0.0) không đạt theo phạm vi mới; ticket giữ `ready-for-human` cho tới khi xong pool / qrels / gán lại của bước tiếp theo.

@@ -104,6 +104,30 @@ def test_actual_distribution_and_language_variety_count_the_question_files(snap_
     assert "unaccented: 1" in variety
 
 
+def test_limitations_say_how_far_the_gold_set_falls_short_of_the_plan(snap_dir, root):
+    cells = [
+        PlanCell(split="test", cluster="auth", level="L1", target=7),
+        PlanCell(split="test", cluster="auth", level="L2", target=3),
+        PlanCell(split="test", cluster="browser", level="L3", target=5),
+        PlanCell(split="test", cluster=None, level="L6", l6_kind="out_of_domain", target=4),
+        PlanCell(split="test", cluster=None, level="L6", l6_kind="not_in_corpus", target=2),
+    ]
+    plan = SamplePlan(snapshot_id="2026-10-18-mini", seed=42, params={"test_floor": 9}, cells=cells, slots=[])
+    write_json(root / "questions" / "v1.0" / "sample-plan.json", plan)
+    assert "kế hoạch" not in section(card(snap_dir, root), "Hạn chế đã biết")  # no gold set yet: nothing to compare
+
+    qs = [question(f"a{i}", "test", "auth", "L1", []) for i in range(3)]
+    qs += [question("b1", "test", "browser", "L3", []), question("o1", "test", None, "L6", [])]
+    qs[-1].strata.l6_kind = "out_of_domain"
+    header = QuestionFileHeader(canary=CANARY, eval_version="0.2.0", snapshot_id="2026-10-18-mini")
+    write_questions(root / "questions" / "v1.0" / "test.jsonl", header, qs)
+
+    text = section(card(snap_dir, root), "Hạn chế đã biết")
+    assert "5 câu" in text and "21 câu" in text
+    assert "L2" in text and "not_in_corpus" in text
+    assert "1–3" in text and "sàn 9" in text
+
+
 def test_collection_shows_models_prompt_versions_and_rejection_rates(snap_dir, root):
     text = section(card(snap_dir, root), "Cách thu thập")
     assert "claude-test-1" in text and "gemini-test-2" in text and "embed-test-3" in text

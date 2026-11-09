@@ -468,6 +468,34 @@ def _limitations(n_documents: int) -> str:
 """
 
 
+def _plan_gap(files: _EvalSetFiles) -> str:
+    """One limitation line when the gold set is smaller than the sample plan: size, levels / L6 kinds with no question,
+    and the range of answerable test questions per cluster against the plan's floor. Empty with no plan or no gold."""
+    plan_file = files.qdir("sample-plan.json")
+    gold = _gold_questions(files)
+    if not plan_file.is_file() or not gold:
+        return ""
+    plan = read_json(plan_file, SamplePlan)
+    planned = sum(c.target for c in plan.cells)
+    levels = [lv for lv in LEVELS if any(c.level == lv and c.target for c in plan.cells) and not any(q.strata.level == lv for q in gold)]
+    kinds = sorted({c.l6_kind for c in plan.cells if c.l6_kind and c.target} - {q.strata.l6_kind for q in gold})
+    if len(gold) >= planned and not levels and not kinds:
+        return ""
+    parts = [f"- Gold set có {len(gold)} câu, {_pct(len(gold), planned)} của kế hoạch {planned} câu (ADR 0005)"]
+    missing = levels + [f"L6 {k}" for k in kinds if "L6" not in levels]
+    if missing:
+        parts.append("không có câu nào ở: " + ", ".join(missing))
+    clusters = {c.cluster for c in plan.cells if c.split == "test" and c.cluster and c.level != "L6" and c.target}
+    if clusters:
+        per = Counter(q.cluster for q in gold if q.split == "test" and q.strata.answerable)
+        counts = [per[c] for c in clusters]
+        floor = plan.params.get("test_floor")
+        parts.append(
+            f"câu trả lời được trên test mỗi cụm {min(counts)}–{max(counts)}" + (f" (sàn {floor} của kế hoạch)" if floor else "")
+        )
+    return "; ".join(parts) + ".\n"
+
+
 def render_card(inputs: CardInputs) -> str:
     files = _EvalSetFiles(inputs)
     snap = load_snapshot(inputs.snapshot)
@@ -488,6 +516,6 @@ def render_card(inputs: CardInputs) -> str:
         _reporting(),
         _distribution(snap.manifest.canary),
         _maintenance(releases),
-        _limitations(len(snap.manifest.documents)),
+        _limitations(len(snap.manifest.documents)) + _plan_gap(files),
     ]
     return "\n".join(p.rstrip("\n") + "\n" for p in parts)

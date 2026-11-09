@@ -155,6 +155,25 @@ def test_a_dropped_gemini_connection_is_retried_then_an_llm_error(monkeypatch):
         client.embed(["a"])
 
 
+def test_a_gemini_server_error_is_retried_then_an_llm_error(monkeypatch):
+    # The pool's judge run died on one "502 ... Please try again in 30 seconds" after 2892 good calls.
+    monkeypatch.setattr(GeminiClient, "RETRY_WAIT", 0.0)
+    apis, fails = FakeAPIs(), [2]
+    bad = {"error": {"code": 502, "message": "Server Error", "status": "UNAVAILABLE"}}
+
+    def flaky(request):
+        if fails[0]:
+            fails[0] -= 1
+            return httpx.Response(502, json=bad)
+        return httpx.Response(200, json=apis.respond(request))
+
+    client = GeminiClient("gemini-3.8-flash", env=ENV, http_client=httpx.Client(transport=httpx.MockTransport(flaky)))
+    assert client.ask_json("q", {"type": "object"})["answerable"] is True
+    fails[0] = 10**6
+    with pytest.raises(LLMError, match=r"gemini-3\.8-flash: 502 .*after 5 tries"):
+        client.ask_json("q", {"type": "object"})
+
+
 def test_gemini_client_sends_the_key_from_env_json_mode_and_embeds():
     apis = FakeAPIs()
     client = GeminiClient("gemini-2.5-pro", env=ENV, http_client=apis.client("gemini"))

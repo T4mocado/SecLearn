@@ -215,19 +215,24 @@ class GeminiClient:
             raise LLMError(f"{self.model}: empty reply")
         return json.loads(response.text)
 
-    #: Tries for a request whose connection drops (the server closes it with no reply); waits double from RETRY_WAIT s.
+    #: Tries for a request whose connection drops (the server closes it with no reply) or that gets a 5xx (a passing
+    #: server error, "try again in 30 seconds"); waits double from RETRY_WAIT s, 30 s in all before the last try.
     RETRIES = 5
     RETRY_WAIT = 2.0
 
     def _call(self, request: Callable[[], Any]) -> Any:
-        """One API request. A dropped connection is tried again; an error the API returns (a retired model's 404,
-        a quota's 429) and a connection that keeps dropping are an LLMError: one line from the CLI."""
+        """One API request. A dropped connection or a 5xx is tried again; any other error the API returns (a retired
+        model's 404, a quota's 429) and a failure that keeps coming back are an LLMError: one line from the CLI."""
         import httpx
         from google.genai import errors
 
         for attempt in range(self.RETRIES):
             try:
                 return request()
+            except errors.ServerError as err:
+                if attempt == self.RETRIES - 1:
+                    raise LLMError(f"{self.model}: {err.code} {err.message} after {self.RETRIES} tries") from err
+                time.sleep(self.RETRY_WAIT * 2**attempt)
             except errors.APIError as err:
                 raise LLMError(f"{self.model}: {err.code} {err.message}") from err
             except httpx.TransportError as err:

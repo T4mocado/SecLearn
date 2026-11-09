@@ -23,6 +23,7 @@ dev = [
 retrieval = [
     "pyvi>=0.1.1",
     "sentence-transformers>=3.0",
+    "torch>=2.7",
 ]
 
 [build-system]
@@ -44,3 +45,11 @@ target-version = "py312"
 select = ["E4", "E7", "E9", "F", "I", "B", "UP", "RUF"]
 # Vietnamese text and typographic dashes are intended, not look-alike characters.
 ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

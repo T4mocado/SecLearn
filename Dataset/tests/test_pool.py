@@ -3,6 +3,7 @@ md_sha256 + model, and the pool = union of every system's top-k + the chunks cov
 
 from __future__ import annotations
 
+import json
 import math
 import re
 from typing import ClassVar
@@ -172,7 +173,12 @@ def test_the_command_stops_before_loading_any_model_when_a_revision_is_null(snap
     questions = tmp_path / "test.jsonl"
     write_questions(questions, QuestionFileHeader(canary=CANARY, eval_version="1.0.0", snapshot_id="2026-10-18-mini"),
                     [question("q1", "test", "auth", "L1", [])])
-    argv = ["pool", "--snapshot", str(snap_dir), "--questions", str(questions), "--config", str(MINI.parents[2] / "pool-config.json"),
+    # The repo's pool-config.json is pinned, so the unpinned case gets its own copy with one revision cleared.
+    config = json.loads((MINI.parents[2] / "pool-config.json").read_text(encoding="utf-8"))
+    config["reranker"]["revision"] = None
+    unpinned = tmp_path / "pool-config.json"
+    unpinned.write_text(json.dumps(config), encoding="utf-8")
+    argv = ["pool", "--snapshot", str(snap_dir), "--questions", str(questions), "--config", str(unpinned),
             "--cache", str(tmp_path / "cache"), "--out", str(tmp_path / "pool.jsonl")]
     assert main(argv) == 1
     err = capsys.readouterr().err

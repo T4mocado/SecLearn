@@ -119,6 +119,8 @@ export async function retrieveForQuestion(opts: {
   recent?: HistoryTurn[];
   /** A plan made earlier, replayed so two retrieval runs differ only in the corpus (scripts/smoke-retrieval.ts). */
   plan?: SearchPlan;
+  /** Passed to `retrieveChunks`: the candidates before reranking (scripts/run-eval.ts). */
+  onCandidates?: (candidates: RetrievedChunk[]) => void;
 }): Promise<{ plan: SearchPlan; chunks: RetrievedChunk[] }> {
   const plan = opts.plan ?? (await planSearch(opts.question, opts.history));
   if (plan.intent === "conversation") return { plan, chunks: [] };
@@ -132,6 +134,7 @@ export async function retrieveForQuestion(opts: {
       carry: carryFor(recent, !!plan.reformat, getEnv().RAG_TOP_K),
       ...(plan.passage ? { passage: plan.passage } : {}),
       ...(compareCells(plan) ? { cells: compareCells(plan) } : {}),
+      ...(opts.onCandidates ? { onCandidates: opts.onCandidates } : {}),
     }),
   ]);
   return { plan, chunks: keepAfterEntityCheck(entityFound, chunks) };
@@ -174,7 +177,10 @@ export async function answerQuestion(opts: {
   visibilities: DocVisibility[];
   locale: string;
   signal?: AbortSignal;
-}): Promise<{ tokens: AsyncGenerator<string, void, unknown>; sources: MessageSource[] }> {
+  /** Replayed search plan and candidate hook, passed to `retrieveForQuestion` (scripts/run-eval.ts). */
+  plan?: SearchPlan;
+  onCandidates?: (candidates: RetrievedChunk[]) => void;
+}): Promise<{ tokens: AsyncGenerator<string, void, unknown>; sources: MessageSource[]; plan: SearchPlan }> {
   const { recent, questions, shownFrom } = historyForAnswer(opts.history);
   // The rewrite gets the history as stored: it numbers refused questions too and strips the markers.
   const { plan, chunks } = await retrieveForQuestion({ ...opts, recent });
@@ -195,12 +201,12 @@ export async function answerQuestion(opts: {
       mode: "conversation",
       signal: opts.signal,
     });
-    return { tokens, sources: [] };
+    return { tokens, sources: [], plan };
   }
 
   const { context, sources } = buildContext(chunks, { cells: compareCells(plan)?.map(cellLabel) });
   const tokens = sources.length
     ? await streamChatCompletion({ messages, questionsNote: note, context, locale: opts.locale, signal: opts.signal })
     : fixedAnswer(noSourcesAnswer(opts.locale));
-  return { tokens, sources };
+  return { tokens, sources, plan };
 }

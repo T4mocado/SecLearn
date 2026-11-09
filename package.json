@@ -13,6 +13,7 @@
     "db:reindex": "tsx --env-file=.env scripts/reindex-all.ts",
     "db:snapshot": "tsx --env-file=.env scripts/export-snapshot.ts",
     "smoke:retrieval": "tsx --env-file=.env scripts/smoke-retrieval.ts",
+    "eval:run": "tsx --env-file=.env scripts/run-eval.ts",
     "smoke": "tsx scripts/smoke.ts",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "check": "npm run lint && npm run typecheck && npm test",

@@ -149,6 +149,8 @@ export async function retrieveChunks(opts: {
    * (`reserveCells`), the top K grows with them (`cellsTopK`) and chunks are labelled and grouped by cell.
    */
   cells?: CompareCell[];
+  /** Sees the merged candidates before reranking (scripts/run-eval.ts: was the gold chunk ever a candidate?). */
+  onCandidates?: (candidates: RetrievedChunk[]) => void;
 }): Promise<RetrievedChunk[]> {
   const env = getEnv();
   const queries = opts.queries?.length ? opts.queries : await searchQueries(opts.query, opts.history);
@@ -175,6 +177,7 @@ export async function retrieveChunks(opts: {
   ]);
   const menu = await names;
   const candidates = mergeCandidates(lists).filter((c) => !isSiteMenu(c.content, menu));
+  opts.onCandidates?.(candidates);
 
   let scores: number[] | null;
   let passageScores: number[] | null = null;

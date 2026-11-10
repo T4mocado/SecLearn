@@ -253,7 +253,7 @@ Phiên bản MAJOR.MINOR.PATCH, nhật ký ở `CHANGELOG.md`; mọi số đo gh
 
 | Phiên bản | Ngày | Thay đổi |
 |---|---|---|
-| 0.2.0 | chưa phát hành | Gold set đầu tiên, đóng băng ở các câu đã duyệt (ADR 0005): 199 câu của đợt duyệt lớn (hướng dẫn v1) và 50 câu pilot (hướng dẫn v0), tổng 249 câu, `questions/v1.0/test.jsonl` và `dev.jsonl`. Chỉ có L1, L3, L4, L5, L6(a); không đạt sàn 100 câu mỗi cụm của kế hoạch. 795 câu chưa duyệt không vào gold. |
+| 0.2.0 | 2026-11-10 | Gold set đầu tiên, đóng băng ở các câu đã duyệt (ADR 0005): 199 câu của đợt duyệt lớn (hướng dẫn v1) và 50 câu pilot (hướng dẫn v0), tổng 249 câu, `questions/v1.0/test.jsonl` và `dev.jsonl`. Chỉ có L1, L3, L4, L5, L6(a); không đạt sàn 100 câu mỗi cụm của kế hoạch. 795 câu chưa duyệt không vào gold. |
 | 0.1.0 | 2026-10-20 | Bộ smoke 40 câu của app (`data/eval/set-a.jsonl`, `set-b.jsonl`) chuyển sang gold span trên snapshot `2026-10-18-owasp`: `questions/smoke/dev.jsonl` (bộ A), `questions/smoke/test.jsonl` (bộ B); bản gốc ở `questions/smoke/source/`, lựa chọn tay cho trích dẫn xuất hiện nhiều lần ở `questions/smoke/anchor-picks.json`. |
 
 ## Hạn chế đã biết

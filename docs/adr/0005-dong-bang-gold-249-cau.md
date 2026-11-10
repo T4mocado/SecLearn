@@ -8,6 +8,8 @@ Hệ quả cho luận văn: khoảng tin cậy theo cụm rộng (khoảng ±20 
 
 Pool 5 hệ thống, sâu 10, có 6.947 chunk, Gemini (`judge-umbrela-v1`) đã chấm hết. Phần người chấm theo thiết kế là 3.673 chunk, khoảng 30–40 giờ, không kịp nên **bỏ hẳn**. Thiết kế không đổi: qrels vẫn là gold span cộng nhãn người, và nhãn Gemini không bao giờ được tính là liên quan. Vì không có nhãn người nào, qrels (`qrels/sentence-v2.qrels`) chỉ gồm 493 chunk liên quan từ gold span và 3.636 chunk Gemini cho 0, ghi là đã chấm, không liên quan. Có 2.818 chunk Gemini cho từ 1 trở lên mà không chứa gold (271 chunk trong đó được 2 hoặc 3) nằm ngoài qrels, tức là chưa được chấm. Hệ quả cho luận văn: không có κ Gemini × người và không có tỉ lệ âm tính giả, nên các mục này trong CARD ghi "chưa có". Tập liên quan có thể thiếu những chunk trả lời đúng mà nằm ngoài gold span, nên recall đo được là recall so với gold span. Judged@10 thấp hơn mức có nhãn người. Các điểm này phải ghi trong phần hạn chế, kèm con số 271 chunk Gemini cho từ 2 trở lên mà chưa có người kiểm.
 
+Bước gán lại 30–50 câu sau ít nhất 7 ngày để đo độ ổn định của chính người gán cũng **bỏ** vì cùng lý do, nên mục độ ổn định trong CARD ghi "chưa có". Luận văn phải nói rõ nhãn gold là nhãn của một người, gán một lần, không có số đo độ ổn định.
+
 ## Considered Options
 
 - Duyệt thêm khoảng 300 câu (35–40 giờ) để mỗi cụm có 40–50 câu: không kịp tiến độ bảo vệ.

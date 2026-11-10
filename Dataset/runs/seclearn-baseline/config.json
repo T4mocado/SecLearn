@@ -1,0 +1,23 @@
+{
+  "run_id": "seclearn-baseline",
+  "config_hash": "ba934c33d22ac53d05266159c83841e87d0ee4317335d2345dca22cde76ade66",
+  "mode": "retrieval",
+  "snapshot_id": "2026-10-18-owasp",
+  "git_commit": "d5e04f5",
+  "git_dirty": false,
+  "chunker_version": "sentence-v2",
+  "LLM_PROVIDER": "deepseek",
+  "llm_model": "deepseek-flash",
+  "EMBED_PROVIDER": "huggingface",
+  "embed_model": "bkai-foundation-models/vietnamese-bi-encoder",
+  "EMBED_DIM": 768,
+  "RERANK_URL": "http://127.0.0.1:8008/rerank",
+  "RAG_TOP_K": 5,
+  "RAG_CANDIDATES": 20,
+  "RAG_MIN_RELEVANCE": 0.01,
+  "RAG_MIN_KEEP": 2,
+  "RAG_MIN_RELEVANCE_EN": 0.05,
+  "RAG_RELATIVE_MIN": 0.1,
+  "RAG_TRANSLATE_QUERY": "on",
+  "replay_plans": null
+}

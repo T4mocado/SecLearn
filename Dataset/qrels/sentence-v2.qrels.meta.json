@@ -1,0 +1,27 @@
+{
+  "generated_by": "seclearn-eval qrels",
+  "snapshot_id": "2026-10-18-owasp",
+  "chunker_version": "sentence-v2",
+  "inputs": {
+    "questions:test.jsonl": {
+      "path": "questions/v1.0/test.jsonl",
+      "sha256": "5932be9e2b181f538c6b77e7871c925c118a05f9bb3f8d41992d2399d4878659"
+    },
+    "questions:dev.jsonl": {
+      "path": "questions/v1.0/dev.jsonl",
+      "sha256": "c9c86cd0488ca0146869a289cd43a82721bdf88a6ada0cd144e57cc68dd126be"
+    },
+    "pool": {
+      "path": "judgments/pool.jsonl",
+      "sha256": "955dabe5508350150032f235151a6127887f342c5db8b4790d2cb5bc3b5c74b0"
+    },
+    "labels": {
+      "path": "judgments/labels.jsonl",
+      "sha256": "e39242eb063fe4a229b4d4e02dc624847d21825ecbb5a7add9faf4587f20a0d1"
+    }
+  },
+  "qrels_sha256": "e4c431a7f141c97beb64a6c8a38b5c1b792769c651e0b12d0f4b5ab077a3f500",
+  "n_questions": 229,
+  "n_lines": 4129,
+  "n_from_labels": 0
+}

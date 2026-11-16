@@ -1,0 +1,26 @@
+%% Hình 3.3. Biểu đồ hoạt động "Nạp tài liệu PDF" (Bảng 3.4; Detali-design.md, mục 5.6)
+flowchart TD
+  S(( )) --> A1("Quản trị viên chọn file PDF,<br/>nhập tiêu đề và mức hiển thị")
+  A1 --> D1{" "}
+  D1 -- "[không phải PDF]" --> X1("Báo lỗi ONLY_PDF")
+  D1 -- "[là PDF]" --> A2("Lưu file, tạo bản ghi tài liệu ở trạng thái pending,<br/>đưa tài liệu vào hàng đợi")
+  A2 --> A4("Trích văn bản từ PDF")
+  A4 --> A5("Làm sạch đầu trang, chân trang, menu;<br/>chuyển sang Markdown")
+  A5 --> A6("Cắt đoạn (800 ký tự, chồng lấp 80),<br/>xóa các đoạn cũ của tài liệu")
+  A6 --> A8("Tạo embedding cho một lô 32 đoạn")
+  A8 --> D2{" "}
+  D2 -- "[cả lô lỗi]" --> A9("Thử lại từng đoạn, bỏ đoạn lỗi<br/>(dừng sau 5 lỗi liên tiếp)")
+  D2 -- "[thành công]" --> A10("Lưu các đoạn kèm vector và tsvector")
+  A9 --> A10
+  A10 --> D3{" "}
+  D3 -- "[còn lô]" --> A8
+  D3 -- "[hết lô]" --> D4{" "}
+  D4 -- "[lưu được đoạn]" --> R1("Tài liệu chuyển sang ready<br/>(kèm cảnh báo nếu có đoạn bị bỏ)")
+  D4 -- "[không lưu được]" --> R2("Tài liệu chuyển sang failed,<br/>kèm thông báo lỗi song ngữ")
+  R1 --> A11("Giao diện hiện thông báo kết quả")
+  R2 --> A11
+  A11 --> E((( )))
+  X1 --> E
+
+  classDef term fill:#000000,stroke:#000000;
+  class S,E term;

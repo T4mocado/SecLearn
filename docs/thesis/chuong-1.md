@@ -26,14 +26,15 @@ Khóa luận xây dựng SecLearn, một ứng dụng web giúp người mới h
 - Trợ lý ảo nhận câu hỏi tiếng Việt (hoặc tiếng Anh) và chỉ trả lời dựa trên các tài liệu OWASP đã nạp. Mỗi ý trong câu trả lời có số trích dẫn dạng `[n]` trỏ về đoạn nguồn. Người dùng xem được các đoạn đã dùng trong một panel nguồn, kèm điểm liên quan và kết quả kiểm tra trích dẫn.
 - Khi không có đoạn tài liệu nào đủ liên quan, trợ lý trả lời rằng tài liệu không đề cập, thay vì dùng kiến thức riêng của LLM.
 - Khách chưa đăng nhập được hỏi thử 10 câu; người đã đăng nhập được lưu lịch sử hội thoại.
-- Bài học song ngữ Việt – Anh và chức năng Ôn tập sinh câu hỏi trắc nghiệm bằng LLM, cho phép làm bài, chấm điểm và xem lại lịch sử.
+- Bài học song ngữ Việt – Anh, do quản trị viên soạn và xuất bản.
 - Trang quản trị cho phép quản lý người dùng, tải tài liệu PDF lên để hệ thống tự cắt đoạn và lập chỉ mục, và quản lý bài học.
 
 ### 1.2.2. Mục tiêu về nghiên cứu và đánh giá
 
 Mục tiêu thứ hai là đo được chất lượng của trợ lý một cách lặp lại được. Cụ thể:
 
-- Xây dựng bộ đánh giá tiếng Việt khoảng 1.475 câu hỏi, chia theo bảy mức từ tra cứu một đoạn (L1) đến hội thoại nhiều lượt (L7), trong đó có các câu không trả lời được từ tài liệu (L6). Mỗi câu có đáp án tham chiếu và bằng chứng được đánh dấu bằng vị trí ký tự trên tài liệu gốc (gold span).
+- Thiết kế bộ đánh giá tiếng Việt theo bảy mức, từ tra cứu một đoạn (L1) đến hội thoại nhiều lượt (L7), trong đó có các câu không trả lời được từ tài liệu (L6), với kế hoạch 1.475 câu. Mỗi câu có đáp án tham chiếu và bằng chứng được đánh dấu bằng vị trí ký tự trên tài liệu gốc (gold span).
+- Xây dựng gold set đã được người duyệt theo thiết kế đó. Do giới hạn thời gian, phiên bản dùng trong khóa luận (0.2.0) dừng ở 249 câu, gồm các mức L1, L3, L4, L5 và L6 loại ngoài lĩnh vực.
 - Chọn trước con số báo cáo chính, cách tính sai số và cách so sánh hai cấu hình, trước khi đo lần đầu.
 - Dùng bộ đánh giá để đo phần truy xuất và khả năng từ chối của SecLearn, và so sánh một số cấu hình của pipeline RAG.
 
@@ -49,12 +50,12 @@ Mục tiêu thứ hai là đo được chất lượng của trợ lý một cá
 
 ### 1.3.2. Phạm vi nghiên cứu
 
-- Tài liệu nguồn (corpus) chỉ gồm OWASP Cheat Sheet Series và WSTG, tổng cộng 134 tài liệu (133 cheat sheet và WSTG), cùng giấy phép CC BY-SA 4.0. Ban đầu corpus có thêm tài liệu NIST CSWP 29, nhưng đã được bỏ ra để toàn bộ corpus dùng chung một giấy phép, giúp việc công bố bộ đánh giá đơn giản hơn.
+- Tài liệu nguồn (corpus) chỉ gồm OWASP Cheat Sheet Series và WSTG, tổng cộng 134 tài liệu (133 cheat sheet và WSTG), cùng giấy phép CC BY-SA 4.0. Ban đầu corpus có thêm tài liệu NIST CSWP 29, nhưng đã được bỏ ra để toàn bộ corpus dùng chung một giấy phép. Như vậy việc công bố bộ đánh giá đơn giản hơn.
 - Câu hỏi của bộ đánh giá viết bằng tiếng Việt. Giao diện ứng dụng hỗ trợ tiếng Việt và tiếng Anh.
 - Con số báo cáo chính đo phần truy xuất (đoạn nào đến được LLM). Phần trả lời được đo ở khả năng từ chối; các độ đo khác của phần trả lời (đúng đáp án, trung thành với nguồn, trích dẫn đúng) được định nghĩa sẵn trong bộ đánh giá.
 - Khóa luận không huấn luyện hay tinh chỉnh mô hình nào; các LLM được gọi qua API, mô hình embedding và rerank dùng bản công bố sẵn.
 - Ứng dụng được triển khai bằng Docker Compose ở quy mô thử nghiệm, không nhằm vận hành cho số lượng lớn người dùng.
-- Bộ đánh giá do một người gán nhãn (tác giả khóa luận). Vì vậy khóa luận báo độ ổn định của người gán thay cho độ đồng ý giữa nhiều người.
+- Bộ đánh giá do một người gán nhãn (tác giả khóa luận), gán một lần. Khóa luận không có số đo độ đồng ý giữa nhiều người, cũng không có số đo độ ổn định của người gán.
 
 ## 1.4. Phương pháp nghiên cứu
 
@@ -68,7 +69,7 @@ Hệ thống được phân tích theo hướng đối tượng, mô hình hóa 
 
 ### 1.4.3. Phương pháp thực nghiệm và đánh giá
 
-Bộ đánh giá được xây dựng theo quy trình: sinh câu hỏi ứng viên bằng LLM, lọc tự động bằng các bước kiểm tra và một LLM chấm, người duyệt từng câu, rồi gộp kết quả của nhiều hệ truy xuất (pooling) để tìm thêm đoạn liên quan. Con số báo cáo chính, cách tính sai số chuẩn theo nhóm và phép kiểm định khi so hai cấu hình được chọn và ghi lại trước lần đo đầu tiên. Tham số chỉ được chỉnh trên tập dev; tập test chỉ dùng để báo cáo.
+Bộ đánh giá được xây dựng theo quy trình: sinh câu hỏi ứng viên bằng LLM, lọc tự động bằng các bước kiểm tra và một LLM chấm, người duyệt từng câu, rồi gộp kết quả của nhiều hệ truy xuất (pooling) để LLM chấm mức liên quan. Con số báo cáo chính, cách tính sai số chuẩn theo nhóm và phép kiểm định khi so hai cấu hình được chọn và ghi lại trước lần đo đầu tiên. Tham số chỉ được chỉnh trên tập dev; tập test chỉ dùng để báo cáo.
 
 ## 1.5. Ý nghĩa khoa học và thực tiễn
 
@@ -81,7 +82,7 @@ Về thực tiễn, SecLearn là một công cụ học an toàn ứng dụng we
 Ngoài phần Mở đầu và Kết luận, báo cáo gồm bốn chương:
 
 - Chương 1 trình bày lý do chọn đề tài, mục tiêu, đối tượng, phạm vi và phương pháp nghiên cứu.
-- Chương 2 trình bày cơ sở lý thuyết: an toàn ứng dụng web và tài liệu OWASP, mô hình ngôn ngữ lớn và biểu diễn vector, kỹ thuật RAG, cách đánh giá hệ thống RAG, các nghiên cứu liên quan và công nghệ sử dụng.
+- Chương 2 trình bày cơ sở lý thuyết: các khái niệm về an toàn ứng dụng web, mô hình ngôn ngữ lớn, biểu diễn vector và kỹ thuật RAG; phương pháp phát triển, phương pháp đánh giá hệ thống RAG và UML; lý thuyết về cơ sở dữ liệu; và các công nghệ sử dụng.
 - Chương 3 phân tích, thiết kế và triển khai ứng dụng SecLearn, sau đó thiết kế bộ dữ liệu đánh giá và quy trình xây dựng nó.
 - Chương 4 trình bày kết quả xây dựng ứng dụng và bộ đánh giá, kết quả đo, và thảo luận về lỗi và hạn chế.
 
@@ -95,4 +96,4 @@ Bảng 1.1. So sánh SecLearn với một số giải pháp liên quan
 | Trích dẫn nguồn trong câu trả lời | Tùy chế độ | Có | [cần kiểm lại] | Có, `[n]` trỏ về đoạn, có kiểm tra sau khi trả lời |
 | Từ chối khi tài liệu không có | Không áp dụng | [cần kiểm lại] | [cần kiểm lại] | Có, không gọi LLM |
 | Hỏi tiếng Việt trên tài liệu tiếng Anh | Có | Song ngữ trên tài liệu tiếng Việt | [cần kiểm lại] | Có, dịch câu hỏi khi truy xuất |
-| Đánh giá định lượng | Không áp dụng | Chạy thử một số câu hỏi | Chạy thử các chức năng | Bộ đánh giá khoảng 1.475 câu, có khoảng tin cậy |
+| Đánh giá định lượng | Không áp dụng | Chạy thử một số câu hỏi | Chạy thử các chức năng | Gold set 249 câu người duyệt (kế hoạch 1.475 câu), có khoảng tin cậy |

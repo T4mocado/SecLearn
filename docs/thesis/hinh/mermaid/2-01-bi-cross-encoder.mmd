@@ -1,0 +1,21 @@
+%% Hình 2.1. Bi-encoder và cross-encoder (mục 2.2.2–2.2.3)
+flowchart LR
+  subgraph BI["(a) Bi-encoder"]
+    direction TB
+    BQ["Câu hỏi"] --> BE1["Bộ mã hóa"]
+    BD["Đoạn văn"] --> BE2["Bộ mã hóa<br/>(chạy trước, lưu lại)"]
+    BE1 --> BV1["Vector q"]
+    BE2 --> BV2["Vector d"]
+    BV1 --> BS["cos(q, d)"]
+    BV2 --> BS
+  end
+
+  subgraph CR["(b) Cross-encoder"]
+    direction TB
+    CQ["Câu hỏi"] --> CP["Cặp (câu hỏi, đoạn văn)"]
+    CD["Đoạn văn"] --> CP
+    CP --> CE["Mô hình Transformer<br/>đọc cả cặp"]
+    CE --> CS["Điểm liên quan<br/>trong [0, 1]"]
+  end
+
+  BI ~~~ CR

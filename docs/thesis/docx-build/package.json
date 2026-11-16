@@ -1,0 +1,12 @@
+{
+  "name": "khoa-luan-docx-build",
+  "private": true,
+  "description": "Dựng khoa-luan-seclearn.docx từ các file .md trong docs/thesis theo bìa và định dạng của khóa luận mẫu NEU",
+  "scripts": {
+    "build": "node build.js .. logo-neu.png ../khoa-luan-seclearn.tmp.docx && powershell -NoProfile -ExecutionPolicy Bypass -File word.ps1 ../khoa-luan-seclearn.tmp.docx ../khoa-luan-seclearn.docx ../khoa-luan-seclearn.pdf && node -e \"require('fs').unlinkSync('../khoa-luan-seclearn.tmp.docx')\""
+  },
+  "dependencies": {
+    "docx": "9.15.3",
+    "jszip": "^3.10.1"
+  }
+}

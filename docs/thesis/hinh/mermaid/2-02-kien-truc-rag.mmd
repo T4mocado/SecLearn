@@ -1,0 +1,23 @@
+%% Hình 2.2. Kiến trúc RAG cơ bản: lập chỉ mục, truy xuất, sinh (mục 2.3.1)
+%% Chỉ nối subgraph với subgraph để Mermaid giữ hướng trái → phải bên trong từng giai đoạn.
+flowchart TB
+  subgraph IDX["1. Lập chỉ mục (làm trước, một lần cho mỗi tài liệu)"]
+    direction LR
+    D["Tài liệu"] --> T["Trích văn bản"] --> C["Cắt thành đoạn"] --> E["Mã hóa<br/>thành vector"]
+  end
+
+  V[("Cơ sở dữ liệu vector")]
+
+  subgraph RET["2. Truy xuất (cho mỗi câu hỏi)"]
+    direction LR
+    Q["Câu hỏi"] --> QE["Mã hóa<br/>câu hỏi"] --> S["Tìm các đoạn<br/>liên quan nhất"]
+  end
+
+  subgraph GEN["3. Sinh"]
+    direction LR
+    P["Lời nhắc:<br/>câu hỏi + các đoạn"] --> L["LLM"] --> A["Câu trả lời<br/>có căn cứ"]
+  end
+
+  IDX -- "lưu vector" --> V
+  V -- "so vector" --> RET
+  RET -- "các đoạn tìm được" --> GEN

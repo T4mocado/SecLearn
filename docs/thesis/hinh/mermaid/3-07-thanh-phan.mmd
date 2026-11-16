@@ -1,0 +1,31 @@
+%% Hình 3.8. Sơ đồ thành phần của SecLearn (Detali-design.md, mục 3.1)
+flowchart TB
+  subgraph Browser["Trình duyệt"]
+    direction LR
+    UI["Giao diện React"]
+    LS[("localStorage<br/>bản nháp của khách")]
+  end
+
+  subgraph Next["Máy chủ Next.js (Node.js, cổng 3847)"]
+    MW["Middleware<br/>chọn ngôn ngữ /vi, /en"]
+    API["Route handler /api/**"]
+    AUTH["Auth.js<br/>(JWT, Credentials)"]
+    LIB["Module nghiệp vụ src/lib<br/>chat-answer · query · rag · rerank<br/>verify · judge · ingest · chunking<br/>embed · llm"]
+    Q["Hàng đợi nạp tài liệu<br/>(trong bộ nhớ)"]
+    FS[("data/uploads<br/>file PDF")]
+  end
+
+  DB[("PostgreSQL 16<br/>+ pgvector")]
+  EMB["Máy chủ embedding<br/>và rerank<br/>(Python, cổng 8008)"]
+  LLM["API của nhà<br/>cung cấp LLM"]
+
+  UI <--> LS
+  UI -- "tải trang" --> MW
+  UI -- "JSON, SSE" --> API
+  API --> AUTH
+  API --> LIB
+  LIB <--> Q
+  LIB --> FS
+  LIB -- "Prisma, SQL" --> DB
+  LIB -- "HTTP" --> EMB
+  LIB -- "HTTP" --> LLM

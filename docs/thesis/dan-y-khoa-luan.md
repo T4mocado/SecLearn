@@ -14,7 +14,7 @@
 *Xây dựng trợ lý ảo hỏi đáp an toàn ứng dụng web dựa trên RAG và bộ dữ liệu đánh giá tiếng Việt* (SecLearn).
 
 **Điểm khác so với hai khóa luận mẫu — nên nhấn mạnh xuyên suốt:**
-1. Không dừng ở "chạy thử vài câu, chụp màn hình" (như cả hai mẫu): SecLearn có **bộ đánh giá riêng ~1.475 câu**, số chính chọn trước khi đo, có khoảng tin cậy và kiểm định.
+1. Không dừng ở "chạy thử vài câu, chụp màn hình" (như cả hai mẫu): SecLearn có **bộ đánh giá riêng** (kế hoạch 1.475 câu, gold set 0.2.0 có 249 câu người duyệt), số chính chọn trước khi đo, có khoảng tin cậy và kiểm định.
 2. Pipeline RAG nhiều tầng: lập kế hoạch truy vấn (viết lại, dịch sang tiếng Anh, HyDE), truy xuất lai vector + từ khóa, rerank cross-encoder, ngưỡng liên quan, từ chối không gọi LLM, hậu kiểm trích dẫn, LLM-as-judge.
 3. Bài toán **xuyên ngôn ngữ**: hỏi tiếng Việt, tri thức là OWASP tiếng Anh.
 
@@ -51,7 +51,7 @@ Khung trang của khoa chỉ mang tính tham khảo, nhưng Chương 3 dài gấ
 - Đề tài: SecLearn — ứng dụng web học an toàn thông tin cơ bản, lõi là trợ lý RAG trả lời tiếng Việt **chỉ dựa trên corpus OWASP**, có trích dẫn `[n]`, biết từ chối.
 - Mục đích kép: (1) xây ứng dụng; (2) xây bộ đánh giá tiếng Việt để đo nó một cách tái lập.
 - Phương pháp: nghiên cứu tài liệu, phân tích–thiết kế hướng đối tượng (UML), phát triển lặp, thực nghiệm định lượng trên bộ đánh giá.
-- Kết quả chính (viết sau khi có số): sản phẩm chạy được (Docker Compose), corpus 134 tài liệu / 5.915 chunk, bộ đánh giá N câu, số chính recall@5 macro = …
+- Kết quả chính (viết sau khi có số): sản phẩm chạy được (Docker Compose), corpus 134 tài liệu / 5.915 chunk, gold set 249 câu, số chính recall@5 macro = …
 - Bố cục báo cáo: một câu cho mỗi chương.
 
 ---
@@ -64,9 +64,9 @@ Khung trang của khoa chỉ mang tính tham khảo, nhưng Chương 3 dài gấ
 
 ### 1.2. Mục tiêu đề tài
 #### 1.2.1. Mục tiêu về sản phẩm
-- Trợ lý RAG song ngữ có trích dẫn, panel nguồn, từ chối khi ngoài corpus; bài học song ngữ; Ôn tập trắc nghiệm sinh bằng LLM; trang quản trị.
+- Trợ lý RAG song ngữ có trích dẫn, panel nguồn, từ chối khi ngoài corpus; bài học song ngữ; trang quản trị.
 #### 1.2.2. Mục tiêu về nghiên cứu và đánh giá
-- Bộ đánh giá ~1.475 câu, thang L1–L7, gold span, có gold set người duyệt; đo truy xuất và khả năng từ chối; so sánh các cấu hình `RAG_*`.
+- Bộ đánh giá: kế hoạch 1.475 câu, gold set 0.2.0 có 249 câu (ADR 0005), thang L1–L7, gold span, có gold set người duyệt; đo truy xuất và khả năng từ chối; so sánh các cấu hình `RAG_*`.
 
 ### 1.3. Đối tượng và phạm vi nghiên cứu
 #### 1.3.1. Đối tượng nghiên cứu
@@ -99,52 +99,50 @@ Khung trang của khoa chỉ mang tính tham khảo, nhưng Chương 3 dài gấ
 
 ## 4. CHƯƠNG 2. CƠ SỞ LÝ THUYẾT (12–15 trang)
 
-### 2.1. An toàn ứng dụng web và tài liệu OWASP
-#### 2.1.1. Các lớp lỗ hổng ứng dụng web phổ biến
-- Injection, XSS, CSRF, xác thực/phiên, phân quyền, cấu hình… — ngắn gọn, đủ để người đọc hiểu 10 cụm chủ đề.
-#### 2.1.2. OWASP Cheat Sheet Series và WSTG
-- Cấu trúc, mã test case `WSTG-XXXX-NN`, giấy phép CC BY-SA 4.0; vì sao chọn làm corpus.
+> Bố cục chia theo khóa luận mẫu [8]: khái niệm và lý thuyết → phương pháp và công cụ phân tích → cơ sở dữ liệu và công cụ thiết kế → ngôn ngữ, thư viện, môi trường.
 
-### 2.2. Mô hình ngôn ngữ lớn và biểu diễn vector
-#### 2.2.1. Mô hình ngôn ngữ lớn (LLM)
-- Transformer (ngắn), prompting, giới hạn: hallucination, kiến thức cố định, ngữ cảnh hữu hạn.
-#### 2.2.2. Embedding và độ tương đồng
-- Bi-encoder, cosine (công thức 2.1); embedding đa ngôn ngữ / tiếng Việt (BKAI vietnamese-bi-encoder 768 chiều, OpenAI text-embedding-3-small 1536 chiều).
-#### 2.2.3. Cross-encoder và rerank
-- So sánh bi-encoder vs cross-encoder; BAAI/bge-reranker-v2-m3.
+### 2.1. Tổng quan các khái niệm và lý thuyết liên quan
+#### 2.1.1. An toàn ứng dụng web và tài liệu OWASP
+- a, Các lớp lỗ hổng phổ biến (Injection, XSS, CSRF, xác thực/phiên, phân quyền); b, Cheat Sheet Series và WSTG, mã `WSTG-XXXX-NN`, CC BY-SA 4.0, vì sao chọn làm corpus.
+#### 2.1.2. Mô hình ngôn ngữ lớn (LLM)
+- Transformer, prompting; giới hạn: hallucination, kiến thức cố định, ngữ cảnh hữu hạn; nhiệt độ.
+#### 2.1.3. Biểu diễn vector và xếp hạng lại (Embedding và Rerank)
+- a, Bi-encoder, cosine (2.1), BKAI 768 chiều; b, cross-encoder, bge-reranker-v2-m3 (Hình 2.1).
+#### 2.1.4. Sinh tăng cường truy xuất (RAG)
+- a, Kiến trúc cơ bản (Hình 2.2); b, chia đoạn; c, truy xuất lai, viết lại/dịch câu hỏi, HyDE; d, trích dẫn, ngưỡng và từ chối, hậu kiểm, LLM-as-judge.
+#### 2.1.5. Các nghiên cứu và giải pháp liên quan
+- Hai khóa luận NEU [8], [9]; bộ đánh giá RAG hiện có; khoảng trống đề tài.
 
-### 2.3. Sinh tăng cường truy xuất (RAG)
-#### 2.3.1. Kiến trúc RAG cơ bản
-- Indexing → retrieval → generation (Hình 2.1).
-#### 2.3.2. Chia đoạn (chunking)
-- Theo câu, kích thước/overlap; ảnh hưởng tới truy xuất.
-#### 2.3.3. Truy xuất lai và kỹ thuật cải thiện truy vấn
-- Tìm kiếm từ khóa (tsvector/BM25), vector, kết hợp; viết lại truy vấn, dịch truy vấn, HyDE.
-#### 2.3.4. Kiểm soát chất lượng câu trả lời
-- Trích dẫn, grounding / hậu kiểm trích dẫn, ngưỡng liên quan và từ chối, LLM-as-judge.
+### 2.2. Giới thiệu về phương pháp và công cụ phân tích hệ thống
+#### 2.2.1. Phương pháp phát triển hệ thống
+- Pipeline RAG hai luồng (nạp tài liệu, trả lời); phát triển vòng lặp, nhật ký lỗi, ticket, ADR; chỉnh tham số trên dev, test chỉ để báo cáo.
+#### 2.2.2. Phương pháp đánh giá hệ thống RAG
+- a, Độ đo truy xuất (2.2–2.4), qrels, Judged@k; b, độ đo phần trả lời, từ chối đúng/sai; c, xây dựng bộ đánh giá, pooling, kappa (2.5); d, sai số chuẩn theo nhóm (2.6), Wilson, kiểm định ngẫu nhiên hóa, Holm. Bảng 2.1.
+#### 2.2.3. Giới thiệu về UML
+- Use case, hoạt động, tuần tự dùng ở Chương 3.
 
-### 2.4. Đánh giá hệ thống RAG
-#### 2.4.1. Độ đo truy xuất
-- Hit@k, Recall@k, MRR@k, nDCG@k (công thức 2.2–2.5), qrels, mức liên quan; Judged@k.
-#### 2.4.2. Độ đo phần trả lời
-- EM/F1, answer correctness, faithfulness, tỉ lệ từ chối đúng/sai.
-#### 2.4.3. Xây dựng bộ đánh giá
-- Sinh tổng hợp bằng LLM (Ragas, InPars), câu không trả lời được (SQuAD 2.0), multi-hop, pooling (TREC), độ đồng ý / độ ổn định người gán.
-#### 2.4.4. Thống kê trong đánh giá
-- Khoảng tin cậy, sai số chuẩn theo cụm (Miller 2024), kiểm định ngẫu nhiên hoá ghép cặp, hiệu chỉnh Holm.
+### 2.3. Lý thuyết về cơ sở dữ liệu và công cụ thiết kế
+#### 2.3.1. Cơ sở dữ liệu quan hệ và PostgreSQL
+#### 2.3.2. Cơ sở dữ liệu vector và pgvector
+- Toán tử `<=>`, tìm kiếm chính xác vs HNSW/IVFFlat; SecLearn dùng tìm kiếm chính xác.
+#### 2.3.3. Tìm kiếm toàn văn trong PostgreSQL
+- `tsvector`, `tsquery`, chỉ mục GIN.
+#### 2.3.4. Cấu trúc dữ liệu lưu trữ của hệ thống
+- Document → DocumentChunk, metadata vị trí ký tự.
+#### 2.3.5. Công cụ thiết kế dữ liệu
+- Prisma schema + migration; Mermaid cho ERD và UML.
 
-### 2.5. Các nghiên cứu và giải pháp liên quan
-- Chatbot RAG giáo dục (gồm hai khóa luận mẫu ở NEU), trợ lý bảo mật, bộ đánh giá RAG tiếng Việt hiện có. Nêu hạn chế → khoảng trống đề tài lấp.
+### 2.4. Ngôn ngữ lập trình, thư viện và môi trường cài đặt chương trình
+#### 2.4.1. Ngôn ngữ lập trình
+- TypeScript (ứng dụng), Python (máy chủ embedding, bộ đánh giá).
+#### 2.4.2. Thư viện và framework
+- Next.js 16, React 19, Tailwind 4, Radix/shadcn, next-intl, Auth.js v5, SSE; Prisma 6, SDK `openai`, sentence-transformers, pdf-parse; ranx, ir-measures, Claude, Gemini.
+#### 2.4.3. Môi trường triển khai
+- Docker Compose (Next.js + PostgreSQL 16/pgvector), máy chủ embedding riêng, `.env` kiểm bằng zod.
+#### 2.4.4. Công cụ hỗ trợ phát triển
+- Git, Label Studio, ESLint, tsc, test runner Node.js (`npm run check`).
 
-### 2.6. Công nghệ sử dụng
-#### 2.6.1. Ứng dụng web
-- Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Radix/shadcn, next-intl, Auth.js v5.
-#### 2.6.2. Dữ liệu và AI
-- PostgreSQL 16 + pgvector, Prisma 6; DeepSeek/OpenAI qua SDK `openai`; máy chủ embedding/rerank Python (`scripts/embed_server.py`).
-#### 2.6.3. Bộ đánh giá và triển khai
-- Python + uv, ranx / ir-measures, Label Studio; Docker Compose; Git.
-
-> **Hình/bảng gợi ý:** Hình 2.1 kiến trúc RAG cơ bản; Hình 2.2 bi-encoder vs cross-encoder; Bảng 2.1 tổng hợp độ đo và dạng dữ liệu cần; Bảng 2.2 so sánh nghiên cứu liên quan.
+> **Hình/bảng:** Hình 2.1 bi-encoder vs cross-encoder; Hình 2.2 kiến trúc RAG cơ bản; Bảng 2.1 các độ đo và dữ liệu cần.
 
 ---
 
@@ -156,21 +154,21 @@ Nguồn chính của 3.1–3.6: `Detali-design.md` (đã có sơ đồ Mermaid d
 #### 3.1.1. Tác nhân và phân quyền
 - Khách (giới hạn 10 câu), người học, quản trị; bảng quyền từ `src/lib/permissions.ts` (Bảng 3.1).
 #### 3.1.2. Yêu cầu chức năng
-- Danh sách F01–F… (xác thực, chatbot, RAG, bài học, ôn tập, quản trị) — Bảng 3.2.
+- Danh sách F01–F… (xác thực, chatbot, RAG, bài học, quản trị) — Bảng 3.2.
 #### 3.1.3. Yêu cầu phi chức năng
 - Song ngữ, streaming SSE, bảo mật (bcrypt, JWT kiểm lại 5 phút, mật khẩu mạnh, khóa tài khoản, không tự hạ quyền admin cuối), tái lập cấu hình qua biến `RAG_*`, chạy được bằng mock khi không có API key.
 
 ### 3.2. Mô hình hóa chức năng
 #### 3.2.1. Biểu đồ use case
-- Use case tổng quát (Hình 3.1); đặc tả use case chính: Hỏi trợ lý, Tạo bộ ôn tập, Tải & lập chỉ mục tài liệu, Quản lý người dùng (Bảng 3.3–3.6, theo mẫu bảng đặc tả của khóa luận mẫu).
+- Use case tổng quát (Hình 3.1); đặc tả use case chính: Hỏi trợ lý, Tải & lập chỉ mục tài liệu (Bảng 3.3–3.4, theo mẫu bảng đặc tả của khóa luận mẫu).
 #### 3.2.2. Biểu đồ hoạt động
-- Hỏi đáp (gồm nhánh từ chối), nạp tài liệu PDF, sinh & làm quiz.
+- Hỏi đáp (gồm nhánh từ chối), nạp tài liệu PDF.
 #### 3.2.3. Biểu đồ tuần tự
 - Gửi câu hỏi → plan → retrieve → rerank → generate (stream) → verify → judge; chuyển hội thoại khách vào tài khoản.
 
 ### 3.3. Thiết kế cơ sở dữ liệu
 #### 3.3.1. Mô hình thực thể – quan hệ
-- 11 model Prisma: User, GuestQuota, Conversation, Message, Document, DocumentChunk, Lesson, LessonTranslation, Quiz, Question, QuizAttempt (Hình ERD).
+- 8 model Prisma: User, GuestQuota, Conversation, Message, Document, DocumentChunk, Lesson, LessonTranslation (Hình ERD).
 #### 3.3.2. Đặc tả bảng
 - Bảng thuộc tính cho các bảng chính; nhấn mạnh `DocumentChunk` (vector, tsvector, offset, mức hiển thị `public/authenticated`).
 
@@ -178,7 +176,7 @@ Nguồn chính của 3.1–3.6: `Detali-design.md` (đã có sơ đồ Mermaid d
 #### 3.4.1. Kiến trúc tổng thể
 - Monolith Next.js (UI + API route), Postgres/pgvector, embed/rerank server, nhà cung cấp LLM; provider có thể thay (`*_PROVIDER`), không lặng lẽ fallback mock.
 #### 3.4.2. Thiết kế API
-- Nhóm endpoint `auth`, `chat`, `lessons`, `quizzes`, `admin`; định dạng sự kiện SSE.
+- Nhóm endpoint `auth`, `chat`, `lessons`, `admin`; định dạng sự kiện SSE.
 
 ### 3.5. Thiết kế pipeline RAG (trọng tâm phần ứng dụng)
 #### 3.5.1. Nạp tài liệu và lập chỉ mục
@@ -217,7 +215,7 @@ Nguồn chính của 3.7–3.8: `Dataset/CARD.md`, `docs/EVAL_DATASET_CONSTRUCTI
 #### 3.8.2. Lọc tự động và LLM judge
 - `filter-answer-v1`, `filter-level-v1`; kiểm schema (`check`); thống kê tỉ lệ bị loại (`filter-report.json`).
 #### 3.8.3. Gán nhãn bởi người và pilot
-- Label Studio; hướng dẫn gán nhãn v0 → v1 sau pilot 50 câu; một người gán → đo độ ổn định (gán lại ~100 mẫu sau ≥ 1 tuần) (ADR 0002).
+- Label Studio; hướng dẫn gán nhãn v0 → v1 sau pilot 50 câu; một người gán (ADR 0002); bước gán lại để đo độ ổn định đã bỏ (ADR 0005).
 #### 3.8.4. Pooling và qrels
 - Gộp top-k từ nhiều cấu hình; thang liên quan 0–3; quy tắc chunk liên quan (giao span ≥ 50%).
 #### 3.8.5. Quy chuẩn báo cáo kết quả (đăng ký trước)
@@ -242,7 +240,7 @@ Nguồn chính của 3.7–3.8: `Dataset/CARD.md`, `docs/EVAL_DATASET_CONSTRUCTI
 #### 4.2.1. Thống kê bộ đánh giá
 - Số câu theo split/mức/cụm thực tế; tỉ lệ ứng viên bị lọc ở từng bước; số câu gold vs silver.
 #### 4.2.2. Chất lượng nhãn
-- Kết quả pilot, độ ổn định người gán, tỉ lệ lỗi ước tính trên silver set.
+- Kết quả pilot; không có độ ổn định người gán và κ Gemini × người (ADR 0005).
 
 ### 4.3. Kết quả đánh giá hệ thống
 #### 4.3.1. Thiết lập thực nghiệm
@@ -258,7 +256,7 @@ Nguồn chính của 3.7–3.8: `Dataset/CARD.md`, `docs/EVAL_DATASET_CONSTRUCTI
 #### 4.4.1. Phân tích lỗi
 - Nhóm lỗi điển hình (truy vấn tiếng Việt dịch lệch thuật ngữ, câu L4/L5 cần nhiều đoạn, ngưỡng từ chối quá chặt/lỏng) kèm ví dụ.
 #### 4.4.2. Hạn chế và mối đe dọa tính hợp lệ
-- Một người gán nhãn; câu sinh bởi LLM có thể thiên lệch; bộ đánh giá không đại diện phân bố câu hỏi thật (hạn mức √); qrels thiếu dù có pooling; số đo gắn với một snapshot và một cách chunk.
+- Một người gán nhãn; câu sinh bởi LLM có thể thiên lệch; bộ đánh giá không đại diện phân bố câu hỏi thật (hạn mức √); qrels chỉ từ gold span, 271 chunk Gemini cho 2–3 chưa có người kiểm (ADR 0005); số đo gắn với một snapshot và một cách chunk.
 
 ### 4.5. Tiến độ thực hiện
 - Bảng kế hoạch vs thực tế theo tuần (khóa luận mẫu Phạm Thị Mai có mục này; khoa yêu cầu 12 tuần gặp GVHD).

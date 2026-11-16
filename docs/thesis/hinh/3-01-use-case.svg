@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1010" viewBox="0 0 1500 1010">
+  <defs>
+    <marker id="arrow" viewBox="0 0 14 14" refX="13" refY="7" markerWidth="13" markerHeight="13" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L13,7 L1,13" fill="none" stroke="#000" stroke-width="1.8" stroke-linejoin="miter"/>
+    </marker>
+  </defs>
+  <rect width="1500" height="1010" fill="#fff"/>
+  <rect x="330" y="30" width="840" height="880" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="750" y="70" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="26" font-weight="bold">SecLearn</text>
+  <line x1="172" y1="250" x2="407.0" y2="155.7" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="172" y1="250" x2="395.0" y2="300.0" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="172" y1="250" x2="393.1" y2="449.0" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="172" y1="250" x2="407.0" y2="624.3" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="172" y1="660" x2="407.0" y2="315.7" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="172" y1="660" x2="393.1" y2="491.0" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="172" y1="660" x2="395.0" y2="640.0" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="172" y1="660" x2="407.0" y2="784.3" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="1328" y1="470" x2="1103.0" y2="245.7" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="1328" y1="470" x2="1115.0" y2="470.0" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="1328" y1="470" x2="1103.0" y2="694.3" stroke="#000" stroke-width="1.8" marker-end="url(#arrow)"/>
+  
+  <ellipse cx="560" cy="140" rx="165" ry="42" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold"><tspan x="560" y="148">Đăng ký, đăng nhập</tspan></text>
+  <ellipse cx="560" cy="300" rx="165" ry="42" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold"><tspan x="560" y="308">Hỏi trợ lý</tspan></text>
+  <ellipse cx="560" cy="470" rx="180" ry="56" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold"><tspan x="560" y="463">Xem nguồn và kết quả</tspan><tspan x="560" y="493">kiểm tra trích dẫn</tspan></text>
+  <ellipse cx="560" cy="640" rx="165" ry="42" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold"><tspan x="560" y="648">Xem bài học</tspan></text>
+  <ellipse cx="560" cy="800" rx="165" ry="42" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold"><tspan x="560" y="808">Quản lý hội thoại</tspan></text>
+  <ellipse cx="950" cy="230" rx="165" ry="42" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold"><tspan x="950" y="238">Quản lý người dùng</tspan></text>
+  <ellipse cx="950" cy="470" rx="165" ry="42" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold"><tspan x="950" y="478">Quản lý tài liệu PDF</tspan></text>
+  <ellipse cx="950" cy="710" rx="165" ry="42" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold"><tspan x="950" y="718">Quản lý bài học</tspan></text>
+  
+  <g stroke="#000" stroke-width="2.2" fill="none" stroke-linecap="round">
+    <circle cx="130" cy="198" r="17" fill="#fff"/>
+    <line x1="130" y1="215" x2="130" y2="272"/>
+    <line x1="96" y1="238" x2="164" y2="238"/>
+    <line x1="130" y1="272" x2="102" y2="316"/>
+    <line x1="130" y1="272" x2="158" y2="316"/>
+  </g>
+  <text x="130" y="350" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold">Khách</text>
+  <g stroke="#000" stroke-width="2.2" fill="none" stroke-linecap="round">
+    <circle cx="130" cy="608" r="17" fill="#fff"/>
+    <line x1="130" y1="625" x2="130" y2="682"/>
+    <line x1="96" y1="648" x2="164" y2="648"/>
+    <line x1="130" y1="682" x2="102" y2="726"/>
+    <line x1="130" y1="682" x2="158" y2="726"/>
+  </g>
+  <text x="130" y="760" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold">Người học</text>
+  <g stroke="#000" stroke-width="2.2" fill="none" stroke-linecap="round">
+    <circle cx="1370" cy="418" r="17" fill="#fff"/>
+    <line x1="1370" y1="435" x2="1370" y2="492"/>
+    <line x1="1336" y1="458" x2="1404" y2="458"/>
+    <line x1="1370" y1="492" x2="1342" y2="536"/>
+    <line x1="1370" y1="492" x2="1398" y2="536"/>
+  </g>
+  <text x="1370" y="570" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="24" font-weight="bold">Quản trị viên</text>
+  
+  <polyline points="1370,584 1370,960 130,960 130,794"
+    fill="none" stroke="#000" stroke-width="1.8"/>
+  <polygon points="130,774 119,794 141,794"
+    fill="#fff" stroke="#000" stroke-width="1.8"/>
+  <rect x="688" y="944" width="124" height="32" fill="#fff"/>
+  <text x="750" y="967" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="22" font-style="italic">kế thừa</text>
+</svg>

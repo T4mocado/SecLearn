@@ -1,0 +1,24 @@
+%% Hình 3.2. Biểu đồ hoạt động "Hỏi trợ lý" (Bảng 3.3; Detali-design.md, mục 5.3 và 5.5)
+flowchart TD
+  S(( )) --> A1("Người dùng nhập câu hỏi và gửi")
+  A1 --> D1{" "}
+  D1 -- "[khách đã hết lượt hỏi]" --> X1("Báo lỗi GUEST_LIMIT,<br/>mời đăng nhập")
+  D1 -- "[còn lượt, hoặc đã đăng nhập]" --> A2("Lập kế hoạch truy vấn (một lời gọi LLM)")
+  A2 --> D2{" "}
+  D2 -- "[hỏi về chính hội thoại,<br/>hoặc yêu cầu trình bày lại]" --> B1("LLM trả lời từ lịch sử hội thoại,<br/>không truy xuất")
+  D2 -- "[cần tìm trong tài liệu]" --> A3("Tìm ứng viên theo vector và theo từ khóa")
+  A3 --> A4("Rerank bằng cross-encoder, chọn đoạn theo ngưỡng")
+  A4 --> D3{" "}
+  D3 -- "[không đoạn nào đạt ngưỡng]" --> C1("Trả câu từ chối cố định,<br/>không gọi LLM")
+  D3 -- "[có đoạn đạt ngưỡng]" --> A6("Gửi danh sách đoạn nguồn về trình duyệt")
+  A6 --> A7("LLM sinh câu trả lời có trích dẫn, gửi dần từng phần")
+  A7 --> A8("Kiểm tra trích dẫn bằng cross-encoder")
+  A8 --> A9("LLM chấm mức liên quan của từng đoạn")
+  A9 --> A10("Lưu và hiển thị câu trả lời cùng danh sách đoạn nguồn")
+  B1 --> A10
+  C1 --> A10
+  A10 --> E((( )))
+  X1 --> E
+
+  classDef term fill:#000000,stroke:#000000;
+  class S,E term;

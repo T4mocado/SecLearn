@@ -97,3 +97,15 @@ Khi viết thêm 3.7–3.8 và Chương 4, tài liệu mới đánh số tiếp 
 [45] S. MacAvaney, C. Macdonald, and I. Ounis, "Streamlining evaluation with ir-measures," in Advances in Information Retrieval (ECIR 2022), Lecture Notes in Computer Science, vol. 13186, Springer, 2022, pp. 305–310.
 
 [46] HumanSignal, "Label Studio: Data labeling software." [Online]. Available: https://github.com/HumanSignal/label-studio (truy cập [ngày]).
+
+[47] T. Gebru et al., "Datasheets for datasets," Communications of the ACM, vol. 64, no. 12, pp. 86–92, 2021.
+
+[48] G. Teixeira de Lima et al., "Know your RAG: Dataset taxonomy and generation strategies for evaluating RAG systems," arXiv preprint arXiv:2411.19710, 2024.
+
+[49] J. Chen, S. Xiao, P. Zhang, K. Luo, D. Lian, and Z. Liu, "BGE M3-Embedding: Multi-lingual, multi-functionality, multi-granularity text embeddings through self-knowledge distillation," arXiv preprint arXiv:2402.03216, 2024.
+
+[50] S. Upadhyay, R. Pradeep, N. Thakur, N. Craswell, and J. Lin, "UMBRELA: UMbrela is the (open-source reproduction of the) Bing RELevance Assessor," arXiv preprint arXiv:2406.06519, 2024.
+
+[51] N. Craswell, B. Mitra, E. Yilmaz, D. Campos, and E. M. Voorhees, "Overview of the TREC 2019 deep learning track," arXiv preprint arXiv:2003.07820, 2020.
+
+[52] E. B. Wilson, "Probable inference, the law of succession, and statistical inference," Journal of the American Statistical Association, vol. 22, no. 158, pp. 209–212, 1927.

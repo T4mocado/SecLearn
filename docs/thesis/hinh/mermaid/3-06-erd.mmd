@@ -1,0 +1,72 @@
+%% Hình 3.6. Sơ đồ thực thể – quan hệ (prisma/schema.prisma, 8 bảng).
+%% Chỉ giữ khóa và các cột chính cho vừa trang (bỏ createdAt, updatedAt); đặc tả đủ cột ở Bảng 3.5, 3.6 và Phụ lục E.
+erDiagram
+  User ||--o{ Conversation : "sở hữu"
+  User ||--o{ Document : "tải lên"
+  Conversation ||--o{ Message : "gồm"
+  Document ||--o{ DocumentChunk : "được cắt thành"
+  Lesson ||--|{ LessonTranslation : "có bản dịch"
+
+  User {
+    string id PK
+    string email UK
+    string passwordHash
+    string name
+    Role role
+    Locale preferredLocale
+    datetime disabledAt
+  }
+  GuestQuota {
+    string id PK
+    string guestKey UK
+    int questionCount
+    datetime expiresAt
+  }
+  Conversation {
+    string id PK
+    string userId FK
+    string title
+    Locale locale
+    boolean migratedFromGuest
+  }
+  Message {
+    string id PK
+    string conversationId FK
+    MessageRole role
+    string content
+    json sources
+  }
+  Document {
+    string id PK
+    string uploadedById FK
+    string title
+    string filename
+    string storagePath
+    string markdown
+    DocVisibility visibility
+    DocStatus status
+    string errorMessage
+  }
+  DocumentChunk {
+    string id PK
+    string documentId FK
+    string content
+    int chunkIndex
+    vector embedding
+    tsvector searchText
+    int tokenCount
+  }
+  Lesson {
+    string id PK
+    string slug UK
+    int order
+    boolean published
+  }
+  LessonTranslation {
+    string id PK
+    string lessonId FK
+    Locale locale
+    string title
+    string summary
+    string content
+  }

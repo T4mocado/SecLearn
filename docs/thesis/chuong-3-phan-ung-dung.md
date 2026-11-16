@@ -15,7 +15,7 @@ Chương này gồm hai phần. Các mục 3.1 đến 3.6 phân tích, thiết k
 SecLearn có ba tác nhân:
 
 - Khách: người chưa đăng nhập. Khách xem được bài học và hỏi trợ lý tối đa 10 câu; lịch sử hội thoại chỉ lưu trong trình duyệt.
-- Người học: người đã đăng ký và đăng nhập. Người học được lưu lịch sử hội thoại, tạo và làm bộ ôn tập.
+- Người học: người đã đăng ký và đăng nhập. Người học được lưu và xem lại lịch sử hội thoại.
 - Quản trị viên: có mọi quyền của người học, cộng thêm quyền quản lý người dùng, tài liệu và bài học.
 
 Toàn bộ chính sách phân quyền đặt ở một module duy nhất (`src/lib/permissions.ts`) để các API kiểm tra cùng một nguồn. Bảng 3.1 liệt kê các quyền.
@@ -27,15 +27,14 @@ Bảng 3.1. Phân quyền theo tác nhân
 | Xem bài học | ✔ | ✔ | ✔ |
 | Hỏi trợ lý | ✔ (tối đa 10 câu) | ✔ | ✔ |
 | Lưu và xem lịch sử hội thoại | | ✔ | ✔ |
-| Tạo và làm bộ ôn tập | | ✔ | ✔ |
 | Quản lý người dùng, tài liệu, bài học | | | ✔ |
 | Tài liệu được dùng để trả lời | `public` | `public`, `authenticated` | `public`, `authenticated` |
 
-Ngoài bảng trên có một số quy tắc bổ sung. Một bộ ôn tập chỉ người tạo mở được, trừ khi nó đã được xuất bản. Quản trị viên không được tự khóa tài khoản hay tự đổi vai trò của mình, và không được thực hiện thao tác làm hệ thống không còn quản trị viên nào đang hoạt động. Tài khoản bị khóa bị từ chối ở mọi API; vì phiên lưu bằng JWT, máy chủ đọc lại vai trò và trạng thái khóa của người dùng sau mỗi 5 phút để thay đổi có hiệu lực mà không cần chờ phiên hết hạn.
+Ngoài bảng trên có một số quy tắc bổ sung. Quản trị viên không được tự khóa tài khoản hay tự đổi vai trò của mình, và không được thực hiện thao tác làm hệ thống không còn quản trị viên nào đang hoạt động. Tài khoản bị khóa bị từ chối ở mọi API; vì phiên lưu bằng JWT, máy chủ đọc lại vai trò và trạng thái khóa của người dùng sau mỗi 5 phút để thay đổi có hiệu lực mà không cần chờ phiên hết hạn.
 
 ### 3.1.2. Yêu cầu chức năng
 
-Bảng 3.2 liệt kê 20 chức năng của hệ thống, chia theo nhóm.
+Bảng 3.2 liệt kê 18 chức năng của hệ thống, chia theo nhóm.
 
 Bảng 3.2. Danh sách chức năng
 
@@ -54,22 +53,20 @@ Bảng 3.2. Danh sách chức năng
 | F11 | RAG | Truy xuất lai vector và từ khóa, rerank, ngưỡng liên quan | Hệ thống |
 | F12 | RAG | Trả lời từ chối cố định khi không có đoạn liên quan, không gọi LLM | Hệ thống |
 | F13 | Bài học | Xem danh sách và chi tiết bài học theo ngôn ngữ | Mọi người |
-| F14 | Ôn tập | Sinh bộ câu hỏi trắc nghiệm bằng LLM, có thể dựa trên một hội thoại | Người dùng |
-| F15 | Ôn tập | Làm bài, nộp, chấm điểm, xem lịch sử | Người dùng |
-| F16 | Quản trị | Quản lý người dùng: đổi vai trò, khóa, mở khóa | Quản trị viên |
-| F17 | Quản trị | Quản lý tài liệu: tải nhiều PDF, đặt mức hiển thị, xem file, lập chỉ mục lại, xóa | Quản trị viên |
-| F18 | Quản trị | Nạp tài liệu chạy nền: trích PDF, làm sạch, cắt đoạn, embedding, lưu | Hệ thống |
-| F19 | Quản trị | Quản lý bài học song ngữ: tạo, sửa, xóa, xuất bản | Quản trị viên |
-| F20 | Chung | Đổi ngôn ngữ Việt – Anh, đổi giao diện sáng – tối | Mọi người |
+| F14 | Quản trị | Quản lý người dùng: đổi vai trò, khóa, mở khóa | Quản trị viên |
+| F15 | Quản trị | Quản lý tài liệu: tải nhiều PDF, đặt mức hiển thị, xem file, lập chỉ mục lại, xóa | Quản trị viên |
+| F16 | Quản trị | Nạp tài liệu chạy nền: trích PDF, làm sạch, cắt đoạn, embedding, lưu | Hệ thống |
+| F17 | Quản trị | Quản lý bài học song ngữ: tạo, sửa, xóa, xuất bản | Quản trị viên |
+| F18 | Chung | Đổi ngôn ngữ Việt – Anh, đổi giao diện sáng – tối | Mọi người |
 
 ### 3.1.3. Yêu cầu phi chức năng
 
 - Bám tài liệu: trợ lý chỉ trả lời từ các đoạn tài liệu đã truy xuất; khi không có đoạn liên quan thì từ chối mà không gọi LLM.
 - Phản hồi nhanh về mặt cảm nhận: câu trả lời được gửi dần về trình duyệt bằng Server-Sent Events, danh sách đoạn nguồn hiện trước khi LLM bắt đầu trả lời.
 - Song ngữ: toàn bộ giao diện và thông báo lỗi có bản tiếng Việt và tiếng Anh.
-- Bảo mật: mật khẩu tối thiểu 8 ký tự, có chữ hoa, chữ thường, chữ số và ký tự đặc biệt, băm bằng bcrypt; mọi dữ liệu đầu vào của API được kiểm tra bằng lược đồ zod; API chỉ trả dữ liệu thuộc về người gọi (hội thoại của người khác trả 404); đáp án đúng của bộ ôn tập không gửi về trình duyệt trước khi nộp bài.
+- Bảo mật: mật khẩu tối thiểu 8 ký tự, có chữ hoa, chữ thường, chữ số và ký tự đặc biệt, băm bằng bcrypt; mọi dữ liệu đầu vào của API được kiểm tra bằng lược đồ zod; API chỉ trả dữ liệu thuộc về người gọi (hội thoại của người khác trả 404).
 - Đổi được nhà cung cấp: LLM và embedding chọn bằng biến môi trường; khi chọn nhà cung cấp thật mà thiếu khóa API, hệ thống báo lỗi rõ ràng thay vì âm thầm chuyển sang dữ liệu giả.
-- Đo được: các tham số của pipeline RAG đều là biến môi trường có giá trị mặc định (Bảng 3.9), để mỗi lượt đo ghi lại được cấu hình chính xác.
+- Đo được: các tham số của pipeline RAG đều là biến môi trường có giá trị mặc định (Bảng 3.8), để mỗi lượt đo ghi lại được cấu hình chính xác.
 - Chạy thử được khi không có khóa API: đặt nhà cung cấp là `mock` thì LLM trả câu trả lời mẫu và embedding dùng vector băm, đủ để kiểm tra giao diện.
 
 ## 3.2. Mô hình hóa chức năng
@@ -78,9 +75,9 @@ Bảng 3.2. Danh sách chức năng
 
 Hình 3.1 là biểu đồ use case tổng quát. Quản trị viên kế thừa mọi use case của người học.
 
-[HÌNH] Hình 3.1. Biểu đồ use case tổng quát của SecLearn (nguồn: `Detali-design.md`, mục 2.3).
+[HÌNH: hinh/3-01-use-case.png] Hình 3.1. Biểu đồ use case tổng quát của SecLearn.
 
-Các bảng 3.3 đến 3.5 đặc tả ba use case chính. Đặc tả các use case còn lại nằm ở Phụ lục E.
+Bảng 3.3 và Bảng 3.4 đặc tả hai use case chính. Đặc tả các use case còn lại nằm ở Phụ lục E.
 
 Bảng 3.3. Đặc tả use case "Hỏi trợ lý"
 
@@ -106,57 +103,44 @@ Bảng 3.4. Đặc tả use case "Tải tài liệu PDF"
 | Ngoại lệ | File không phải PDF: lỗi `ONLY_PDF` |
 | Hậu điều kiện | Các đoạn của tài liệu tìm kiếm được khi người dùng hỏi |
 
-Bảng 3.5. Đặc tả use case "Tạo và làm bộ ôn tập"
-
-| Mục | Nội dung |
-|---|---|
-| Tác nhân | Người học, quản trị viên |
-| Mô tả | Người dùng yêu cầu LLM sinh bộ câu hỏi trắc nghiệm, làm bài và xem điểm |
-| Tiền điều kiện | Đã đăng nhập |
-| Luồng chính | 1. Người dùng chọn tạo bộ ôn tập, có thể chọn một hội thoại làm nguồn hoặc nhập gợi ý chủ đề. 2. Hệ thống lấy 12 tin nhắn gần nhất của hội thoại (nếu có) và gọi LLM ở chế độ trả JSON. 3. Hệ thống lưu bộ ôn tập và mở trang làm bài. 4. Người dùng chọn đáp án và nộp. 5. Hệ thống chấm điểm theo phần trăm câu đúng, lưu lần làm bài và trả kết quả từng câu |
-| Ngoại lệ | Hội thoại không thuộc người gọi: 404. Lỗi LLM: lỗi song ngữ |
-| Hậu điều kiện | Lần làm bài xuất hiện trong lịch sử |
-
 ### 3.2.2. Biểu đồ hoạt động
 
-Hình 3.2 mô tả hoạt động hỏi trợ lý, gồm nhánh trả lời từ lịch sử và nhánh từ chối. Hình 3.3 mô tả hoạt động nạp tài liệu PDF, gồm nhánh thử lại từng đoạn khi tạo embedding lỗi. Hình 3.4 mô tả hoạt động tạo và làm bộ ôn tập.
+Hình 3.2 mô tả hoạt động hỏi trợ lý, gồm nhánh trả lời từ lịch sử và nhánh từ chối. Hình 3.3 mô tả hoạt động nạp tài liệu PDF, gồm nhánh thử lại từng đoạn khi tạo embedding lỗi.
 
-[HÌNH] Hình 3.2. Biểu đồ hoạt động "Hỏi trợ lý".
+[HÌNH: hinh/3-02-hoat-dong-hoi-tro-ly.png] Hình 3.2. Biểu đồ hoạt động "Hỏi trợ lý".
 
-[HÌNH] Hình 3.3. Biểu đồ hoạt động "Nạp tài liệu PDF".
-
-[HÌNH] Hình 3.4. Biểu đồ hoạt động "Tạo và làm bộ ôn tập".
+[HÌNH: hinh/3-03-hoat-dong-nap-tai-lieu.png] Hình 3.3. Biểu đồ hoạt động "Nạp tài liệu PDF".
 
 ### 3.2.3. Biểu đồ tuần tự
 
-Hình 3.5 là biểu đồ tuần tự của luồng chính khi người đã đăng nhập hỏi trợ lý. Máy chủ nạp tối đa 200 tin nhắn gần nhất của hội thoại, lưu câu hỏi, rồi gọi hàm điều phối trả lời. Hàm này lập kế hoạch truy vấn, truy xuất các đoạn và gọi LLM. Trong lúc LLM sinh câu trả lời, máy chủ gửi về trình duyệt lần lượt các sự kiện SSE: `sources` (danh sách đoạn), nhiều sự kiện `token`, `sources` (kèm kết quả kiểm tra trích dẫn), `sources` (kèm điểm của LLM chấm) và `done`. Câu trả lời được lưu cùng danh sách đoạn cuối cùng.
+Hình 3.4 là biểu đồ tuần tự của luồng chính khi người đã đăng nhập hỏi trợ lý. Máy chủ nạp tối đa 200 tin nhắn gần nhất của hội thoại, lưu câu hỏi, rồi gọi hàm điều phối trả lời. Hàm này lập kế hoạch truy vấn, truy xuất các đoạn và gọi LLM. Trong lúc LLM sinh câu trả lời, máy chủ gửi về trình duyệt lần lượt các sự kiện SSE: `sources` (danh sách đoạn), nhiều sự kiện `token`, `sources` (kèm kết quả kiểm tra trích dẫn), `sources` (kèm điểm của LLM chấm) và `done`. Câu trả lời được lưu cùng danh sách đoạn cuối cùng.
 
-[HÌNH] Hình 3.5. Biểu đồ tuần tự "Người dùng hỏi trợ lý" (nguồn: `Detali-design.md`, mục 5.5).
+[HÌNH: hinh/3-04-tuan-tu-hoi-tro-ly.png] Hình 3.4. Biểu đồ tuần tự "Người dùng hỏi trợ lý".
 
-Hình 3.6 là biểu đồ tuần tự chuyển hội thoại của khách vào tài khoản. Khi khách đăng nhập, giao diện đọc bản nháp trong `localStorage`, gửi tối đa 40 tin nhắn lên máy chủ; máy chủ tạo hội thoại mới đánh dấu là chuyển từ khách, xóa bản ghi hạn mức của khách và cookie tương ứng.
+Hình 3.5 là biểu đồ tuần tự chuyển hội thoại của khách vào tài khoản. Khi khách đăng nhập, giao diện đọc bản nháp trong `localStorage`, gửi tối đa 40 tin nhắn lên máy chủ; máy chủ tạo hội thoại mới đánh dấu là chuyển từ khách, xóa bản ghi hạn mức của khách và cookie tương ứng.
 
-[HÌNH] Hình 3.6. Biểu đồ tuần tự "Chuyển hội thoại khách vào tài khoản" (nguồn: `Detali-design.md`, mục 5.4).
+[HÌNH: hinh/3-05-tuan-tu-chuyen-hoi-thoai.png] Hình 3.5. Biểu đồ tuần tự "Chuyển hội thoại khách vào tài khoản".
 
 ## 3.3. Thiết kế cơ sở dữ liệu
 
 ### 3.3.1. Mô hình thực thể – quan hệ
 
-Cơ sở dữ liệu gồm 11 bảng, định nghĩa trong lược đồ Prisma (`prisma/schema.prisma`). Hình 3.7 là sơ đồ thực thể – quan hệ. Các bảng chia thành bốn nhóm:
+Cơ sở dữ liệu gồm 8 bảng, định nghĩa trong lược đồ Prisma (`prisma/schema.prisma`). Hình 3.6 là sơ đồ thực thể – quan hệ. Các bảng chia thành bốn nhóm:
 
 - Người dùng: `User` và `GuestQuota` (hạn mức câu hỏi của khách, khóa theo một UUID lưu trong cookie, hết hạn sau 7 ngày).
 - Hội thoại: `Conversation` và `Message`. Mỗi tin nhắn của trợ lý lưu kèm trường `sources` dạng JSON, chứa bản sao nội dung các đoạn đã dùng, điểm rerank, kết quả kiểm tra trích dẫn và điểm của LLM chấm. Vì lưu bản sao, câu trả lời cũ vẫn xem được nguồn khi tài liệu bị lập chỉ mục lại hoặc bị xóa.
 - Tài liệu: `Document` và `DocumentChunk`. Mỗi đoạn có cột `embedding` kiểu `vector(768)` của pgvector và cột `searchText` kiểu `tsvector` cho tìm kiếm từ khóa.
-- Học tập: `Lesson` và `LessonTranslation` (mỗi bài học có một bản dịch cho mỗi ngôn ngữ), `Quiz`, `Question` và `QuizAttempt`.
+- Bài học: `Lesson` và `LessonTranslation` (mỗi bài học có một bản dịch cho mỗi ngôn ngữ).
 
-[HÌNH] Hình 3.7. Sơ đồ thực thể – quan hệ (nguồn: `Detali-design.md`, mục 4.1).
+[HÌNH: hinh/3-06-erd.png] Hình 3.6. Sơ đồ thực thể – quan hệ.
 
-Các khóa ngoại dùng `ON DELETE CASCADE`, nên xóa một tài liệu thì các đoạn của nó bị xóa theo, xóa một hội thoại thì các tin nhắn bị xóa theo. Riêng khóa ngoại từ bộ ôn tập tới hội thoại nguồn dùng `ON DELETE SET NULL`, để xóa hội thoại không làm mất bộ ôn tập.
+Các khóa ngoại dùng `ON DELETE CASCADE`, nên xóa một tài liệu thì các đoạn của nó bị xóa theo, xóa một hội thoại thì các tin nhắn bị xóa theo.
 
 ### 3.3.2. Đặc tả bảng
 
-Bảng 3.6 và Bảng 3.7 đặc tả hai bảng chính của phần RAG. Đặc tả đầy đủ cả 11 bảng nằm ở Phụ lục E.
+Bảng 3.5 và Bảng 3.6 đặc tả hai bảng chính của phần RAG. Đặc tả đầy đủ cả 8 bảng nằm ở Phụ lục E.
 
-Bảng 3.6. Đặc tả bảng `Document`
+Bảng 3.5. Đặc tả bảng `Document`
 
 | Cột | Kiểu | Ràng buộc | Mô tả |
 |---|---|---|---|
@@ -172,7 +156,7 @@ Bảng 3.6. Đặc tả bảng `Document`
 | uploadedById | text | Khóa ngoại tới `User` | Người tải lên |
 | createdAt, updatedAt | timestamp | | |
 
-Bảng 3.7. Đặc tả bảng `DocumentChunk`
+Bảng 3.6. Đặc tả bảng `DocumentChunk`
 
 | Cột | Kiểu | Ràng buộc | Mô tả |
 |---|---|---|---|
@@ -192,14 +176,14 @@ Số chiều của cột `embedding` đã đổi nhiều lần theo mô hình em
 
 ### 3.4.1. Kiến trúc tổng thể
 
-SecLearn là một ứng dụng Next.js nguyên khối: cùng một tiến trình Node.js phục vụ giao diện và API. Hình 3.8 là sơ đồ thành phần. Hệ thống gồm bốn khối:
+SecLearn là một ứng dụng Next.js nguyên khối: cùng một tiến trình Node.js phục vụ giao diện và API. Hình 3.7 là sơ đồ thành phần. Hệ thống gồm bốn khối:
 
 - Trình duyệt: giao diện React; với khách, lịch sử hội thoại lưu trong `localStorage`.
 - Máy chủ Next.js (cổng 3847): middleware chọn ngôn ngữ theo đường dẫn, Auth.js xác thực, các route handler của API, các module nghiệp vụ trong `src/lib` và một hàng đợi nạp tài liệu chạy trong bộ nhớ với số worker đặt bằng `INGEST_CONCURRENCY` (mặc định 2).
 - PostgreSQL 16 có pgvector: lưu toàn bộ dữ liệu ứng dụng và vector.
 - Dịch vụ bên ngoài: máy chủ embedding và rerank viết bằng Python (cổng 8008), và API của nhà cung cấp LLM.
 
-[HÌNH] Hình 3.8. Sơ đồ thành phần của SecLearn (nguồn: `Detali-design.md`, mục 3.1).
+[HÌNH: hinh/3-07-thanh-phan.png] Hình 3.7. Sơ đồ thành phần của SecLearn.
 
 Máy chủ embedding cung cấp hai endpoint: `POST /` nhận một hoặc nhiều đoạn văn và trả vector đã chuẩn hóa, `POST /rerank` nhận các cặp (truy vấn, đoạn văn) và trả điểm liên quan từ 0 đến 1. Mô hình embedding và mô hình rerank được tách khỏi ứng dụng Next.js vì chúng chạy bằng Python và cần tải trọng số mô hình một lần khi khởi động.
 
@@ -207,25 +191,24 @@ Truy cập LLM và embedding đi qua hai module adapter (`llm.ts`, `embed.ts`). 
 
 ### 3.4.2. Thiết kế API
 
-API gồm 34 endpoint, chia thành năm nhóm (Bảng 3.8). Mọi endpoint nhận và trả JSON, trừ endpoint tải file (multipart) và hai endpoint hỏi trợ lý (trả luồng SSE). Lỗi có định dạng chung gồm thông điệp, mã lỗi và, với lỗi cấu hình hoặc lỗi nhà cung cấp, thêm thông điệp tiếng Việt và tiếng Anh.
+API gồm 29 endpoint, chia thành bốn nhóm (Bảng 3.7). Mọi endpoint nhận và trả JSON, trừ endpoint tải file (multipart) và hai endpoint hỏi trợ lý (trả luồng SSE). Lỗi có định dạng chung gồm thông điệp, mã lỗi và, với lỗi cấu hình hoặc lỗi nhà cung cấp, thêm thông điệp tiếng Việt và tiếng Anh.
 
-Bảng 3.8. Các nhóm API
+Bảng 3.7. Các nhóm API
 
 | Nhóm | Đường dẫn | Số endpoint | Quyền |
 |---|---|---|---|
 | Xác thực | `/api/auth/*` | 4 | Công khai, người dùng |
 | Trợ lý | `/api/chat/*` | 8 | Khách, người dùng (chủ hội thoại) |
 | Bài học | `/api/lessons/*` | 2 | Công khai |
-| Ôn tập | `/api/quizzes/*` | 5 | Người dùng |
 | Quản trị | `/api/admin/*` | 15 | Quản trị viên |
 
 Luồng SSE của trợ lý gồm năm loại sự kiện. `sources` mang danh sách đoạn và được gửi ba lần: trước câu trả lời, sau khi kiểm tra trích dẫn và sau khi LLM chấm. `token` mang từng phần câu trả lời. `done` báo kết thúc, và `error` báo lỗi giữa chừng. Cách gửi danh sách đoạn nhiều lần cho phép giao diện hiện nguồn ngay, rồi bổ sung kết quả kiểm tra khi có, mà không phải chờ bước chậm nhất. Đặc tả chi tiết từng endpoint nằm ở Phụ lục E.
 
 ## 3.5. Thiết kế pipeline RAG
 
-Hình 3.9 là sơ đồ tổng thể của pipeline RAG trong SecLearn. Pipeline gồm hai phần: phần lập chỉ mục chạy khi quản trị viên tải tài liệu lên (mục 3.5.1), và phần trả lời chạy cho mỗi câu hỏi, gồm lập kế hoạch truy vấn (3.5.2), truy xuất và rerank (3.5.3), sinh và kiểm tra câu trả lời (3.5.4).
+Hình 3.8 là sơ đồ tổng thể của pipeline RAG trong SecLearn. Pipeline gồm hai phần: phần lập chỉ mục chạy khi quản trị viên tải tài liệu lên (mục 3.5.1), và phần trả lời chạy cho mỗi câu hỏi, gồm lập kế hoạch truy vấn (3.5.2), truy xuất và rerank (3.5.3), sinh và kiểm tra câu trả lời (3.5.4).
 
-[HÌNH] Hình 3.9. Pipeline RAG của SecLearn: lập chỉ mục (PDF → làm sạch → Markdown → cắt đoạn → embedding → pgvector, tsvector) và trả lời (kế hoạch truy vấn → tìm vector và từ khóa → rerank → chọn theo ngưỡng → sinh câu trả lời → kiểm tra trích dẫn → LLM chấm).
+[HÌNH: hinh/3-08-pipeline-rag.png] Hình 3.8. Pipeline RAG của SecLearn: lập chỉ mục (PDF → làm sạch → Markdown → cắt đoạn → embedding → pgvector, tsvector) và trả lời (kế hoạch truy vấn → tìm vector và từ khóa → rerank → chọn theo ngưỡng → sinh câu trả lời → kiểm tra trích dẫn → LLM chấm).
 
 Thiết kế hiện tại là kết quả của nhiều vòng sửa lỗi. Trong quá trình phát triển, mỗi lỗi phát hiện khi dùng thử được ghi vào nhật ký lỗi của dự án (`docs/ERRORS.md`, 36 mục) cùng nguyên nhân và cách sửa. Các mục dưới đây nêu lý do của từng quyết định khi lý do đó đến từ một lỗi cụ thể.
 
@@ -274,9 +257,9 @@ Chọn theo ngưỡng. Hàm chọn áp các quy tắc sau theo thứ tự:
 5. Với HyDE, đoạn được xếp hạng theo điểm cao hơn giữa điểm với câu hỏi và điểm với đoạn giả định, nhưng mức liên quan vẫn quyết định bằng điểm với câu hỏi: đoạn chỉ được nới ngưỡng tương đối khi điểm với đoạn giả định từ 0,5 trở lên và điểm với câu hỏi từ 0,05 trở lên. Khi thử chỉ dùng điểm với đoạn giả định, các câu hỏi ngoài tài liệu vẫn giữ lại 3 đến 5 đoạn không liên quan.
 6. Với câu hỏi so sánh, mỗi ô (đối tượng, khía cạnh) được dành trước đoạn mà nó chấm cao nhất và chưa ô nào lấy, hai đoạn mỗi ô khi có tối đa 3 ô, một đoạn mỗi ô khi nhiều hơn; tổng số đoạn tối đa là 8. Trước khi có quy tắc này, câu hỏi so sánh 6 ô chỉ có 5 chỗ, và nhiều ô cùng lấy một đoạn định nghĩa.
 
-Các ngưỡng được thể hiện thành biến môi trường để có thể đo và điều chỉnh trên tập dev của bộ đánh giá. Bảng 3.9 tóm tắt các tham số chính và giá trị mặc định.
+Các ngưỡng đều là biến môi trường, để đo và chỉnh được trên tập dev của bộ đánh giá. Bảng 3.8 tóm tắt các tham số chính và giá trị mặc định.
 
-Bảng 3.9. Tham số chính của pipeline RAG
+Bảng 3.8. Tham số chính của pipeline RAG
 
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
@@ -310,32 +293,29 @@ Kết quả của hai bước kiểm tra được gửi về trình duyệt ngay
 
 ### 3.6.1. Môi trường và cấu hình
 
-Hệ thống được đóng gói bằng Docker Compose với hai dịch vụ: ứng dụng Next.js (cổng 3847) và PostgreSQL 16 có pgvector (cổng 5432), cùng các volume cho file tải lên và bộ nhớ đệm mô hình. Máy chủ embedding và rerank chạy riêng bằng lệnh `python scripts/embed_server.py` (cổng 8008), dùng GPU nếu có.
+Hệ thống được đóng gói bằng Docker Compose và gồm hai dịch vụ. Dịch vụ thứ nhất là ứng dụng Next.js, chạy ở cổng 3847. Dịch vụ thứ hai là PostgreSQL 16 có pgvector, chạy ở cổng 5432. Compose khai báo thêm các volume cho file tải lên và bộ nhớ đệm mô hình. Máy chủ embedding và rerank chạy riêng bằng lệnh `python scripts/embed_server.py` ở cổng 8008, và dùng GPU nếu máy có.
 
-Cấu hình đặt trong file `.env` và được kiểm tra bằng lược đồ zod khi khởi động (`src/lib/env.ts`); giá trị sai kiểu làm ứng dụng dừng ngay với thông báo rõ ràng. Các khóa API chỉ nằm trong `.env`, không đưa vào Git; file `.env.example` chứa giá trị giữ chỗ. Cấu hình dùng khi xây dựng corpus và bộ đánh giá là: LLM DeepSeek `deepseek-flash`, embedding BKAI 768 chiều qua máy chủ cục bộ, rerank `bge-reranker-v2-m3`, các tham số RAG theo Bảng 3.9.
+Cấu hình đặt trong file `.env`. Khi khởi động, ứng dụng kiểm tra file này bằng một lược đồ zod (`src/lib/env.ts`); nếu có giá trị sai kiểu, ứng dụng dừng ngay và đưa ra thông báo rõ ràng. Các khóa API chỉ nằm trong `.env` và không được đưa vào Git; file `.env.example` chỉ chứa giá trị giữ chỗ. Khi xây dựng corpus và bộ đánh giá, em dùng LLM DeepSeek `deepseek-flash`, mô hình embedding BKAI 768 chiều chạy qua máy chủ cục bộ, mô hình rerank `bge-reranker-v2-m3` và các tham số RAG trong Bảng 3.8.
 
-Các bước triển khai như sau:
+Việc triển khai gồm bốn bước:
 
-1. Sao chép `.env.example` thành `.env` và điền khóa API.
-2. Tạo lược đồ cơ sở dữ liệu bằng `prisma db push` (hoặc `prisma migrate deploy`), rồi chạy `prisma/seed.ts` để tạo tài khoản quản trị từ biến `ADMIN_EMAIL`, `ADMIN_PASSWORD` và các bài học mẫu.
-3. Khởi động máy chủ embedding, rồi khởi động ứng dụng bằng `docker compose up --build` (hoặc `npm run dev` khi phát triển).
-4. Đăng nhập bằng tài khoản quản trị và tải các file PDF của corpus lên; hoặc chạy `npm run db:reindex` để lập chỉ mục lại toàn bộ tài liệu đã có.
+1. Sao chép `.env.example` thành `.env` rồi điền các khóa API.
+2. Tạo lược đồ cơ sở dữ liệu bằng `prisma db push` (hoặc `prisma migrate deploy`). Sau đó chạy `prisma/seed.ts` để tạo tài khoản quản trị, lấy từ hai biến `ADMIN_EMAIL` và `ADMIN_PASSWORD`, cùng các bài học mẫu.
+3. Khởi động máy chủ embedding trước, rồi khởi động ứng dụng bằng `docker compose up --build`. Khi phát triển thì dùng `npm run dev`.
+4. Đăng nhập bằng tài khoản quản trị và tải các file PDF của corpus lên. Với các tài liệu đã có, có thể chạy `npm run db:reindex` để lập chỉ mục lại toàn bộ.
 
-Khi lập chỉ mục lại, máy chủ embedding phải đang chạy: bước nạp xóa các đoạn cũ trước khi tạo embedding, nên nếu máy chủ embedding tắt, tài liệu sẽ chuyển sang `failed` và không còn đoạn nào. Sự cố này đã xảy ra một lần trong quá trình làm khóa luận và được khắc phục bằng cách lập chỉ mục lại.
+Khi lập chỉ mục lại, máy chủ embedding phải đang chạy. Lý do là bước nạp xóa các đoạn cũ trước rồi mới tạo embedding, nên nếu máy chủ embedding tắt, tài liệu sẽ chuyển sang `failed` và không còn đoạn nào. Em đã gặp sự cố này một lần trong quá trình làm khóa luận và khắc phục bằng cách lập chỉ mục lại.
 
 ### 3.6.2. Kiểm thử phần mềm
 
-Ứng dụng có 8 file kiểm thử đơn vị (chạy bằng `npm test`, dùng trình chạy test có sẵn của Node.js qua tsx), tập trung vào các module có logic dễ sai:
+Ứng dụng có 8 file kiểm thử đơn vị, chạy bằng `npm test` với trình chạy test có sẵn của Node.js qua tsx. Các file này tập trung vào những module có logic dễ sai.
 
-- `chunking.test.ts`: bỏ menu và chân trang website, thêm tiêu đề cho test case WSTG, cắt đoạn tại cuối câu, gắn tiêu đề mục, chồng lấp bằng câu trọn vẹn, vị trí ký tự của đoạn.
-- `retrieval.test.ts`: các quy tắc chọn đoạn theo ngưỡng ở mục 3.5.3.
-- `grounding.test.ts`: lời nhắc cấm dùng kiến thức ngoài và yêu cầu trích dẫn, câu từ chối, đánh số câu hỏi, nhận diện câu trả lời từ chối.
-- `remark-citations.test.ts`: phát hiện và đánh dấu câu khẳng định không có trích dẫn.
-- `judge.test.ts`: gắn điểm của LLM chấm vào từng đoạn, bỏ qua khi bước chấm bị tắt.
-- `sources.test.ts`: chỉ cho mở file nằm trong thư mục tải lên, tên file tiếng Việt khi trả về trình duyệt.
-- `permissions.test.ts`: bảng phân quyền và các quy tắc về quản trị viên cuối cùng.
-- `snapshot.test.ts`: xuất bản đóng băng của corpus cho bộ đánh giá.
+Ở bước nạp tài liệu, `chunking.test.ts` kiểm tra việc bỏ menu và chân trang website, thêm tiêu đề cho test case WSTG, cắt đoạn tại cuối câu, gắn tiêu đề mục, chồng lấp bằng câu trọn vẹn và vị trí ký tự của đoạn.
 
-Ngoài kiểm thử đơn vị, dự án có kiểm tra kiểu (`npm run typecheck`), kiểm tra mã (`npm run lint`) và hai script kiểm tra nhanh. Script `smoke-retrieval.ts` chạy bộ 40 câu hỏi mẫu qua đúng hàm truy xuất của ứng dụng và báo tỉ lệ tìm được đoạn bằng chứng; script này được dùng để so trước và sau lần lập chỉ mục lại ở mục 3.5.1.
+Phần truy xuất và trả lời có bốn file. `retrieval.test.ts` kiểm tra các quy tắc chọn đoạn theo ngưỡng ở mục 3.5.3. `grounding.test.ts` kiểm tra lời nhắc (cấm dùng kiến thức ngoài, yêu cầu trích dẫn), câu từ chối, cách đánh số câu hỏi và việc nhận diện câu trả lời từ chối. `remark-citations.test.ts` kiểm tra việc phát hiện và đánh dấu câu khẳng định không có trích dẫn. `judge.test.ts` kiểm tra việc gắn điểm của LLM chấm vào từng đoạn, và việc bỏ qua bước này khi bước chấm bị tắt.
 
-Cuối cùng, script `export-snapshot.ts` xuất bản đóng băng của corpus (snapshot) gồm văn bản Markdown của từng tài liệu, mã băm sha256 và danh sách đoạn kèm vị trí ký tự. Snapshot là ranh giới duy nhất giữa ứng dụng và bộ đánh giá: bộ đánh giá trình bày ở mục 3.7 và 3.8 chỉ đọc snapshot, không đọc mã nguồn hay cơ sở dữ liệu của ứng dụng.
+Hai file kiểm tra quyền truy cập. `sources.test.ts` kiểm tra rằng chỉ file nằm trong thư mục tải lên mới được mở, và kiểm tra tên file tiếng Việt khi trả về trình duyệt. `permissions.test.ts` kiểm tra bảng phân quyền và các quy tắc về quản trị viên cuối cùng. File còn lại, `snapshot.test.ts`, kiểm tra việc xuất bản đóng băng của corpus cho bộ đánh giá.
+
+Ngoài kiểm thử đơn vị, dự án còn kiểm tra kiểu bằng `npm run typecheck`, kiểm tra mã bằng `npm run lint` và có hai script kiểm tra nhanh. Script `smoke-retrieval.ts` chạy bộ 40 câu hỏi mẫu qua đúng hàm truy xuất của ứng dụng rồi báo tỉ lệ tìm được đoạn bằng chứng. Em dùng script này để so kết quả trước và sau lần lập chỉ mục lại ở mục 3.5.1.
+
+Cuối cùng, script `export-snapshot.ts` xuất bản đóng băng của corpus (snapshot), gồm văn bản Markdown của từng tài liệu, mã băm sha256 và danh sách đoạn kèm vị trí ký tự. Snapshot là ranh giới duy nhất giữa ứng dụng và bộ đánh giá: bộ đánh giá ở mục 3.7 và 3.8 chỉ đọc snapshot, không đọc mã nguồn hay cơ sở dữ liệu của ứng dụng.

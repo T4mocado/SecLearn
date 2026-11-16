@@ -1,0 +1,42 @@
+%% Hình 3.5. Biểu đồ tuần tự "Người dùng hỏi trợ lý" (rút gọn từ Detali-design.md, mục 5.5)
+sequenceDiagram
+  actor U as Người dùng
+  participant C as Giao diện
+  participant R as API tin nhắn
+  participant CA as Điều phối trả lời
+  participant E as Máy chủ embedding, rerank
+  participant L as LLM
+  participant DB as PostgreSQL
+
+  U->>C: Gửi câu hỏi
+  C->>R: { content, locale }
+  R->>DB: Nạp hội thoại và 200 tin nhắn gần nhất
+  R->>DB: Lưu câu hỏi
+  R->>CA: answerQuestion
+  CA->>L: Lập kế hoạch truy vấn
+  L-->>CA: Ý định, truy vấn tiếng Anh, HyDE
+  alt Ý định là hỏi về chính hội thoại
+    CA->>L: Trả lời từ lịch sử, không dùng tài liệu
+  else Ý định là tìm trong tài liệu
+    CA->>E: Tạo embedding cho các truy vấn
+    CA->>DB: Tìm theo vector và theo từ khóa
+    CA->>E: Rerank các cặp (truy vấn, đoạn)
+    Note over CA: Chọn đoạn theo ngưỡng
+    alt Không có đoạn đạt ngưỡng
+      CA-->>R: Câu từ chối cố định
+    else Có đoạn đạt ngưỡng
+      CA->>L: Sinh câu trả lời từ các đoạn
+    end
+  end
+  R-->>C: SSE sources (danh sách đoạn)
+  loop Mỗi phần câu trả lời
+    L-->>R: token
+    R-->>C: SSE token
+  end
+  R->>E: Kiểm tra trích dẫn
+  R-->>C: SSE sources (kèm kết quả kiểm tra)
+  R->>L: Chấm mức liên quan của từng đoạn
+  R-->>C: SSE sources (kèm điểm LLM chấm)
+  R->>DB: Lưu câu trả lời và danh sách đoạn
+  R-->>C: SSE done
+  C-->>U: Câu trả lời và panel nguồn

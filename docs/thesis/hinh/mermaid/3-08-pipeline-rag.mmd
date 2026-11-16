@@ -1,0 +1,27 @@
+%% Hình 3.9. Pipeline RAG của SecLearn (mục 3.5.1–3.5.4)
+flowchart TB
+  subgraph IDX["Lập chỉ mục (khi quản trị viên tải tài liệu lên)"]
+    direction LR
+    I1["File PDF"] --> I2["Trích văn bản<br/>và làm sạch"] --> I3["Markdown"] --> I4["Cắt đoạn<br/>800 ký tự"] --> I5["Embedding<br/>768 chiều"]
+  end
+
+  DB[("PostgreSQL + pgvector<br/>đoạn · vector · tsvector")]
+
+  subgraph ANS["Trả lời (cho mỗi câu hỏi)"]
+    direction TB
+    Q0["Câu hỏi và lịch sử hội thoại"] --> Q1["Lập kế hoạch truy vấn<br/>ý định · truy vấn tiếng Anh · HyDE · so sánh"]
+    Q1 --> R1["Tìm theo vector<br/>(cosine, 20 đoạn mỗi truy vấn)"]
+    Q1 --> R2["Tìm theo từ khóa<br/>(tsvector, 10 đoạn)"]
+    R1 --> R3["Rerank bằng cross-encoder"]
+    R2 --> R3
+    R3 --> R5["Chọn đoạn theo ngưỡng (tối đa 5 đoạn)"]
+    R5 --> R4{" "}
+    R4 -- "[không đoạn nào đạt]" --> G0["Câu từ chối cố định<br/>(không gọi LLM)"]
+    R4 -- "[có đoạn đạt]" --> G1["LLM sinh câu trả lời<br/>có trích dẫn [n]"]
+    G1 --> G2["Kiểm tra trích dẫn<br/>(cross-encoder)"]
+    G2 --> G3["LLM chấm từng đoạn<br/>(0–100)"]
+  end
+
+  IDX --> DB
+  DB --> R1
+  DB --> R2

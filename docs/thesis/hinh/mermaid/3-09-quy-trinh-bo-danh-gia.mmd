@@ -1,0 +1,19 @@
+%% Hình 3.10. Quy trình xây dựng bộ đánh giá (mục 3.7–3.8)
+flowchart TB
+  subgraph P1["Chuẩn bị"]
+    direction LR
+    S1["Snapshot corpus"] --> S2["Đơn vị lấy mẫu<br/>và cụm chủ đề"] --> S3["Kế hoạch<br/>hạn mức"]
+  end
+  subgraph P2["Tạo câu hỏi"]
+    direction LR
+    S4["Sinh ứng viên<br/>bằng LLM"] --> S5["Lọc tự động<br/>(6 bước)"] --> S6["Người duyệt,<br/>bôi gold span"]
+  end
+  subgraph P3["Nhãn liên quan"]
+    direction LR
+    S7["Pool và<br/>LLM chấm"] --> S8["Qrels"] --> S9["Kiểm tra"]
+  end
+  subgraph P4["Đo và công bố"]
+    direction LR
+    S10["Chấm điểm<br/>và báo cáo"] --> S11["Dataset card"]
+  end
+  P1 --> P2 --> P3 --> P4

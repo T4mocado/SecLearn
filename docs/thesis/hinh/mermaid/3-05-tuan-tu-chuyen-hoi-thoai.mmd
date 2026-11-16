@@ -1,0 +1,20 @@
+%% Hình 3.6. Biểu đồ tuần tự "Chuyển hội thoại khách vào tài khoản" (Detali-design.md, mục 5.4)
+sequenceDiagram
+  actor U as Người dùng vừa đăng nhập
+  participant C as Giao diện
+  participant LS as localStorage
+  participant API as API chuyển hội thoại
+  participant DB as PostgreSQL
+
+  U->>C: Đăng nhập xong, mở trang trợ lý
+  C->>LS: Đọc bản nháp của khách
+  alt Có bản nháp
+    C->>API: POST /api/chat/conversations/migrate (tối đa 40 tin nhắn)
+    API->>DB: Tạo hội thoại (migratedFromGuest = true) và các tin nhắn
+    API->>DB: Xóa bản ghi hạn mức của khách
+    API-->>C: Hội thoại mới, xóa cookie của khách
+    C->>LS: Xóa bản nháp
+    C-->>U: Mở hội thoại vừa chuyển
+  end
+  C->>API: GET /api/chat/conversations
+  API-->>C: Danh sách hội thoại

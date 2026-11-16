@@ -1,0 +1,47 @@
+{
+  "theme": "neutral",
+  "fontFamily": "\"Times New Roman\", Times, serif",
+  "themeVariables": {
+    "fontFamily": "\"Times New Roman\", Times, serif",
+    "fontSize": "22px"
+  },
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 30,
+    "rankSpacing": 28,
+    "padding": 8,
+    "wrappingWidth": 420,
+    "useMaxWidth": false
+  },
+  "sequence": {
+    "useMaxWidth": false,
+    "actorMargin": 12,
+    "width": 112,
+    "height": 46,
+    "boxMargin": 5,
+    "messageMargin": 22,
+    "noteMargin": 6,
+    "wrap": true,
+    "wrapPadding": 4,
+    "mirrorActors": false,
+    "actorFontSize": 17,
+    "messageFontSize": 16,
+    "noteFontSize": 16,
+    "actorFontFamily": "\"Times New Roman\", Times, serif",
+    "messageFontFamily": "\"Times New Roman\", Times, serif",
+    "noteFontFamily": "\"Times New Roman\", Times, serif"
+  },
+  "er": {
+    "useMaxWidth": false,
+    "layoutDirection": "TB",
+    "nodeSpacing": 30,
+    "rankSpacing": 45
+  },
+  "state": {
+    "useMaxWidth": false,
+    "nodeSpacing": 30,
+    "rankSpacing": 26
+  },
+  "themeCSS": ".erDiagram .edgeLabel, .erDiagram .edgeLabel p, .relationshipLabel { font-size: 18px !important; }"
+}

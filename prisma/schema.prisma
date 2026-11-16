@@ -36,15 +36,6 @@ enum DocStatus {
   failed
 }
 
-enum QuizSource {
-  generated
-  manual
-}
-
-enum AttemptMode {
-  review
-}
-
 model User {
   id              String         @id @default(cuid())
   email           String         @unique
@@ -56,8 +47,6 @@ model User {
   createdAt       DateTime       @default(now())
   conversations   Conversation[]
   documents       Document[]     @relation("UploadedBy")
-  quizzes         Quiz[]         @relation("QuizCreator")
-  quizAttempts    QuizAttempt[]
 }
 
 model GuestQuota {
@@ -79,7 +68,6 @@ model Conversation {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   messages           Message[]
-  quizzesBasedOn     Quiz[]   @relation("QuizFromConversation")
 
   @@index([userId, updatedAt])
 }
@@ -153,49 +141,4 @@ model LessonTranslation {
   content   String
 
   @@unique([lessonId, locale])
-}
-
-model Quiz {
-  id                     String         @id @default(cuid())
-  titleVi                String?
-  titleEn                String?
-  description            String?
-  published              Boolean        @default(false)
-  source                 QuizSource     @default(generated)
-  createdById            String
-  createdBy              User           @relation("QuizCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  basedOnConversationId  String?
-  basedOnConversation    Conversation?  @relation("QuizFromConversation", fields: [basedOnConversationId], references: [id], onDelete: SetNull)
-  createdAt              DateTime       @default(now())
-  questions              Question[]
-  attempts               QuizAttempt[]
-
-  @@index([createdById, createdAt])
-}
-
-model Question {
-  id              String  @id @default(cuid())
-  quizId          String
-  quiz            Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  prompt          String
-  options         Json
-  correctOptionId String
-  order           Int     @default(0)
-  locale          Locale?
-
-  @@index([quizId, order])
-}
-
-model QuizAttempt {
-  id          String      @id @default(cuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quizId      String
-  quiz        Quiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  score       Float
-  answers     Json
-  mode        AttemptMode @default(review)
-  completedAt DateTime    @default(now())
-
-  @@index([userId, completedAt])
 }

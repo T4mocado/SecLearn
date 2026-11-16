@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
-import { Button } from "@/components/ui/button";
 
 type LessonDetail = {
   title: string;
@@ -50,9 +48,6 @@ export default function LessonDetailPage() {
             <article className="prose-chat rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
               {lesson.content}
             </article>
-            <Button asChild>
-              <Link href={`/${locale}/on-tap`}>{t("reviewCta")}</Link>
-            </Button>
           </>
         )}
       </div>

@@ -10,13 +10,12 @@ export type Action =
   | "lesson:read"
   | "chat:ask"
   | "chat:history"
-  | "quiz:generate"
   | "admin:access"
   | "lesson:manage"
   | "document:manage"
   | "user:manage";
 
-const learnerActions: readonly Action[] = ["lesson:read", "chat:ask", "chat:history", "quiz:generate"];
+const learnerActions: readonly Action[] = ["lesson:read", "chat:ask", "chat:history"];
 
 const PERMISSIONS: Record<Actor, readonly Action[]> = {
   guest: ["lesson:read", "chat:ask"],
@@ -41,14 +40,6 @@ export function can(actor: Actor, action: Action): boolean {
 /** Documents whose chunks this actor's chat answers may draw on. */
 export function docVisibilitiesFor(actor: Actor): DocVisibility[] {
   return [...DOC_VISIBILITIES[actor]];
-}
-
-/**
- * A quiz is generated from the creator's own conversation, so only the creator may open it, admins included.
- * A published quiz is open to every signed-in user.
- */
-export function canAccessQuiz(user: { id: string }, quiz: { createdById: string; published: boolean }): boolean {
-  return quiz.createdById === user.id || quiz.published;
 }
 
 /**

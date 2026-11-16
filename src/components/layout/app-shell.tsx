@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations, useLocale } from "next-intl";
-import { Menu, X, MessageSquare, BookOpen, Brain, Shield } from "lucide-react";
+import { Menu, X, MessageSquare, BookOpen, Shield } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -29,7 +29,6 @@ export function AppShell({
   const links = [
     { href: `/${locale}`, label: t("nav.chat"), icon: MessageSquare },
     { href: `/${locale}/lessons`, label: t("nav.lessons"), icon: BookOpen },
-    { href: `/${locale}/on-tap`, label: t("nav.review"), icon: Brain },
   ];
   const isAdmin = can(actorOf(session?.user), "admin:access");
   if (isAdmin) {

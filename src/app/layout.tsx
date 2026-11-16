@@ -10,7 +10,7 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: "SecLearn",
-  description: "Beginner cybersecurity learning with AI chat, lessons, and review quizzes.",
+  description: "Beginner cybersecurity learning with AI chat and lessons.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

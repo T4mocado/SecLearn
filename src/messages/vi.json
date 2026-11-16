@@ -4,7 +4,6 @@
   "nav": {
     "chat": "Chat",
     "lessons": "Bài học",
-    "review": "Ôn tập",
     "admin": "Admin",
     "login": "Đăng nhập",
     "register": "Đăng ký",
@@ -94,20 +93,7 @@
   "lessons": {
     "title": "Bài học",
     "empty": "Chưa có bài học công khai.",
-    "reviewCta": "Ôn tập",
     "loading": "Đang tải bài học..."
-  },
-  "review": {
-    "title": "Ôn tập",
-    "create": "Tạo bộ câu ôn tập",
-    "creating": "Đang tạo câu hỏi...",
-    "empty": "Bạn chưa có bộ câu nào. Hãy tạo bộ câu ôn tập đầu tiên.",
-    "start": "Làm bài",
-    "submit": "Nộp bài",
-    "score": "Điểm: {score}%",
-    "history": "Lịch sử làm bài",
-    "needAuth": "Đăng nhập để dùng Ôn tập.",
-    "questions": "{count} câu"
   },
   "admin": {
     "users": "Người dùng",
@@ -145,7 +131,7 @@
     "retry": "Thử lại",
     "refresh": "Làm mới",
     "chunks": "Chunks",
-    "ingestHint": "Ingest dùng EMBED_PROVIDER (mặc định openai / text-embedding-3-small, dim 1536). Lỗi hiện trên từng tài liệu — sửa .env rồi Reindex.",
+    "ingestHint": "Ingest dùng EMBED_PROVIDER đặt trong .env (hiện là huggingface / vietnamese-bi-encoder, dim 768).",
     "uploadError": "Tải lên thất bại. Kiểm tra PDF và cấu hình embed.",
     "embedFailed": "Embedding/ingest thất bại — xem lỗi trên tài liệu. Đổi EMBED_DIM/model thì migrate/db push rồi Reindex.",
     "toastProcessing": "Đang cắt chunk / xử lý “{title}”…",

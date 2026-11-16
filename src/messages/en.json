@@ -4,7 +4,6 @@
   "nav": {
     "chat": "Chat",
     "lessons": "Lessons",
-    "review": "Review",
     "admin": "Admin",
     "login": "Log in",
     "register": "Sign up",
@@ -94,20 +93,7 @@
   "lessons": {
     "title": "Lessons",
     "empty": "No published lessons yet.",
-    "reviewCta": "Review",
     "loading": "Loading lessons..."
-  },
-  "review": {
-    "title": "Review",
-    "create": "Generate review quiz",
-    "creating": "Generating questions...",
-    "empty": "No saved quizzes yet. Generate your first review set.",
-    "start": "Take quiz",
-    "submit": "Submit",
-    "score": "Score: {score}%",
-    "history": "Attempt history",
-    "needAuth": "Sign in to use Review.",
-    "questions": "{count} questions"
   },
   "admin": {
     "users": "Users",
@@ -145,7 +131,7 @@
     "retry": "Retry",
     "refresh": "Refresh",
     "chunks": "Chunks",
-    "ingestHint": "Ingest embeds with EMBED_PROVIDER (default openai / text-embedding-3-small, dim 1536). Failures show on the document row — fix .env, then Reindex.",
+    "ingestHint": "Ingest embeds with the EMBED_PROVIDER set in .env (currently huggingface / vietnamese-bi-encoder, dim 768). Failures show on the document row — fix .env, then Reindex.",
     "uploadError": "Upload failed. Check the PDF and embed configuration.",
     "embedFailed": "Embedding/ingest failed — see error on the document. After changing EMBED_DIM or model, run db push/migrate and Reindex.",
     "toastProcessing": "Chunking / processing “{title}”…",

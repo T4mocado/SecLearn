@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 type LessonItem = {
   id: string;
@@ -51,9 +50,6 @@ export default function LessonsPage() {
                 {lesson.title}
               </Link>
               <p className="text-sm text-[var(--text-muted)]">{lesson.summary}</p>
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/${locale}/on-tap`}>{t("reviewCta")}</Link>
-              </Button>
             </Card>
           ))}
         </div>

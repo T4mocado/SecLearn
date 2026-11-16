@@ -20,6 +20,8 @@ const eslintConfig = defineConfig([
     "**/.venv/**",
     "**/.uv-python/**",
     ".claude/**",
+    // Thesis .docx build script: a standalone CommonJS Node tool, not part of the app.
+    "docs/thesis/docx-build/**",
   ]),
   {
     rules: {

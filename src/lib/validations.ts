@@ -66,17 +66,6 @@ export const createConversationSchema = z.object({
   locale: localeSchema.optional(),
 });
 
-export const generateQuizSchema = z.object({
-  locale: localeSchema.optional(),
-  conversationId: z.string().cuid().optional(),
-  topicHint: z.string().trim().max(200).optional(),
-});
-
-export const attemptSchema = z.object({
-  answers: z.record(z.string(), z.string()),
-  mode: z.literal("review").default("review"),
-});
-
 export const adminUserPatchSchema = z.object({
   role: z.enum(["learner", "admin"]).optional(),
   disabled: z.boolean().optional(),

@@ -1,6 +1,6 @@
 # SecLearn
 
-Beginner cybersecurity learning app: AI chat (guest + authenticated), bilingual lessons, **Ôn tập** review quizzes, and admin PDF → vector RAG.
+Beginner cybersecurity learning app: AI chat (guest + authenticated), bilingual lessons, and admin PDF → vector RAG.
 
 Monolith: **Next.js (App Router) + TypeScript + Tailwind + shadcn-style UI + next-intl (VI/EN) + Auth.js + Prisma + Postgres/pgvector**.
 
